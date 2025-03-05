@@ -1,0 +1,31 @@
+.landingPage {
+    background-image: url("https://scontent.fmnl17-1.fna.fbcdn.net/v/t39.30808-6/472293021_921960990118564_1065768672985207164_n.png?_nc_cat=100&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeG7PBpjkDMc2eQG3HTHZz12ZPYN-nvQcudk9g36e9By50DEtV5zxj5WQZ8iCqHEJ0itnZvoDlmsqw1NYjAhroPU&_nc_ohc=MnUeAFNzHr8Q7kNvgFRiHBN&_nc_oc=Adjju5STaxH380JorbxhZlmVACODB_rg_wGh2ql84TCHhDBQTqmKZ8gGHnwvmIDVz2E&_nc_zt=23&_nc_ht=scontent.fmnl17-1.fna&_nc_gid=AwjOhwzS5r_68pUqy_aZQLE&oh=00_AYBe4Jnlv3CP4kD9dOPN3MgKn-QKiMVMe1HpU_vwDY6Bjw&oe=67CAEF2C");
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+}
+
+.loginButton {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .loginButton:hover {
+    background-color: #0056b3;
+  }
+  
+

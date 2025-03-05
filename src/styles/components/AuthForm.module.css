@@ -1,0 +1,43 @@
+.authContainer {
+    
+    height: 100vh;
+  }
+  
+  .leftSide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+  }
+  
+  .logoImage {
+    width: 300%;
+    height: 100vh;
+    object-fit: cover;
+  }
+  
+  .rightSide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1E4E92;
+  }
+  
+  .loginBox {
+    background: #1E4E92;
+    padding: 30px;
+    border-radius: 15px;
+    width: 350px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .forgotPassword {
+    color: red;
+    font-size: 12px;
+    text-decoration: none;
+  }
+  
+  .forgotPassword:hover {
+    text-decoration: underline;
+  }
+  
