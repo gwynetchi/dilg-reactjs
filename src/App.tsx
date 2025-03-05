@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import AuthForm from './components/AuthForm';
 import LandingPage from "./components/LandingPage";
+import NewAuthForm from "./components/NewAuthForm";
 
 function App() {
   const [showAuth, setShowAuth] = useState(false);
@@ -19,7 +20,7 @@ function App() {
       {!showAuth ? (
         <LandingPage onGetStarted={handleGetStarted} isVisible={isLandingVisible} />
       ) : (
-        <AuthForm />
+        <NewAuthForm />
       )}
     </>
   );
