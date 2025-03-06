@@ -4,6 +4,10 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import LandingPage from "./components/LandingPage";
 import NewAuthForm from "./components/NewAuthForm";
+import AdminDashboard from './pages/admin/dashboard'; // Import AdminDashboard
+import EvaluatorDashboard from './pages/evaluator/dashboard'; // Import EvaluatorDashboard
+import LGUuserDashboard from './pages/lgu/dashboard'; // Import LGUuserDashboard
+import ViewerDashboard from './pages/viewer/dashboard'; // Import ViewerDashboard
 
 const App: React.FC = () => {
   const [showAuth, setShowAuth] = useState(false);
@@ -25,6 +29,11 @@ const App: React.FC = () => {
             <NewAuthForm />
           )
         } />
+        <Route path="/pages/admin/dashboard" element={<AdminDashboard />} /> 
+        <Route path="/pages/evaluator/dashboard" element={<EvaluatorDashboard />} /> 
+        <Route path="/pages/lgu/dashboard" element={<LGUuserDashboard />} /> 
+        <Route path="/pages/viewer/dashboard" element={<ViewerDashboard />} /> 
+
       </Routes>
     </Router>
   );
