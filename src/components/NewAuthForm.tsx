@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore";
+import { setDoc, doc, getDoc } from "firebase/firestore"; // Import getDoc
 import styles from "../styles/components/NewAuthForm.module.css";
 
 const NewAuthForm = () => {
@@ -13,6 +13,7 @@ const NewAuthForm = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Admin");
   const [error, setError] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Define the logged-in state
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,9 +26,10 @@ const NewAuthForm = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await setDoc(doc(db, "users", user.uid), { email: user.email, role, password });
+
       console.log("Account Created Successfully");
-      navigate("/");
-    } catch (err: any) {
+      setIsLoggedIn(true); // Mark user as logged in
+    } catch (err) {
       console.error(err);
       setError("Error creating account. Try again.");
     }
@@ -38,7 +40,35 @@ const NewAuthForm = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       console.log("Logged in successfully");
-      navigate("/");
+
+      // Fetch user data from Firestore based on the user's UID
+      const user = auth.currentUser;
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef); // Use getDoc to fetch the user data
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const userRole = userData?.role;
+
+          // Redirect based on the user's role
+          if (userRole === "Admin") {
+            navigate("../pages/admin/dashboard"); // Redirect to admin dashboard
+          } else if (userRole === "LGU") {
+            navigate("../pages/lgu/dashboard"); // Redirect to LGU user dashboard
+          } else if (userRole === "Viewer") {
+            navigate("../pages/viewer/dashboard"); // Redirect to viewer dashboard
+          } else if (userRole === "Evaluator") {
+            navigate("../pages/evaluator/dashboard"); // Redirect to evaluator dashboard
+          } else {
+            navigate("/"); // Default redirection if no role matches
+          }
+        } else {
+          setError("Error: User data not found.");
+        }
+      }
+
+      setIsLoggedIn(true); // Mark user as logged in
     } catch (err: any) {
       console.error(err);
       setError("Invalid email or password.");
