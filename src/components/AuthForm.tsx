@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Form, Button, Container, Row, Col } from "react-bootstrap";
 import { motion, AnimatePresence } from "framer-motion";
-import styles from "../styles/components/AuthForm.module.css"; 
+import styles from "../styles/components/AuthForm.module.css";
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
