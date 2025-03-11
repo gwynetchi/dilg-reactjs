@@ -14,6 +14,7 @@ interface Link {
   userId: string;
   fullName: string;
   locality: string;
+  role: string;
   linkUrl: string;
   createdAt: any;
 }
@@ -86,6 +87,7 @@ const fetchUserDetails = async (uid: string) => {
         id: doc.id,
         userId: data.userId || "Unknown",
         fullName: data.fullName || "Unknown",
+        role: data.role || "Unknown",
         locality: data.locality || "Unknown",
         linkUrl: data.linkUrl || "",
         createdAt: data.createdAt || null,
@@ -123,6 +125,7 @@ const fetchUserDetails = async (uid: string) => {
         userId: auth.currentUser.uid,
         fullName,  // 🔹 Ensure this is stored
         locality,  // 🔹 Ensure this is stored
+        role,
         linkUrl: link.trim(),
         createdAt: Timestamp.fromDate(new Date()),
       });
@@ -193,6 +196,7 @@ const fetchUserDetails = async (uid: string) => {
               <tr>
                 <th>Link</th>
                 <th>Full Name</th>
+                <th>Role</th>
                 <th>Locality</th>
                 <th>Uploaded On</th>
                 <th>Actions</th>
@@ -207,6 +211,7 @@ const fetchUserDetails = async (uid: string) => {
                     </a>
                   </td>
                   <td>{link.fullName}</td>
+                  <td>{link.role}</td>
                   <td>{link.locality}</td>
                   <td>
                     {link.createdAt && link.createdAt.seconds
