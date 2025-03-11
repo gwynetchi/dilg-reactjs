@@ -1,31 +1,80 @@
 .landingPage {
-    background-image: url("https://scontent.fmnl17-1.fna.fbcdn.net/v/t39.30808-6/472293021_921960990118564_1065768672985207164_n.png?_nc_cat=100&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeG7PBpjkDMc2eQG3HTHZz12ZPYN-nvQcudk9g36e9By50DEtV5zxj5WQZ8iCqHEJ0itnZvoDlmsqw1NYjAhroPU&_nc_ohc=MnUeAFNzHr8Q7kNvgFRiHBN&_nc_oc=Adjju5STaxH380JorbxhZlmVACODB_rg_wGh2ql84TCHhDBQTqmKZ8gGHnwvmIDVz2E&_nc_zt=23&_nc_ht=scontent.fmnl17-1.fna&_nc_gid=AwjOhwzS5r_68pUqy_aZQLE&oh=00_AYBe4Jnlv3CP4kD9dOPN3MgKn-QKiMVMe1HpU_vwDY6Bjw&oe=67CAEF2C");
-    background-size: cover;
-    background-position: center;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+  background-image: url('bg.gif'); /* Ensure path to your image is correct */
+  background-size: cover;
+  background-position: center;
+  height: 100vh; /* Full viewport height */
+  display: flex;
+  align-items: flex-start; /* Align content to the top */
+  justify-content: flex-start; /* Align content to the left */
+  text-align: left; /* Align text to the left */
+  padding: 20px; /* Add padding if you want space from the edges */
+}
 
+.bloody-text {
+  font-family: 'Creepster', sans-serif;
+  color: #8A0303; /* Dark red color for blood */
+  font-size: 4rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  /* Add margin if you want to move it away from the edge */
+  margin-top: 50px;
+}
+
+.bloody-text::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(45deg, #8A0303, #900);
+  filter: blur(2px);
+  z-index: -1;
+}
+
+.bloody-text::after {
+  content: '';
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 20px;
+  background: #8A0303;
+  animation: drip 1s infinite;
+}
+
+@keyframes drip {
+  0% {
+    height: 20px;
+    opacity: 1;
+  }
+  50% {
+    height: 25px;
+    opacity: 0.6;
+  }
+  100% {
+    height: 20px;
+    opacity: 1;
+  }
 }
 
 .loginButton {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    font-size: 1.2rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .loginButton:hover {
-    background-color: #0056b3;
-  }
-  
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  font-size: 1.2rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
 
+.loginButton:hover {
+  background-color: #0056b3;
+}
