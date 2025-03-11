@@ -1,67 +1,93 @@
 /* Table */
 .upload-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 600px;
-    border: 2px solid black;
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+  border: 2px solid black;
+  table-layout: fixed; /* Prevents the table from expanding too much */
+}
+
+/* Table Header */
+.upload-table th {
+  background-color: #f4f4f4;
+  text-align: left;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid black; /* Thick black border around each column */
+  word-wrap: break-word; /* Prevents overflow issues */
+}
+
+/* Table Cells */
+.upload-table td {
+  padding: 12px;
+  font-size: 14px;
+  border: 2px solid black; /* Thick black border around each cell */
+  word-break: break-word;
+  max-width: 250px;
+  white-space: normal;
+  text-align: center; /* Centers content for better readability */
+}
+
+/* Alternating Row Colors */
+.upload-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Table Links */
+.upload-table a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.upload-table a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile-Friendly Table */
+@media screen and (max-width: 768px) {
+  .upload-table-container {
+    overflow-x: auto; /* Horizontal scroll if necessary */
+    -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
   }
-  
-  /* Table Header */
-  .upload-table th {
-    background-color: #f4f4f4;
-    text-align: left;
-    padding: 12px;
-    font-size: 16px;
-    border: 2px solid black; /* Thick black border around each column */
+
+  .upload-table {
+    min-width: 100%; /* Ensure the table takes full width on mobile */
+    table-layout: auto; /* Allow for auto resizing of columns */
   }
-  
-  /* Table Cells */
+
+  .upload-table th,
   .upload-table td {
-    padding: 12px;
+    padding: 8px; /* Reduced padding for smaller screens */
+    font-size: 12px; /* Smaller font size for better fit */
+    border: 1px solid black; /* Thinner borders on mobile */
+  }
+
+  .upload-input {
     font-size: 14px;
-    border: 2px solid black; /* Thick black border around each cell */
-    word-break: break-word;
-    max-width: 250px;
-    white-space: normal;
-    text-align: center; /* Centers content for better readability */
   }
-  
-  /* Alternating Row Colors */
-  .upload-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+
+  .upload-button {
+    font-size: 14px;
+    padding: 8px 15px;
   }
-  
-  /* Table Links */
-  .upload-table a {
-    color: #007bff;
-    text-decoration: none;
+
+  /* Optional: Stack columns vertically on small screens */
+  .upload-table td {
+    display: block;
+    width: 100%; /* Make each cell take full width */
+    text-align: left; /* Align text to the left for readability */
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box; /* Prevent extra space */
+    border-bottom: 1px solid #ddd; /* Add a subtle divider between rows */
+  }
+
+  /* Add labels for each column when stacked vertically */
+  .upload-table td::before {
+    content: attr(data-label); /* Content of the cell label from data-label attribute */
     font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
   }
-  
-  .upload-table a:hover {
-    text-decoration: underline;
-  }
-  
-  /* Mobile-Friendly Table */
-  @media screen and (max-width: 768px) {
-    .upload-table-container {
-      overflow-x: auto;
-    }
-  
-    .upload-table th,
-    .upload-table td {
-      padding: 10px;
-      font-size: 14px;
-      border: 2px solid black; /* Ensures separation on mobile too */
-    }
-  
-    .upload-input {
-      font-size: 14px;
-    }
-  
-    .upload-button {
-      font-size: 14px;
-      padding: 8px 15px;
-    }
-  }
-  
+}
