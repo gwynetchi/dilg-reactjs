@@ -1,0 +1,67 @@
+/* Table */
+.upload-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+    border: 2px solid black;
+  }
+  
+  /* Table Header */
+  .upload-table th {
+    background-color: #f4f4f4;
+    text-align: left;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid black; /* Thick black border around each column */
+  }
+  
+  /* Table Cells */
+  .upload-table td {
+    padding: 12px;
+    font-size: 14px;
+    border: 2px solid black; /* Thick black border around each cell */
+    word-break: break-word;
+    max-width: 250px;
+    white-space: normal;
+    text-align: center; /* Centers content for better readability */
+  }
+  
+  /* Alternating Row Colors */
+  .upload-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  /* Table Links */
+  .upload-table a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .upload-table a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Mobile-Friendly Table */
+  @media screen and (max-width: 768px) {
+    .upload-table-container {
+      overflow-x: auto;
+    }
+  
+    .upload-table th,
+    .upload-table td {
+      padding: 10px;
+      font-size: 14px;
+      border: 2px solid black; /* Ensures separation on mobile too */
+    }
+  
+    .upload-input {
+      font-size: 14px;
+    }
+  
+    .upload-button {
+      font-size: 14px;
+      padding: 8px 15px;
+    }
+  }
+  
