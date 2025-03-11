@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"; // React hooks for state and lifecycle management
 import { getAuth, onAuthStateChanged } from "firebase/auth"; // Firebase authentication methods
 import { db } from "../../firebase"; // Import Firestore database instance
-import { collection, addDoc, getDocs, doc, getDoc, deleteDoc, Timestamp } from "firebase/firestore"; // Firestore functions for CRUD operations
+import { collection, addDoc, doc, getDoc, deleteDoc, Timestamp, onSnapshot } from "firebase/firestore"; // Firestore functions for CRUD operations
 import "../../styles/components/pages.module.css"; // Import styles
 
 // Initialize Firebase authentication
@@ -36,7 +36,7 @@ const UploadLink = () => {
       if (user) {
         setIsAuthenticated(true);
         fetchUserDetails(user.uid);
-        fetchLinks();
+        subscribeToLinks();
       } else {
         setIsAuthenticated(false);
         setFullName("");
@@ -50,53 +50,54 @@ const UploadLink = () => {
   }, []);
 
   // Fetch user details from Firestore
-// Fetch user details from Firestore
-const fetchUserDetails = async (uid: string) => {
-  try {
-    const userRef = doc(db, "users", uid);
-    const userDoc = await getDoc(userRef);
+  const fetchUserDetails = async (uid: string) => {
+    try {
+      const userRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userRef);
 
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      
-      // Ensure all users have their full name recorded
-      setFullName(userData?.full_name || "Unknown");
-      setLocality(userData?.locality || "Unknown");
-      setRole(userData?.role?.toLowerCase() || "Unknown");
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        // Ensure all users have their full name recorded
+        setFullName(userData?.full_name || "Unknown");
+        setLocality(userData?.locality || "Unknown");
+        setRole(userData?.role?.toLowerCase() || "Unknown");
 
-      console.log("Fetched User Details:", {
-        fullName: userData?.full_name,
-        locality: userData?.locality,
-        role: userData?.role,
-      });
-    } else {
-      setMessage("⚠️ User data not found.");
+        console.log("Fetched User Details:", {
+          fullName: userData?.full_name,
+          locality: userData?.locality,
+          role: userData?.role,
+        });
+      } else {
+        setMessage("⚠️ User data not found.");
+      }
+    } catch (error) {
+      console.error("Error fetching user details:", error);
     }
-  } catch (error) {
-    console.error("Error fetching user details:", error);
-  }
-};
+  };
 
+  // Subscribe to Firestore collection for real-time updates
+  const subscribeToLinks = () => {
+    const unsubscribe = onSnapshot(collection(db, "links"), (snapshot) => {
+      const links = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          userId: data.userId || "Unknown",
+          fullName: data.fullName || "Unknown",
+          role: data.role || "Unknown",
+          locality: data.locality || "Unknown",
+          linkUrl: data.linkUrl || "",
+          createdAt: data.createdAt || null,
+        };
+      });
 
-  // Fetch uploaded links from Firestore
-  const fetchLinks = async () => {
-    const querySnapshot = await getDocs(collection(db, "links"));
-    const links = querySnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        userId: data.userId || "Unknown",
-        fullName: data.fullName || "Unknown",
-        role: data.role || "Unknown",
-        locality: data.locality || "Unknown",
-        linkUrl: data.linkUrl || "",
-        createdAt: data.createdAt || null,
-      };
+      // Sort links by creation date (newest first)
+      links.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setUploadedLinks(links);
     });
 
-    // Sort links by creation date (newest first)
-    links.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-    setUploadedLinks(links);
+    return unsubscribe;
   };
 
   // Handle link upload
@@ -132,12 +133,10 @@ const fetchUserDetails = async (uid: string) => {
   
       setMessage("✅ Link uploaded successfully!");
       setLink("");
-      fetchLinks();
     } catch (error) {
       setMessage(`⚠️ Failed to upload link: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
-  
 
   // Handle link deletion
   const handleDelete = async (id: string, userId: string) => {
@@ -152,7 +151,6 @@ const fetchUserDetails = async (uid: string) => {
 
     try {
       await deleteDoc(doc(db, "links", id));
-      setUploadedLinks(uploadedLinks.filter((link) => link.id !== id));
       setMessage("✅ Link deleted successfully!");
     } catch (error) {
       setMessage(`⚠️ Failed to delete link: ${error instanceof Error ? error.message : "Unknown error"}`);
