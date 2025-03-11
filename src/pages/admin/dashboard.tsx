@@ -1,4 +1,3 @@
-import React from 'react';
 import TopNav from './navigation/topnav';
 
 const Dashboard = () => {

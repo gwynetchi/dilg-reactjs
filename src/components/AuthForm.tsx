@@ -1,88 +1,219 @@
-import { useState } from "react";
-import { Form, Button, Container, Row, Col } from "react-bootstrap";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import styles from "../styles/components/AuthForm.module.css"; 
+import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { setDoc, doc, getDoc } from "firebase/firestore";
+import styles from "../styles/components/NewAuthForm.module.css";
 
-export default function AuthForm() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({ email: "", password: "", confirmPassword: "" });
+const NewAuthForm = () => {
+  const [isActive, setIsActive] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  const clearFields = () => {
+    setEmail("");
+    setPassword("");
+    setRole("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 🔹 Unified Error Handler
+  const handleAuthError = (err: any) => {
+    console.error("Auth Error:", err);
+    switch (err.code) {
+      case "auth/email-already-in-use":
+        return "This email is already registered. Please log in instead.";
+      case "auth/weak-password":
+        return "Password should be at least 6 characters.";
+      case "auth/invalid-email":
+        return "Invalid email format. Please enter a valid email.";
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+        return "Invalid email or password. Please try again.";
+      case "auth/too-many-requests":
+        return "Too many failed attempts. Please try again later.";
+      case "auth/network-request-failed":
+        return "Network error. Check your internet connection.";
+      default:
+        return err.message || "An error occurred. Please try again.";
+    }
+  };
+
+  // 🔹 SIGN UP HANDLER
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+    setError("");
+    setMessage("");
+
+    if (!email.endsWith("@gmail.com")) {
+      setError("Only Gmail accounts (@gmail.com) are allowed.");
       return;
     }
-    alert(isLogin ? "Logged in successfully!" : "Account created!");
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      await setDoc(doc(db, "users", user.uid), { email: user.email, role });
+
+      setMessage("🎉 Account Created Successfully! Redirecting...");
+      clearFields();
+      setTimeout(() => navigate("/"), 2000);
+    } catch (err: any) {
+      setError(handleAuthError(err));
+    }
   };
 
+  // 🔹 LOGIN HANDLER
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+  
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+  
+      if (userDoc.exists()) {
+        const userRole = userDoc.data()?.role;
+        setMessage("✅ Login successful! Redirecting...");
+  
+        setTimeout(() => {
+          switch (userRole) {
+            case "Admin":
+              navigate("/pages/admin/dashboard");
+              break;
+            case "LGU":
+              navigate("/pages/lgu/dashboard");
+              break;
+            case "Viewer":
+              navigate("/pages/viewer/dashboard");
+              break;
+            case "Evaluator":
+              navigate("/pages/evaluator/dashboard");
+              break;
+            default:
+              navigate("/");
+          }
+        }, 2000);
+      } else {
+        setError("⚠️ User data not found. Please contact support.");
+      }
+  
+      clearFields();
+    } catch (err: any) {
+      console.error("Login Error:", err);
+  
+      switch (err.code) {
+        case "auth/user-not-found":
+          setError("⚠️ No account found with this email. Please check and try again.");
+          break;
+        case "auth/wrong-password":
+          setError("⚠️ Incorrect password. Please try again.");
+          break;
+        case "auth/invalid-credential":
+          setError("⚠️ Invalid email or password. Please check your credentials.");
+          break;
+        case "auth/too-many-requests":
+          setError("⏳ Too many failed attempts. Please try again later.");
+          break;
+        case "auth/network-request-failed":
+          setError("🌐 Network error. Check your internet connection.");
+          break;
+        default:
+          setError(err.message || "⚠️ Login failed. Try again.");
+      }
+    }
+  };
+  
+
   return (
-    <Container fluid className={styles.authContainer}>
-      <Row className="vh-100">
-        {/* Left Side - Logo Image */}
-        <Col md={6} className={styles.leftSide}>
-          <img src="https://scontent.fmnl17-5.fna.fbcdn.net/v/t39.30808-6/472311036_921960780118585_2294339441687169412_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeE8hNmddmL4ITzhKz9HNTrdyLcNbA-F9cDItw1sD4X1wBDTjdzQ3RnA8WKxv2oKe5sKS6l8oaFBrNDoh_kXSTV5&_nc_ohc=mEePo8E5BggQ7kNvgGRIOJl&_nc_oc=AdhAxVojQkc2QLG6TY2dFov0sj03UrOiuKDcIgNu-zeFM8rINlcXmIukunG1kn1KTnM&_nc_zt=23&_nc_ht=scontent.fmnl17-5.fna&_nc_gid=ABy-2bPdR6-gOosAYac8GQ3&oh=00_AYBz4F-hlIAfZGxJ12eBnwvp5DgxTl_QBY2dW0RxTwFqoA&oe=67CC66C1" alt="DILG Cavite Logo" className={styles.logoImage} />
-        </Col>
-
-        {/* Right Side - Login / Sign Up Form */}
-        <Col md={6} className={styles.rightSide}>
-          <AnimatePresence mode="wait">
+    <div className={styles.authWrapper}>
+      <AnimatePresence>
+        {isVisible && (
           <motion.div
-              key={isLogin ? "login" : "signup"} // Unique key triggers animation change
-              initial={{ opacity: 0, y: 50 }} // Start hidden below
-              animate={{ opacity: 1, y: 0 }} // Slide in and fade in
-              exit={{ opacity: 0, y: -50 }} // Slide up and fade out when changing
-              transition={{ duration: 0.5 }}
-              className={styles.loginBox}
-            >
-              <h2 className="text-white text-center mb-4">{isLogin ? "LOGIN" : "SIGN UP"}</h2>
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label className="text-white">Email:</Form.Label>
-                  <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} required />
-                </Form.Group>
+            className={`${styles.container} ${isActive ? styles.active : ""}`}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 120, damping: 10 }}
+          >
+            {/* 🔹 LOGIN FORM */}
+            <div className={`${styles.formBox} ${styles.login}`}>
+              <form onSubmit={handleLogin}>
+                <h1>Login</h1>
+                <div className={styles.inputBox}>
+                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className={styles.inputBox}>
+                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </div>
+                {error && <p className={styles.error}>{error}</p>}
+                {message && <p className={styles.success}>{message}</p>}
+                <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  Login
+                </motion.button>
+              </form>
+            </div>
 
-                <Form.Group className="mb-3">
-                  <Form.Label className="text-white">Password:</Form.Label>
-                  <Form.Control type="password" name="password" value={formData.password} onChange={handleChange} required />
-                </Form.Group>
+            {/* 🔹 REGISTRATION FORM */}
+            <div className={`${styles.formBox} ${styles.register}`}>
+              <form onSubmit={handleSignUp}>
+                <h1>Registration</h1>
+                <div className={styles.inputBox}>
+                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className={styles.inputBox}>
+                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                </div>
+                <div className={styles.inputBox}>
+                  <select value={role} onChange={(e) => setRole(e.target.value)} required>
+                    <option value="" disabled>Select Role</option>
+                    <option value="Admin">Admin</option>
+                    <option value="LGU">LGU User</option>
+                    <option value="Viewer">Viewer</option>
+                    <option value="Evaluator">Evaluator</option>
+                  </select>
+                </div>
+                {error && <p className={styles.error}>{error}</p>}
+                {message && <p className={styles.success}>{message}</p>}
+                <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  Register
+                </motion.button>
+              </form>
+            </div>
 
-                {!isLogin && (
-                  <Form.Group className="mb-3">
-                    <Form.Label className="text-white">Confirm Password:</Form.Label>
-                    <Form.Control type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required />
-                  </Form.Group>
-                )}
-
-                {isLogin && (
-                  <div className="text-end">
-                    <a href="#" className={styles.forgotPassword}>Forgot Password?</a>
-                  </div>
-                )}
-
-                <Button variant="warning" type="submit" className="w-100 mt-3">
-                  {isLogin ? "Login" : "Sign Up"}
-                </Button>
-              </Form>
-
-              <div className="text-center mt-3">
-                <small className="text-white">
-                  {isLogin ? "Don't have an account?" : "Already have an account?"}
-                  <span className={styles.toggleLink} onClick={() => setIsLogin(!isLogin)}>
-                    {isLogin ? " Sign Up" : " Login"}
-                  </span>
-                </small>
+            {/* 🔹 TOGGLE BOX */}
+            <div className={styles.toggleBox}>
+              <div className={`${styles.togglePanel} ${styles.toggleLeft}`}>
+                <h1>Welcome!</h1>
+                <p>Don't have an account?</p>
+                <motion.button type="button" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setIsActive(true)}>
+                  Register
+                </motion.button>
               </div>
-            </motion.div>
-            
-          </AnimatePresence>
-        </Col>
-      </Row>
-    </Container>
-    
+
+              <div className={`${styles.togglePanel} ${styles.toggleRight}`}>
+                <h1>Welcome Back!</h1>
+                <p>Already have an account?</p>
+                <motion.button type="button" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setIsActive(false)}>
+                  Login
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
-}
+};
+
+export default NewAuthForm;

@@ -17,7 +17,7 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(90deg, #e2e2e2, #c9d6ff);
+    background: linear-gradient(90deg, #503b3b, #c9d6ff);
     background-image: url("https://scontent.fmnl17-1.fna.fbcdn.net/v/t39.30808-6/472293021_921960990118564_1065768672985207164_n.png?_nc_cat=100&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeG7PBpjkDMc2eQG3HTHZz12ZPYN-nvQcudk9g36e9By50DEtV5zxj5WQZ8iCqHEJ0itnZvoDlmsqw1NYjAhroPU&_nc_ohc=MnUeAFNzHr8Q7kNvgFRiHBN&_nc_oc=Adjju5STaxH380JorbxhZlmVACODB_rg_wGh2ql84TCHhDBQTqmKZ8gGHnwvmIDVz2E&_nc_zt=23&_nc_ht=scontent.fmnl17-1.fna&_nc_gid=AwjOhwzS5r_68pUqy_aZQLE&oh=00_AYBe4Jnlv3CP4kD9dOPN3MgKn-QKiMVMe1HpU_vwDY6Bjw&oe=67CAEF2C");
     background-size: cover;
     background-position: center;
@@ -33,6 +33,78 @@
     box-shadow: 0 0 30px rgba(0, 0, 0, .2);
     overflow: hidden;
 }
+/* Loading Spinner Styles */
+/* Loading Container Styles */
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+}
+
+/* Spinner Styles */
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 50px;  /* Default size for desktop */
+    height: 50px; /* Default size for desktop */
+    animation: spin 1s linear infinite;
+}
+
+/* Keyframes for Spin */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Keyframes for Fade In */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Loading Text Styles */
+        .loadingText {
+            font-size: 18px;  /* Default text size for desktop */
+            color: #fff;
+            margin-top: 15px;
+        }
+
+        /* Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .spinner {
+                width: 40px;  /* Smaller spinner for tablets */
+                height: 40px; /* Smaller spinner for tablets */
+            }
+
+            .loadingText {
+                font-size: 16px; /* Slightly smaller text for tablets */
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .spinner {
+                width: 35px;  /* Even smaller spinner for mobile */
+                height: 35px; /* Even smaller spinner for mobile */
+            }
+
+            .loadingText {
+                font-size: 14px; /* Smaller text for mobile */
+            }
+        }
+
 
     .container h1{
         font-size: 36px;
