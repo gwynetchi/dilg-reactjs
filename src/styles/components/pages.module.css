@@ -1,36 +1,63 @@
+/* Table Container (Ensures responsiveness) */
+.upload-table-container {
+  overflow-x: auto; /* Enables horizontal scroll on small screens */
+  max-width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
 /* Table */
 .upload-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px;
-  border: 2px solid black;
-  table-layout: fixed; /* Prevents the table from expanding too much */
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 600px; /* Ensures columns stay visible */
 }
 
 /* Table Header */
 .upload-table th {
-  background-color: #f4f4f4;
-  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
   padding: 12px;
   font-size: 16px;
-  border: 2px solid black; /* Thick black border around each column */
-  word-wrap: break-word; /* Prevents overflow issues */
+  border: 2px solid #ddd;
+  text-transform: uppercase;
+  white-space: nowrap; /* Prevents header text from wrapping */
 }
 
 /* Table Cells */
 .upload-table td {
   padding: 12px;
   font-size: 14px;
-  border: 2px solid black; /* Thick black border around each cell */
+  border: 1px solid #ddd;
+  text-align: center;
   word-break: break-word;
   max-width: 250px;
+  transition: all 0.3s;
+  white-space: nowrap; /* Prevents text wrapping in smaller screens */
+}
+
+/* ✅ Prevent link overflow */
+.upload-table td:first-child {
+  max-width: 150px;
+  word-wrap: break-word;
   white-space: normal;
-  text-align: center; /* Centers content for better readability */
 }
 
 /* Alternating Row Colors */
 .upload-table tr:nth-child(even) {
   background-color: #f9f9f9;
+}
+
+/* Table Hover Effect */
+.upload-table tr:hover {
+  background-color: #f1f1f1;
+  transform: scale(1.01);
+  transition: all 0.3s ease;
 }
 
 /* Table Links */
@@ -42,52 +69,89 @@
 
 .upload-table a:hover {
   text-decoration: underline;
+  color: #0056b3;
 }
 
-/* Mobile-Friendly Table */
+/* Upload Button */
+.upload-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.upload-button:hover {
+  background-color: #45a049;
+}
+
+/* Delete Button */
+.delete-button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 3px 10px rgba(255, 77, 77, 0.2);
+}
+
+.delete-button:hover {
+  background-color: #ff3333;
+  transform: scale(1.05);
+}
+
+/* ✅ Tablet Responsiveness (768px and below) */
 @media screen and (max-width: 768px) {
   .upload-table-container {
-    overflow-x: auto; /* Horizontal scroll if necessary */
-    -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
+    overflow-x: auto;
+    max-width: 100%;
   }
 
   .upload-table {
-    min-width: 100%; /* Ensure the table takes full width on mobile */
-    table-layout: auto; /* Allow for auto resizing of columns */
+    min-width: 100%;
+    white-space: nowrap; /* Keeps columns in place */
   }
 
   .upload-table th,
   .upload-table td {
-    padding: 8px; /* Reduced padding for smaller screens */
-    font-size: 12px; /* Smaller font size for better fit */
-    border: 1px solid black; /* Thinner borders on mobile */
-  }
-
-  .upload-input {
+    padding: 10px;
     font-size: 14px;
   }
 
-  .upload-button {
-    font-size: 14px;
-    padding: 8px 15px;
+  /* Adjust button size */
+  .upload-button,
+  .delete-button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+/* ✅ Mobile (480px and below) */
+@media screen and (max-width: 480px) {
+  .upload-table-container {
+    overflow-x: auto;
   }
 
-  /* Optional: Stack columns vertically on small screens */
+  .upload-table {
+    min-width: 100%;
+  }
+
+  .upload-table th,
   .upload-table td {
-    display: block;
-    width: 100%; /* Make each cell take full width */
-    text-align: left; /* Align text to the left for readability */
-    padding-left: 0;
-    padding-right: 0;
-    box-sizing: border-box; /* Prevent extra space */
-    border-bottom: 1px solid #ddd; /* Add a subtle divider between rows */
+    font-size: 12px;
+    padding: 8px;
   }
 
-  /* Add labels for each column when stacked vertically */
-  .upload-table td::before {
-    content: attr(data-label); /* Content of the cell label from data-label attribute */
-    font-weight: bold;
-    display: block;
-    margin-bottom: 5px;
+  /* Adjust button size */
+  .upload-button,
+  .delete-button {
+    font-size: 12px;
+    padding: 5px 10px;
   }
 }
