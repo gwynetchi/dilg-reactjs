@@ -19,7 +19,7 @@
 
 /* Table Header */
 .upload-table th {
-  background-color: #4CAF50;
+  background-color: #3c9edf;
   color: white;
   text-align: center;
   padding: 12px;
@@ -62,7 +62,7 @@
 
 /* Table Links */
 .upload-table a {
-  color: #007bff;
+  color: #727070;
   text-decoration: none;
   font-weight: bold;
 }
@@ -74,10 +74,11 @@
 
 /* Upload Button */
 .upload-button {
-  background-color: #4CAF50;
+  background-color: rgb(238, 168, 39);
   color: white;
   border: none;
-  padding: 10px 15px;
+  padding: 3px;
+  margin: 10px;
   font-size: 14px;
   cursor: pointer;
   border-radius: 5px;
@@ -85,12 +86,12 @@
 }
 
 .upload-button:hover {
-  background-color: #45a049;
+  background-color: #fac107;
 }
 
 /* Delete Button */
 .delete-button {
-  background-color: #ff4d4d;
+  background-color: #eb6767;
   color: white;
   border: none;
   padding: 8px 15px;
@@ -102,7 +103,7 @@
 }
 
 .delete-button:hover {
-  background-color: #ff3333;
+  background-color: #8a2121;
   transform: scale(1.05);
 }
 
@@ -154,4 +155,24 @@
     font-size: 12px;
     padding: 5px 10px;
   }
+}
+
+/* ✅ Popup Message */
+.popup-message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(238, 168, 39, 0.822);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.popup-message.hidden {
+  opacity: 0;
 }
