@@ -1,3 +1,4 @@
+
 //import React from 'react';
 //import NavBar from './navigation/navbar';   <NavBar />
 import "./navigation/dashboard.css"; // Ensure you have the corresponding CSS file
@@ -104,6 +105,7 @@ const Dashboard = () => {
             </section>
         </div>
     );
+
 };
 
 export default Dashboard;

@@ -13,6 +13,7 @@ import EvaluatorCommunication from "./pages/evaluator/communication"; //
 import EvaluatorProfile from "./pages/evaluator/profile"; // 
 import LGUuserDashboard from "./pages/lgu/dashboard";
 import ViewerDashboard from "./pages/viewer/dashboard";
+
 import NewAuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 // Import role-specific navbars
@@ -20,6 +21,7 @@ import AdminNavbar from "./pages/admin/navigation/navbar";
 import EvaluatorNavbar from "./pages/evaluator/navigation/navbar";
 import LGUNavbar from "./pages/lgu/navigation/navbar";
 import ViewerNavbar from "./pages/viewer/navigation/navbar";
+
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -74,6 +76,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+
       <div className="app-container">
         {/* Only render the navbar when the role is available */}
         {user && role && (
@@ -110,6 +113,7 @@ const App: React.FC = () => {
           </Routes>
         </div>
       </div>
+
     </Router>
   );
 };
