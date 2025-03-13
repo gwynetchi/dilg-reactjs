@@ -8,7 +8,7 @@ import AdminDashboard from "./pages/admin/dashboard";
 import EvaluatorDashboard from "./pages/evaluator/dashboard";
 import LGUuserDashboard from "./pages/lgu/dashboard";
 import ViewerDashboard from "./pages/viewer/dashboard";
-
+import DashboardEmbed from "../embed";
 const App: React.FC = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [isLandingVisible, setIsLandingVisible] = useState(true);
@@ -37,6 +37,7 @@ const App: React.FC = () => {
         <Route path="/pages/evaluator/dashboard" element={<EvaluatorDashboard />} />
         <Route path="/pages/lgu/dashboard" element={<LGUuserDashboard />} />
         <Route path="/pages/viewer/dashboard" element={<ViewerDashboard />} />
+        <Route path="/embed" element={<DashboardEmbed />} />
       </Routes>
     </Router>
   );
