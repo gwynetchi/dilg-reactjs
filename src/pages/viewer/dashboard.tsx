@@ -19,7 +19,7 @@ interface Link {
   createdAt: any;
 }
 
-const UploadLink = () => {
+const Dashboard = () => {
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -229,4 +229,4 @@ const UploadLink = () => {
   );
 };
 
-export default UploadLink;
+export default Dashboard;
