@@ -109,11 +109,17 @@ const UploadLink = () => {
   
     if (!link.trim()) {
       setMessage("⚠️ Please provide a link.");
+      setTimeout(() => setMessage(""), 2000);
       return;
     }
-  
+
+    if (!/^https?:\/\//.test(link.trim())) {
+      setMessage("Only HTTPS links are allowed!");
+      setTimeout(() => setMessage(""), 2000);
+      return;
+    }
     // Restrict roles that cannot upload
-    const restrictedRoles = ["viewer", "admin", "evaluator"];
+    const restrictedRoles = ["viewer", "admin", "lgu"];
     if (restrictedRoles.includes(role)) {
       setMessage(`🔒 You are ${fullName}, a / an ${role}, and cannot upload links.`);
       return;
@@ -121,7 +127,9 @@ const UploadLink = () => {
   
     try {
       console.log("Uploading link with:", { fullName, locality, role });
-  
+      setMessage("✅ Link uploaded successfully!");
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setTimeout(() => setMessage(""), 500);
       await addDoc(collection(db, "links"), {
         userId: auth.currentUser.uid,
         fullName,  // 🔹 Ensure this is stored
@@ -130,11 +138,11 @@ const UploadLink = () => {
         linkUrl: link.trim(),
         createdAt: Timestamp.fromDate(new Date()),
       });
-  
-      setMessage("✅ Link uploaded successfully!");
       setLink("");
     } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 100));
       setMessage(`⚠️ Failed to upload link: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setTimeout(() => setMessage(""), 2000);
     }
   };
 
@@ -144,16 +152,22 @@ const UploadLink = () => {
     console.log("User Role:", role);
     console.log("Full name:", fullName);
 
-    if (!auth.currentUser || (auth.currentUser.uid !== userId && role !== "lgu")) {
+    if (!auth.currentUser || (auth.currentUser.uid !== userId && role !== "evaluator")) {
       setMessage("⚠️ You are not authorized to delete this link.");
+      setTimeout(() => setMessage(""), 2000);
       return;
     }
 
     try {
-      await deleteDoc(doc(db, "links", id));
       setMessage("✅ Link deleted successfully!");
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setTimeout(() => setMessage(""), 500);
+      await deleteDoc(doc(db, "links", id));
     } catch (error) {
       setMessage(`⚠️ Failed to delete link: ${error instanceof Error ? error.message : "Unknown error"}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setTimeout(() => setMessage(""), 2000);
     }
   };
 
@@ -162,7 +176,7 @@ const UploadLink = () => {
   if (!isAuthenticated) return <p>🔒 You must be logged in to view and upload links.</p>;
 
   // List of roles that cannot upload links
-  const restrictedRoles = ["viewer", "admin", "evaluator"];
+  const restrictedRoles = ["viewer", "admin", "lgu"];
 
   return (
     <div className="upload-link-container">
@@ -205,7 +219,7 @@ const UploadLink = () => {
                 <tr key={link.id}>
                   <td>
                     <a href={link.linkUrl} target="_blank" rel="noopener noreferrer" title={link.linkUrl}>
-                      {link.linkUrl.length > 50 ? link.linkUrl.substring(0, 50) + "..." : link.linkUrl}
+                      {link.linkUrl.length > 10 ? link.linkUrl.substring(0, 10) + "..." : link.linkUrl}
                     </a>
                   </td>
                   <td>{link.fullName}</td>
@@ -217,7 +231,9 @@ const UploadLink = () => {
                       : "Unknown"}
                   </td>
                   <td>
-                    <button onClick={() => handleDelete(link.id, link.userId)} className="delete-button">
+                    <button onClick={() => handleDelete(link.id, link.userId)} className="delete-button"    disabled={restrictedRoles.includes(role)} // Disable button for restricted users
+    title={restrictedRoles.includes(role) ? "You are not allowed to delete links." : ""}
+>
                       ❌ Delete
                     </button>
                   </td>
