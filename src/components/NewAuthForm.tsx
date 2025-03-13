@@ -14,7 +14,7 @@ const NewAuthForm = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Admin");
   const [error, setError] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Define the logged-in state
+  const [, setIsLoggedIn] = useState(false); // Define the logged-in state
   const navigate = useNavigate();
 
   useEffect(() => {
