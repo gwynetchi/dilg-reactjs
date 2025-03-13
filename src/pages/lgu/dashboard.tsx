@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import NavBar from "./navigation/navbar";
 import "./navigation/dashboard.css";
@@ -148,6 +149,7 @@ const Dashboard = () => {
             </section>
         </div>
     );
+
 };
 
 export default Dashboard;
