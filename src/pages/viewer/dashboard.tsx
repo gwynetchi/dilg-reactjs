@@ -19,7 +19,7 @@ interface Link {
   createdAt: any;
 }
 
-const UploadLink = () => {
+const Dashboard = () => {
   // State management
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Tracks authentication status
   const [fullName, setFullName] = useState(""); // Stores user's full name
@@ -231,4 +231,4 @@ const UploadLink = () => {
   );
 };
 
-export default UploadLink;
+export default Dashboard;

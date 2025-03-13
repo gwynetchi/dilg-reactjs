@@ -1,234 +1,109 @@
-// Import necessary dependencies
-import { useState, useEffect } from "react"; // React hooks for state and lifecycle management
-import { getAuth, onAuthStateChanged } from "firebase/auth"; // Firebase authentication methods
-import { db } from "../../firebase"; // Import Firestore database instance
-import { collection, addDoc, doc, getDoc, deleteDoc, Timestamp, onSnapshot } from "firebase/firestore"; // Firestore functions for CRUD operations
-import "../../styles/components/pages.module.css"; // Import styles
+//import React from 'react';
+//import NavBar from './navigation/navbar';   <NavBar />
+import "./navigation/dashboard.css"; // Ensure you have the corresponding CSS file
 
-// Initialize Firebase authentication
-const auth = getAuth();
+const Dashboard = () => {
+    return (
+        <div className="dashboard-container">
+            {/* SIDEBAR (Handled by NavBar) */}
+          
+            
+            {/* CONTENT */}
+            <section id="content">
+                <main>
+                    <div className="head-title">
+                        <div className="left">
+                            <h1>Evaluator Dashboard</h1>
+                            <ul className="breadcrumb">
+                                <li><a href="#">Administrative Tools</a></li>
+                                <li><i className='bx bx-chevron-right'></i></li>
+                                <li><a className="active" href="#">Home</a></li>
+                            </ul>
+                        </div>
+                        <a href="#" className="btn-download">
+                            <i className='bx bxs-cloud-download bx-fade-down-hover'></i>
+                            <span className="text">PDF Export</span>
+                        </a>
+                    </div>
 
-// Define TypeScript interface for a Link object
-interface Link {
-  id: string;
-  userId: string;
-  fullName: string;
-  locality: string;
-  role: string;
-  linkUrl: string;
-  createdAt: any;
-}
-
-const UploadLink = () => {
-  // State management
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Tracks authentication status
-  const [fullName, setFullName] = useState(""); // Stores user's full name
-  const [locality, setLocality] = useState(""); // Stores user's locality
-  const [role, setRole] = useState(""); // Stores user role
-  const [link, setLink] = useState(""); // Stores link input
-  const [message, setMessage] = useState(""); // Stores messages for the user
-  const [uploadedLinks, setUploadedLinks] = useState<Link[]>([]); // Stores uploaded links
-  const [loading, setLoading] = useState(true); // Tracks loading state
-
-  // Effect to handle authentication state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        fetchUserDetails(user.uid);
-        subscribeToLinks();
-      } else {
-        setIsAuthenticated(false);
-        setFullName("");
-        setLocality("");
-        setRole("");
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe(); // Cleanup function
-  }, []);
-
-  // Fetch user details from Firestore
-  const fetchUserDetails = async (uid: string) => {
-    try {
-      const userRef = doc(db, "users", uid);
-      const userDoc = await getDoc(userRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        
-        // Ensure all users have their full name recorded
-        setFullName(userData?.full_name || "Unknown");
-        setLocality(userData?.locality || "Unknown");
-        setRole(userData?.role?.toLowerCase() || "Unknown");
-
-        console.log("Fetched User Details:", {
-          fullName: userData?.full_name,
-          locality: userData?.locality,
-          role: userData?.role,
-        });
-      } else {
-        setMessage("⚠️ User data not found.");
-      }
-    } catch (error) {
-      console.error("Error fetching user details:", error);
-    }
-  };
-
-  // Subscribe to Firestore collection for real-time updates
-  const subscribeToLinks = () => {
-    const unsubscribe = onSnapshot(collection(db, "links"), (snapshot) => {
-      const links = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          userId: data.userId || "Unknown",
-          fullName: data.fullName || "Unknown",
-          role: data.role || "Unknown",
-          locality: data.locality || "Unknown",
-          linkUrl: data.linkUrl || "",
-          createdAt: data.createdAt || null,
-        };
-      });
-
-      // Sort links by creation date (newest first)
-      links.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setUploadedLinks(links);
-    });
-
-    return unsubscribe;
-  };
-
-  // Handle link upload
-  const handleUpload = async () => {
-    if (!auth.currentUser) {
-      setMessage("⚠️ You must be logged in to upload links.");
-      return;
-    }
-  
-    if (!link.trim()) {
-      setMessage("⚠️ Please provide a link.");
-      return;
-    }
-  
-    // Restrict roles that cannot upload
-    const restrictedRoles = ["viewer", "admin", "evaluator"];
-    if (restrictedRoles.includes(role)) {
-      setMessage(`🔒 You are ${fullName}, a / an ${role}, and cannot upload links.`);
-      return;
-    }
-  
-    try {
-      console.log("Uploading link with:", { fullName, locality, role });
-  
-      await addDoc(collection(db, "links"), {
-        userId: auth.currentUser.uid,
-        fullName,  // 🔹 Ensure this is stored
-        locality,  // 🔹 Ensure this is stored
-        role,
-        linkUrl: link.trim(),
-        createdAt: Timestamp.fromDate(new Date()),
-      });
-  
-      setMessage("✅ Link uploaded successfully!");
-      setLink("");
-    } catch (error) {
-      setMessage(`⚠️ Failed to upload link: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  };
-
-  // Handle link deletion
-  const handleDelete = async (id: string, userId: string) => {
-    console.log("Current User ID:", auth.currentUser?.uid);
-    console.log("User Role:", role);
-    console.log("Full name:", fullName);
-
-    if (!auth.currentUser || (auth.currentUser.uid !== userId && role !== "lgu")) {
-      setMessage("⚠️ You are not authorized to delete this link.");
-      return;
-    }
-
-    try {
-      await deleteDoc(doc(db, "links", id));
-      setMessage("✅ Link deleted successfully!");
-    } catch (error) {
-      setMessage(`⚠️ Failed to delete link: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  };
-
-  // Render UI
-  if (loading) return <p>Loading...</p>;
-  if (!isAuthenticated) return <p>🔒 You must be logged in to view and upload links.</p>;
-
-  // List of roles that cannot upload links
-  const restrictedRoles = ["viewer", "admin", "evaluator"];
-
-  return (
-    <div className="upload-link-container">
-      {restrictedRoles.includes(role) ? (
-        <p>🔒 You are {fullName}, a / an {role}, and cannot upload links.</p>
-      ) : (
-        <>
-          <input
-            type="text"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="Enter link"
-            className="upload-input"
-          />
-          <button onClick={handleUpload} className="upload-button">
-            Upload Link
-          </button>
-        </>
-      )}
-      {message && <p>{message}</p>}
-
-      <h3>Uploaded Links:</h3>
-      {uploadedLinks.length === 0 ? (
-        <p>No links uploaded yet.</p>
-      ) : (
-        <div className="upload-table-container">
-          <table className="upload-table">
-            <thead>
-              <tr>
-                <th>Link</th>
-                <th>Full Name</th>
-                <th>Role</th>
-                <th>Locality</th>
-                <th>Uploaded On</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {uploadedLinks.map((link) => (
-                <tr key={link.id}>
-                  <td>
-                    <a href={link.linkUrl} target="_blank" rel="noopener noreferrer" title={link.linkUrl}>
-                      {link.linkUrl.length > 50 ? link.linkUrl.substring(0, 50) + "..." : link.linkUrl}
-                    </a>
-                  </td>
-                  <td>{link.fullName}</td>
-                  <td>{link.role}</td>
-                  <td>{link.locality}</td>
-                  <td>
-                    {link.createdAt && link.createdAt.seconds
-                      ? new Date(link.createdAt.seconds * 1000).toLocaleString()
-                      : "Unknown"}
-                  </td>
-                  <td>
-                    <button onClick={() => handleDelete(link.id, link.userId)} className="delete-button">
-                      ❌ Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <ul className="box-info">
+                        <li>
+                            <i className='bx bxs-calendar-check'></i>
+                            <span className="text">
+                                <h3>1020</h3>
+                                <p>New Users</p>
+                            </span>
+                        </li>
+                        <li>
+                            <i className='bx bxs-group'></i>
+                            <span className="text">
+                                <h3>2834</h3>
+                                <p>Manage Users</p>
+                            </span>
+                        </li>
+                        <li>
+                            <i className='bx bxs-user-x'></i>
+                            <span className="text">
+                                <h3>13</h3>
+                                <p>Users Not Approved</p>
+                            </span>
+                        </li>
+                    </ul>
+                    
+                    <div className="table-data">
+                        <div className="order">
+                            <div className="head">
+                                <h3>Recent Users</h3>
+                                <i className='bx bx-search'></i>
+                                <i className='bx bx-filter'></i>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Creation Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <img src="https://placehold.co/600x400/png" alt="Profile" />
+                                            <p>Micheal John</p>
+                                        </td>
+                                        <td>07-03-2025</td>
+                                        <td><span className="status completed">Approved</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="todo">
+                            <div className="head">
+                                <h3>Todos</h3>
+                                <i className='bx bx-plus icon'></i>
+                                <i className='bx bx-filter'></i>
+                            </div>
+                            <ul className="todo-list">
+                                <li className="completed">
+                                    <p>Check Inventory</p>
+                                    <i className='bx bx-dots-vertical-rounded'></i>
+                                </li>
+                                <li className="not-completed">
+                                    <p>Contact Selma: Confirm Delivery</p>
+                                    <i className='bx bx-dots-vertical-rounded'></i>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <iframe 
+                        width="1000px" 
+                        height="700px" 
+                        src="https://docs.google.com/spreadsheets/d/1zseIl5-m0ABOZ39gOHo2zvJQc50rusWtjkH52InCeNY/preview">
+                    </iframe>
+                </main>
+            </section>
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
-export default UploadLink;
+export default Dashboard;
