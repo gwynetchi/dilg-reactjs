@@ -1,5 +1,5 @@
 .landingPage {
-  background-image: url('bg.gif'); /* Ensure path to your image is correct */
+  background: linear-gradient(to right, #ff7f50, #ff6347, #1e90ff, #ffd700); /* Smooth gradient from coral, tomato, dodger blue, to gold */
   background-size: cover;
   background-position: center;
   height: 100vh; /* Full viewport height */
@@ -9,6 +9,7 @@
   text-align: left; /* Align text to the left */
   padding: 20px; /* Add padding if you want space from the edges */
 }
+
 
 .bloody-text {
   font-family: 'Creepster', sans-serif;
