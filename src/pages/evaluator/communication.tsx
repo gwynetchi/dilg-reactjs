@@ -1,3 +1,4 @@
+import { getAuth } from "firebase/auth"; // Import Firebase auth
 import React, { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, deleteDoc, collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from "../../firebase"; // Ensure correct Firebase import
@@ -104,16 +105,24 @@ const fetchUsers = async () => {
     setPreviewLink(modifiedLink);
   };
 
-  // Handle Form Submission
   const handleSubmit = async () => {
     if (!subject || !recipient || !deadline || !remarks) {
       alert("Please fill in all fields before sending.");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
+      const auth = getAuth(); // Get Firebase auth instance
+      const user = auth.currentUser; // Get logged-in user
+  
+      if (!user) {
+        alert("You must be logged in to send a communication.");
+        setLoading(false);
+        return;
+      }
+  
       const communicationRef = collection(db, "communications");
       await addDoc(communicationRef, {
         subject,
@@ -121,9 +130,10 @@ const fetchUsers = async () => {
         deadline,
         remarks,
         link: inputLink,
+        createdBy: user.uid, // Store sender's user ID
         createdAt: new Date(),
       });
-
+  
       alert("Message sent successfully!");
       setSubject("");
       setRecipient("");
@@ -139,6 +149,7 @@ const fetchUsers = async () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="dashboard-container">
