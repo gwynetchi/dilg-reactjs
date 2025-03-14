@@ -64,8 +64,8 @@ const AuthForm = () => {
       
       setTimeout(() => {
         setLoading(false);
-        navigate("/login");  
-        resetForm(); // Reset AFTER navigation
+        setIsActive(false);
+        resetForm();
       }, 1000);
     } catch (err) {
       console.error(err);
