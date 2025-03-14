@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-
-
 // Import dashboards
 import AdminDashboard from "./pages/admin/dashboard";
 import EvaluatorDashboard from "./pages/evaluator/dashboard";
-import EvaluatorCommunication from "./pages/evaluator/communication"; // 
-import EvaluatorProfile from "./pages/evaluator/profile"; // 
+import EvaluatorCommunication from "./pages/evaluator/communication";
+import EvaluatorProfile from "./pages/evaluator/profile";
 import LGUuserDashboard from "./pages/lgu/dashboard";
 import ViewerDashboard from "./pages/viewer/dashboard";
 
 import NewAuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
+
 // Import role-specific navbars
 import AdminNavbar from "./pages/admin/navigation/navbar";
 import EvaluatorNavbar from "./pages/evaluator/navigation/navbar";
 import LGUNavbar from "./pages/lgu/navigation/navbar";
 import ViewerNavbar from "./pages/viewer/navigation/navbar";
-
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -76,45 +74,64 @@ const App: React.FC = () => {
 
   return (
     <Router>
-
-      <div className="app-container">
-        {/* Only render the navbar when the role is available */}
-        {user && role && (
-          <>
-            {role === "Admin" && <AdminNavbar />}
-            {role === "Evaluator" && <EvaluatorNavbar />}
-            {role === "LGU" && <LGUNavbar />}
-            {role === "Viewer" && <ViewerNavbar />}
-          </>
-        )}
-
-        <div className="content">
-          <Routes>
-            {/* Login Route */}
-            <Route path="/" element={<Landing/>} />
-            <Route path="/login" element={<NewAuthForm/>} />
-
-            {/* Redirect logged-in users to their dashboard */}
-            {user && role && <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />}
-
-            {/* Role-specific Routes */}
-            <Route path="/admin/dashboard" element={user && role === "Admin" ? <AdminDashboard /> : <Navigate to="/login" />} />
-            <Route path="/evaluator/dashboard" element={user && role === "Evaluator" ? <EvaluatorDashboard /> : <Navigate to="/login" />} />
-            <Route path="/evaluator/communication" element={user && role === "Evaluator" ? <EvaluatorCommunication /> : <Navigate to="/login" />} />
-            <Route path="/evaluator/profile" element={user && role === "Evaluator" ? <EvaluatorProfile /> : <Navigate to="/login" />} />
-            <Route path="/lgu/dashboard" element={user && role === "LGU" ? <LGUuserDashboard /> : <Navigate to="/login" />} />
-            <Route path="/viewer/dashboard" element={user && role === "Viewer" ? <ViewerDashboard /> : <Navigate to="/login" />} />
-
-            {/* Redirect unknown routes */}
-            {user && role && <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />}
-
-            {/* Redirect non-logged-in users to login */}
-            {!user && <Route path="*" element={<Navigate to="/login" replace />} />}
-          </Routes>
-        </div>
-      </div>
-
+      <Content user={user} role={role} getDashboardPath={getDashboardPath} />
     </Router>
+  );
+};
+
+// Move everything that uses useLocation() into a separate component inside <Router>
+const Content: React.FC<{ user: any; role: string | null; getDashboardPath: () => string }> = ({
+  user,
+  role,
+  getDashboardPath,
+}) => {
+  const location = useLocation(); // Now inside Router, so no error!
+
+  // Hide navbar on these pages
+  const hideNavbarRoutes = ["/", "/login", "/register-success"];
+  const shouldShowNavbar = user && role && !hideNavbarRoutes.includes(location.pathname);
+
+  return (
+    <div className="app-container">
+      {/* Only render the navbar when a user is authenticated and not on login/registration pages */}
+      {shouldShowNavbar && (
+        <>
+          {role === "Admin" && <AdminNavbar />}
+          {role === "Evaluator" && <EvaluatorNavbar />}
+          {role === "LGU" && <LGUNavbar />}
+          {role === "Viewer" && <ViewerNavbar />}
+        </>
+      )}
+
+      <div className="content">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<NewAuthForm />} />
+
+          {/* Redirect newly registered users to login */}
+          <Route path="/register-success" element={<Navigate to="/login" replace />} />
+
+          {/* Protected Routes (User must be authenticated) */}
+          {user && role ? (
+            <>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/evaluator/dashboard" element={<EvaluatorDashboard />} />
+              <Route path="/evaluator/communication" element={<EvaluatorCommunication />} />
+              <Route path="/evaluator/profile" element={<EvaluatorProfile />} />
+              <Route path="/lgu/dashboard" element={<LGUuserDashboard />} />
+              <Route path="/viewer/dashboard" element={<ViewerDashboard />} />
+
+              {/* Redirect authenticated users to their dashboard */}
+              <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
+            </>
+          ) : (
+            // Redirect non-logged-in users to login
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          )}
+        </Routes>
+      </div>
+    </div>
   );
 };
 
