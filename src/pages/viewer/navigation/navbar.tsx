@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
+import Dashboard from  "../dashboard.tsx" //Viewer Dashboard
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 
@@ -73,7 +74,7 @@ const Navbar = () => {
 
   const menuItems = [
     { name: "Dashboard", icon: "bxs-dashboard" },
-    { name: "My Store", icon: "bxs-store" },
+    { name: "Uploaded Links", icon: "bxs-store" },
     { name: "Analytics", icon: "bxs-bar-chart-alt-2" },
     { name: "Message", icon: "bxs-message" },
     { name: "Team", icon: "bxs-group" },
@@ -123,7 +124,7 @@ const Navbar = () => {
       </section>
 
       {/* Main Content */}
-      <section id="content" className="flex-grow-5">
+      <section id="content" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i
             className="bx bx-menu bx-sm"
@@ -195,6 +196,14 @@ const Navbar = () => {
             )}
           </div>
         </nav>
+
+        {/* Dashboard Container */}
+        <div className="dashboard-container">
+          <h1>Dashboard</h1>
+          <Dashboard />
+        </div>
+
+
       </section>
     </div>
   );

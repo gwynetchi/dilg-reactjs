@@ -46,8 +46,7 @@
   }
 
   body {
-    background: #fff;
-    color: #0B093B;
+    
     font-family: 'Khula', sans-serif;
     overflow-x: hidden;
     font-size: 16px;
@@ -100,7 +99,7 @@
     width: 100%;
   }
   .active {
-    border-bottom: 2px solid #7620FF;
+    /*border-bottom: 2px solid #7620FF;*/
     color: #7620FF;
   }
   .tag {
