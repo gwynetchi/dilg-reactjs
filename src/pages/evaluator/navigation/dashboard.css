@@ -187,10 +187,28 @@ ol, ul {
 /* CONTENT */
 #content {
 	position: relative;
+	transition: width 0.3s ease, left 0.3s ease;
+  }
+  
+  /* When sidebar is open */
+  #content.expanded {
 	width: calc(100% - 220px);
 	left: 220px;
-	transition: .3s ease;
-}
+  }
+  
+  /* When sidebar is collapsed */
+  #content.collapsed {
+	width: calc(100% - 60px);
+	left: 60px;
+  }
+
+/* Dashboard container inside content */
+.dashboard-container {
+	padding: 20px;
+	background: var(--light);
+	min-height: 100vh;
+  }
+  
 #sidebar.hide ~ #content {
 	width: calc(100% - 60px);
 	left: 60px;

@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "fire
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
+
 const AuthForm = () => {
   const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -52,6 +53,7 @@ const AuthForm = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -71,6 +73,7 @@ const AuthForm = () => {
       console.error(err);
       setError("❌ Error creating account. Try again.");
       setLoading(false);
+
     }
   };
   
@@ -78,6 +81,7 @@ const AuthForm = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -88,10 +92,12 @@ const AuthForm = () => {
         setSuccessMessage("✅ Logged in successfully!");
       }, 1000);
       
+
       const user = auth.currentUser;
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
+
   
         if (userDoc.exists()) {
           const userRole = userDoc.data().role;
@@ -100,15 +106,18 @@ const AuthForm = () => {
             navigate(`/${userRole.toLowerCase()}/dashboard`);
             setLoading(false); // Stop loading AFTER redirection
           }, 500);
+          
         } else {
           setError("❌ User data not found.");
           setLoading(false);
         }
       }
+
     } catch (err) {
       console.error(err);
       setError("❌ Invalid email or password.");
       setLoading(false);
+
     }
   };
   
@@ -135,6 +144,7 @@ const AuthForm = () => {
                 <div className={styles.inputBox}>
                   <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
+
                 {loading ? (
   <div className={styles.loadingSpinner}></div>
 ) : (
@@ -165,11 +175,14 @@ const AuthForm = () => {
                     <option value="Evaluator">Evaluator</option>
                   </select>
                 </div>
+
+
                 {loading ? <div className={styles.loadingSpinner}></div> : (
                   <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     Register
                   </motion.button>
                 )}
+
               </form>
             </div>
 
@@ -183,10 +196,12 @@ const AuthForm = () => {
                   className={`${styles.btn} ${styles.registerBtn}`}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+
                   onClick={() => {
                     setIsActive(true);
                     resetForm();
                   }}
+
                 >
                   Register
                 </motion.button>
@@ -200,10 +215,12 @@ const AuthForm = () => {
                   className={`${styles.btn} ${styles.loginBtn}`}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+
                   onClick={() => {
                     setIsActive(false);
                     resetForm();
                   }}
+
                 >
                   Login
                 </motion.button>
