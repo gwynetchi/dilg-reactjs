@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, ReactElement } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 // Import dashboards
-import AdminDashboard from "./pages/admin/dashboard";
-import EvaluatorDashboard from "./pages/evaluator/dashboard";
+
+
 import EvaluatorCommunication from "./pages/evaluator/communication";
 import EvaluatorProfile from "./pages/evaluator/profile";
-import LGUuserDashboard from "./pages/lgu/dashboard";
-import ViewerDashboard from "./pages/viewer/dashboard";
 
+{/*import ViewerDashboard from "./pages/viewer/dashboard";*/}
+
+// Import authentication & landing page
 import NewAuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 
@@ -20,6 +22,7 @@ import AdminNavbar from "./pages/admin/navigation/navbar";
 import EvaluatorNavbar from "./pages/evaluator/navigation/navbar";
 import LGUNavbar from "./pages/lgu/navigation/navbar";
 import ViewerNavbar from "./pages/viewer/navigation/navbar";
+
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -47,7 +50,7 @@ const App: React.FC = () => {
         setUser(null);
         setRole(null);
       }
-      setLoading(false); // Mark as loaded
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -69,11 +72,32 @@ const App: React.FC = () => {
     }
   };
 
-  // Prevent rendering before role is fetched
-  if (loading) return <div>Loading...</div>;
+  const renderNavbar = () => {
+    switch (role) {
+      case "Admin":
+        return <AdminNavbar />;
+      case "Evaluator":
+        return <EvaluatorNavbar />;
+      case "LGU":
+        return <LGUNavbar />;
+      case "Viewer":
+        return <ViewerNavbar />;
+      default:
+        return null;
+    }
+  };
+
+  if (loading) return <div className="loading-screen">Loading...</div>;
+
+  const ProtectedRoute = ({ element, allowedRole }: { element: ReactElement; allowedRole: string }) => {
+    if (!user) return <Navigate to="/login" />;
+    if (role !== allowedRole) return <Navigate to={getDashboardPath()} />;
+    return element;
+  };
 
   return (
     <Router>
+
       <Content user={user} role={role} getDashboardPath={getDashboardPath} />
     </Router>
   );
@@ -115,12 +139,11 @@ const Content: React.FC<{ user: any; role: string | null; getDashboardPath: () =
           {/* Protected Routes (User must be authenticated) */}
           {user && role ? (
             <>
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/evaluator/dashboard" element={<EvaluatorDashboard />} />
-              <Route path="/evaluator/communication" element={<EvaluatorCommunication />} />
-              <Route path="/evaluator/profile" element={<EvaluatorProfile />} />
-              <Route path="/lgu/dashboard" element={<LGUuserDashboard />} />
-              <Route path="/viewer/dashboard" element={<ViewerDashboard />} />
+              
+             
+              <Route path="/evaluator/communication" element={<ProtectedRoute element={<EvaluatorCommunication />} allowedRole="Evaluator" />} />
+              <Route path="/evaluator/profile" element={<ProtectedRoute element={<EvaluatorProfile />} allowedRole="Evaluator" />} />
+              
 
               {/* Redirect authenticated users to their dashboard */}
               <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
@@ -132,6 +155,7 @@ const Content: React.FC<{ user: any; role: string | null; getDashboardPath: () =
         </Routes>
       </div>
     </div>
+
   );
 };
 

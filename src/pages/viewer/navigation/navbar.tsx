@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
+import Dashboard from  "../dashboard.tsx" //Viewer Dashboard
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 
@@ -67,11 +68,13 @@ const Navbar = () => {
   };
 
   const menuItems = [
+
     { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
     { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
     { name: "Inbox", icon: "bxs-message", path: "/viewer/Inbox" }, // Added Communication route
     { name: "Upload links", icon: "bxs-bar-chart-alt-2", path: "/viewer/uploadlinks" },
     { name: "Team", icon: "bxs-group", path: "/viewer/team" },
+
 
   ];
 
@@ -116,7 +119,7 @@ const Navbar = () => {
       </section>
 
       {/* Main Content */}
-      <section id="content" className="flex-grow-5">
+      <section id="content" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i
             className="bx bx-menu bx-sm"
@@ -200,6 +203,14 @@ const Navbar = () => {
 </div>
 
         </nav>
+
+        {/* Dashboard Container */}
+        <div className="dashboard-container">
+          <h1>Dashboard</h1>
+          <Dashboard />
+        </div>
+
+
       </section>
     </div>
   );
