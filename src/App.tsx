@@ -1,11 +1,12 @@
-import React, { useState, useEffect, ReactElement } from "react";
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, useEffect, ReactElement } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 // Import dashboards
+
 
 import EvaluatorCommunication from "./pages/evaluator/communication";
 import EvaluatorProfile from "./pages/evaluator/profile";
@@ -21,7 +22,6 @@ import AdminNavbar from "./pages/admin/navigation/navbar";
 import EvaluatorNavbar from "./pages/evaluator/navigation/navbar";
 import LGUNavbar from "./pages/lgu/navigation/navbar";
 import ViewerNavbar from "./pages/viewer/navigation/navbar";
-
 
 
 const App: React.FC = () => {
@@ -97,26 +97,65 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="app-container">
-        {user && role && window.location.pathname !== "/login" && renderNavbar()}
-        <div className="content">
-          <Routes>
-            <Route path="/" element={user && role ? <Navigate to={getDashboardPath()} replace /> : <Landing />} />
-            <Route path="/login" element={user ? <Navigate to={getDashboardPath()} replace /> : <NewAuthForm />} />
 
-            {/* Role-specific routes */}
-            
-            <Route path="/evaluator/communication" element={<ProtectedRoute element={<EvaluatorCommunication />} allowedRole="Evaluator" />} />
-            <Route path="/evaluator/profile" element={<ProtectedRoute element={<EvaluatorProfile />} allowedRole="Evaluator" />} />
-           
-            {/*<Route path="/viewer/dashboard" element={<ProtectedRoute element={<ViewerDashboard />} allowedRole="Viewer" />} />*/}
-
-            {/* Redirect unknown routes */}
-            <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
-          </Routes>
-        </div>
-      </div>
+      <Content user={user} role={role} getDashboardPath={getDashboardPath} />
     </Router>
+  );
+};
+
+// Move everything that uses useLocation() into a separate component inside <Router>
+const Content: React.FC<{ user: any; role: string | null; getDashboardPath: () => string }> = ({
+  user,
+  role,
+  getDashboardPath,
+}) => {
+  const location = useLocation(); // Now inside Router, so no error!
+
+  // Hide navbar on these pages
+  const hideNavbarRoutes = ["/", "/login", "/register-success"];
+  const shouldShowNavbar = user && role && !hideNavbarRoutes.includes(location.pathname);
+
+  return (
+    <div className="app-container">
+      {/* Only render the navbar when a user is authenticated and not on login/registration pages */}
+      {shouldShowNavbar && (
+        <>
+          {role === "Admin" && <AdminNavbar />}
+          {role === "Evaluator" && <EvaluatorNavbar />}
+          {role === "LGU" && <LGUNavbar />}
+          {role === "Viewer" && <ViewerNavbar />}
+        </>
+      )}
+
+      <div className="content">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<NewAuthForm />} />
+
+          {/* Redirect newly registered users to login */}
+          <Route path="/register-success" element={<Navigate to="/login" replace />} />
+
+          {/* Protected Routes (User must be authenticated) */}
+          {user && role ? (
+            <>
+              
+             
+              <Route path="/evaluator/communication" element={<ProtectedRoute element={<EvaluatorCommunication />} allowedRole="Evaluator" />} />
+              <Route path="/evaluator/profile" element={<ProtectedRoute element={<EvaluatorProfile />} allowedRole="Evaluator" />} />
+              
+
+              {/* Redirect authenticated users to their dashboard */}
+              <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
+            </>
+          ) : (
+            // Redirect non-logged-in users to login
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          )}
+        </Routes>
+      </div>
+    </div>
+
   );
 };
 
