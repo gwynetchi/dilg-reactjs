@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { setDoc, doc, getDoc } from "firebase/firestore"; // Import getDoc
+import { setDoc, doc, getDoc } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css";
 
 const NewAuthForm = () => {
@@ -14,65 +14,75 @@ const NewAuthForm = () => {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Admin");
   const [error, setError] = useState("");
-  const [, setIsLoggedIn] = useState(false); // Define the logged-in state
+  const [loading, setLoading] = useState(false); // <-- Added loading state
   const navigate = useNavigate();
 
   useEffect(() => {
-    setIsVisible(true); // Trigger animation when component mounts
+    setIsVisible(true);
   }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // <-- Start loading
+    setError("");
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await setDoc(doc(db, "users", user.uid), { email: user.email, role, password });
 
       console.log("Account Created Successfully");
-      setIsLoggedIn(true); // Mark user as logged in
+      navigate("/dashboard"); // Adjust the redirection as needed
     } catch (err) {
       console.error(err);
       setError("Error creating account. Try again.");
+    } finally {
+      setLoading(false); // <-- Stop loading
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // <-- Start loading
+    setError("");
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       console.log("Logged in successfully");
 
-      // Fetch user data from Firestore based on the user's UID
       const user = auth.currentUser;
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef); // Use getDoc to fetch the user data
+        const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const userRole = userData?.role;
+          const userRole = userDoc.data()?.role;
 
-          // Redirect based on the user's role
-          if (userRole === "Admin") {
-            navigate("../pages/admin/dashboard"); // Redirect to admin dashboard
-          } else if (userRole === "LGU") {
-            navigate("../pages/lgu/dashboard"); // Redirect to LGU user dashboard
-          } else if (userRole === "Viewer") {
-            navigate("../pages/viewer/dashboard"); // Redirect to viewer dashboard
-          } else if (userRole === "Evaluator") {
-            navigate("../pages/evaluator/dashboard"); // Redirect to evaluator dashboard
-          } else {
-            navigate("/"); // Default redirection if no role matches
+          switch (userRole) {
+            case "Admin":
+              navigate("../pages/admin/dashboard");
+              break;
+            case "LGU":
+              navigate("../pages/lgu/dashboard");
+              break;
+            case "Viewer":
+              navigate("../pages/viewer/dashboard");
+              break;
+            case "Evaluator":
+              navigate("../pages/evaluator/dashboard");
+              break;
+            default:
+              navigate("/");
           }
         } else {
           setError("Error: User data not found.");
         }
       }
-
-      setIsLoggedIn(true); // Mark user as logged in
     } catch (err: any) {
       console.error(err);
       setError("Invalid email or password.");
+    } finally {
+      setLoading(false); // <-- Stop loading
     }
   };
 
@@ -97,13 +107,15 @@ const NewAuthForm = () => {
                   <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 {error && <p className={styles.error}>{error}</p>}
+                {loading ? <p>Loading...</p> : null}
                 <motion.button
                   type="submit"
                   className={styles.btn}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  disabled={loading} // Disable button while loading
                 >
-                  Login
+                  {loading ? "Logging in..." : "Login"}
                 </motion.button>
               </form>
             </div>
@@ -127,13 +139,15 @@ const NewAuthForm = () => {
                   </select>
                 </div>
                 {error && <p className={styles.error}>{error}</p>}
+                {loading ? <p>Loading...</p> : null}
                 <motion.button
                   type="submit"
                   className={styles.btn}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  disabled={loading} // Disable button while loading
                 >
-                  Register
+                  {loading ? "Registering..." : "Register"}
                 </motion.button>
               </form>
             </div>
@@ -149,6 +163,7 @@ const NewAuthForm = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsActive(true)}
+                  disabled={loading}
                 >
                   Register
                 </motion.button>
@@ -163,6 +178,7 @@ const NewAuthForm = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsActive(false)}
+                  disabled={loading}
                 >
                   Login
                 </motion.button>

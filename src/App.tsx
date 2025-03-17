@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ReactElement } from "react";
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-
-
 // Import dashboards
-import AdminDashboard from "./pages/admin/dashboard";
-import EvaluatorDashboard from "./pages/evaluator/dashboard";
-import EvaluatorCommunication from "./pages/evaluator/communication"; // 
-import EvaluatorProfile from "./pages/evaluator/profile"; // 
-import LGUuserDashboard from "./pages/lgu/dashboard";
-import ViewerDashboard from "./pages/viewer/dashboard";
 
+import EvaluatorCommunication from "./pages/evaluator/communication";
+import EvaluatorProfile from "./pages/evaluator/profile";
+
+{/*import ViewerDashboard from "./pages/viewer/dashboard";*/}
+
+// Import authentication & landing page
 import NewAuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
+
 // Import role-specific navbars
 import AdminNavbar from "./pages/admin/navigation/navbar";
 import EvaluatorNavbar from "./pages/evaluator/navigation/navbar";
 import LGUNavbar from "./pages/lgu/navigation/navbar";
 import ViewerNavbar from "./pages/viewer/navigation/navbar";
+
 
 
 const App: React.FC = () => {
@@ -49,7 +50,7 @@ const App: React.FC = () => {
         setUser(null);
         setRole(null);
       }
-      setLoading(false); // Mark as loaded
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -71,49 +72,50 @@ const App: React.FC = () => {
     }
   };
 
-  // Prevent rendering before role is fetched
-  if (loading) return <div>Loading...</div>;
+  const renderNavbar = () => {
+    switch (role) {
+      case "Admin":
+        return <AdminNavbar />;
+      case "Evaluator":
+        return <EvaluatorNavbar />;
+      case "LGU":
+        return <LGUNavbar />;
+      case "Viewer":
+        return <ViewerNavbar />;
+      default:
+        return null;
+    }
+  };
+
+  if (loading) return <div className="loading-screen">Loading...</div>;
+
+  const ProtectedRoute = ({ element, allowedRole }: { element: ReactElement; allowedRole: string }) => {
+    if (!user) return <Navigate to="/login" />;
+    if (role !== allowedRole) return <Navigate to={getDashboardPath()} />;
+    return element;
+  };
 
   return (
     <Router>
-
       <div className="app-container">
-        {/* Only render the navbar when the role is available */}
-        {user && role && (
-          <>
-            {role === "Admin" && <AdminNavbar />}
-            {role === "Evaluator" && <EvaluatorNavbar />}
-            {role === "LGU" && <LGUNavbar />}
-            {role === "Viewer" && <ViewerNavbar />}
-          </>
-        )}
-
+        {user && role && window.location.pathname !== "/login" && renderNavbar()}
         <div className="content">
           <Routes>
-            {/* Login Route */}
-            <Route path="/" element={<Landing/>} />
-            <Route path="/login" element={<NewAuthForm/>} />
+            <Route path="/" element={user && role ? <Navigate to={getDashboardPath()} replace /> : <Landing />} />
+            <Route path="/login" element={user ? <Navigate to={getDashboardPath()} replace /> : <NewAuthForm />} />
 
-            {/* Redirect logged-in users to their dashboard */}
-            {user && role && <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />}
-
-            {/* Role-specific Routes */}
-            <Route path="/admin/dashboard" element={user && role === "Admin" ? <AdminDashboard /> : <Navigate to="/login" />} />
-            <Route path="/evaluator/dashboard" element={user && role === "Evaluator" ? <EvaluatorDashboard /> : <Navigate to="/login" />} />
-            <Route path="/evaluator/communication" element={user && role === "Evaluator" ? <EvaluatorCommunication /> : <Navigate to="/login" />} />
-            <Route path="/evaluator/profile" element={user && role === "Evaluator" ? <EvaluatorProfile /> : <Navigate to="/login" />} />
-            <Route path="/lgu/dashboard" element={user && role === "LGU" ? <LGUuserDashboard /> : <Navigate to="/login" />} />
-            <Route path="/viewer/dashboard" element={user && role === "Viewer" ? <ViewerDashboard /> : <Navigate to="/login" />} />
+            {/* Role-specific routes */}
+            
+            <Route path="/evaluator/communication" element={<ProtectedRoute element={<EvaluatorCommunication />} allowedRole="Evaluator" />} />
+            <Route path="/evaluator/profile" element={<ProtectedRoute element={<EvaluatorProfile />} allowedRole="Evaluator" />} />
+           
+            {/*<Route path="/viewer/dashboard" element={<ProtectedRoute element={<ViewerDashboard />} allowedRole="Viewer" />} />*/}
 
             {/* Redirect unknown routes */}
-            {user && role && <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />}
-
-            {/* Redirect non-logged-in users to login */}
-            {!user && <Route path="*" element={<Navigate to="/login" replace />} />}
+            <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
           </Routes>
         </div>
       </div>
-
     </Router>
   );
 };
