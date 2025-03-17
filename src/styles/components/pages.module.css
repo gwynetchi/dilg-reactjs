@@ -8,6 +8,12 @@
   background-color: #fff;
 }
 
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 /* Table */
 .upload-table {
   width: 100%;
@@ -15,6 +21,18 @@
   border-radius: 10px;
   overflow: hidden;
   min-width: 600px; /* Ensures columns stay visible */
+}
+
+/* Upload Section Positioned to Upper Right */
+.upload-section {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f4f4f4;
 }
 
 /* Table Header */
@@ -72,9 +90,18 @@
   color: #0056b3;
 }
 
+/* Upload Input */
+.upload-input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  width: 250px;
+}
+
 /* Upload Button */
 .upload-button {
-  background-color: rgb(238, 168, 39);
+  background-color: rgb(211, 161, 67);
   color: white;
   border: none;
   padding: 3px;
@@ -112,6 +139,17 @@
   .upload-table-container {
     overflow-x: auto;
     max-width: 100%;
+  }
+
+  .upload-section {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap; /* Prevents items from stacking */
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;    
   }
 
   .upload-table {
@@ -155,7 +193,26 @@
     font-size: 12px;
     padding: 5px 10px;
   }
+
+  /* ✅ Fix Input & Button Alignment */
+  .upload-section {
+    flex-direction: column; /* Stack input & button */
+    align-items: stretch; /* Ensure full width */
+  }
+
+  .upload-input {
+    flex-grow: 1; /* Allows it to fill available space */
+    min-width: 150px;
+    max-width: 300px;
+  }
+
+  .upload-button {
+    flex-shrink: 0; /* Prevents button from shrinking */
+    padding: 8px 15px;
+    min-width: 100px;
+  }
 }
+
 
 /* ✅ Popup Message */
 .popup-message {
@@ -176,3 +233,24 @@
 .popup-message.hidden {
   opacity: 0;
 }
+
+/* ✅ Error Popup Message */
+.error-popup-message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgb(226, 120, 120); /* Red for errors */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.error-popup-message.hidden {
+  opacity: 0;
+}
+
