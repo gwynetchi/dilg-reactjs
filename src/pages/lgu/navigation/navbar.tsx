@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
-import Dashboard from  "../dashboard.tsx" //LGU Dashboard
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 
@@ -193,14 +192,6 @@ const Navbar = () => {
             )}
           </div>
         </nav>
-
-        {/* Dashboard Container */}
-        <div className="dashboard-container">
-          <h1>Dashboard</h1>
-          <Dashboard />
-        </div>
-
-
       </section>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
@@ -8,7 +8,7 @@ const Inbox: React.FC = () => {
   const [communications, setCommunications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null); // Move inside component
+  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Track authenticated user and fetch role
@@ -16,12 +16,10 @@ const Inbox: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
-        
-        // Fetch user role from Firestore
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          setUserRole(userSnap.data().role); // Ensure Firestore contains "role"
+          setUserRole(userSnap.data().role);
         }
       } else {
         setUserId(null);
@@ -32,48 +30,42 @@ const Inbox: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch user messages
+  // Fetch messages in real-time
   useEffect(() => {
     if (!userId) return;
 
-    const fetchCommunications = async () => {
+    const commRef = collection(db, "communications");
+    const q = query(commRef, where("recipient", "==", userId));
+
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setLoading(true);
-      try {
-        const commRef = collection(db, "communications");
-        const q = query(commRef, where("recipient", "==", userId));
-        const querySnapshot = await getDocs(q);
+      const messages = await Promise.all(
+        querySnapshot.docs.map(async (docSnapshot) => {
+          const msgData = docSnapshot.data();
+          let senderName = "Unknown";
 
-        const messages = await Promise.all(
-          querySnapshot.docs.map(async (docSnapshot) => {
-            const msgData = docSnapshot.data();
-            let senderName = "Unknown";
-
-            if (msgData.createdBy) {
-              const senderRef = doc(db, "users", msgData.createdBy);
-              const senderSnap = await getDoc(senderRef);
-              if (senderSnap.exists()) {
-                const senderData = senderSnap.data();
-                senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
-              }
+          if (msgData.createdBy) {
+            const senderRef = doc(db, "users", msgData.createdBy);
+            const senderSnap = await getDoc(senderRef);
+            if (senderSnap.exists()) {
+              const senderData = senderSnap.data();
+              senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
             }
+          }
 
-            return {
-              id: docSnapshot.id,
-              ...msgData,
-              senderName,
-            };
-          })
-        );
+          return {
+            id: docSnapshot.id,
+            ...msgData,
+            senderName,
+          };
+        })
+      );
 
-        setCommunications(messages);
-      } catch (error) {
-        console.error("Error fetching communications:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setCommunications(messages);
+      setLoading(false);
+    });
 
-    fetchCommunications();
+    return () => unsubscribe();
   }, [userId]);
 
   // Function to open message based on role
@@ -83,7 +75,6 @@ const Inbox: React.FC = () => {
       return;
     }
 
-    // Define role-based routes
     const rolePaths: { [key: string]: string } = {
       Evaluator: "evaluator",
       Viewer: "viewer",
@@ -91,8 +82,7 @@ const Inbox: React.FC = () => {
       Admin: "admin",
     };
 
-    const rolePath = rolePaths[userRole] || "viewer"; // Default to "viewer" if role is unknown
-    navigate(`/${rolePath}/communication/${id}`);
+    navigate(`/${rolePaths[userRole] || "viewer"}/communication/${id}`);
   };
 
   return (
