@@ -1,6 +1,9 @@
-import * as React from "react";
 
-function SvgComponent(props) {
+import React from 'react';
+
+interface SvgComponentProps extends React.SVGProps<SVGSVGElement> {}
+
+function SvgComponent(props: SvgComponentProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={186.223} height={249.21} viewBox="0 0 186.223 249.21" {...props}>
       <g data-name="Group 102" fill="#bebdce">

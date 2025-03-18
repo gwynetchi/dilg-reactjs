@@ -1,6 +1,7 @@
-import * as React from "react";
+import { SVGProps } from "react";
+import { JSX } from "react/jsx-runtime";
 
-function SvgComponent(props) {
+function SvgComponent(props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={18.641} height={12.607} {...props}>
       <g data-name="Group 77" fill="#49cb86">

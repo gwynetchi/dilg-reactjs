@@ -1,6 +1,9 @@
-import * as React from "react";
 
-function SvgComponent(props) {
+import React from 'react';
+
+interface SvgComponentProps extends React.SVGProps<SVGSVGElement> {}
+
+function SvgComponent(props: SvgComponentProps) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={28} height={22} viewBox="0 0 28 22" {...props}>
       <path data-name="Line 5" fill="none" stroke="#0b093b" strokeLinecap="round" strokeWidth={2} d="M1 1h26" />
