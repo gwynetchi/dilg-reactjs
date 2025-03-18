@@ -3,7 +3,7 @@ import styled from "styled-components";
 // Components
 import FullButton from "../Buttons/FullButton";
 // Assets
-import HeaderImage from "../../assets/img/header-img.png";
+import HeaderImage from "../../assets/img/pd.png";
 import QuotesIcon from "../../assets/svg/Quotes";
 import Dots from "../../assets/svg/Dots";
 
@@ -35,7 +35,7 @@ export default function Header() {
             </QuotesWrapper>
             <div>
               <p className="font15 whiteColor">
-                <em>Lorem ipsum dolor est</em>
+                <em></em>
               </p>
               <p className="font15s extraBold orangeColor textRight" style={{marginTop: '10px'}}>ENGR. DANILO A. NOBLEZA</p>
               <p className="font13 orangeColor textRight" style={{marginTop: '4px'}}>Provincial Director</p>

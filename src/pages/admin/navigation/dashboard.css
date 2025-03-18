@@ -54,23 +54,24 @@ ol, ul {
 
 /* SIDEBAR */
 #sidebar {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 220px;
-	height: 100%;
-	background: var(--light);
-	z-index: 2000;
-	font-family: var(--lato);
-	transition: .3s ease;
-	overflow-x: hidden;
-	scrollbar-width: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 220px;
+    height: 100%;
+    background: var(--light);
+    z-index: 2000;
+    font-family: var(--lato);
+    transition: width 0.3s ease-in-out, left 0.3s ease-in-out;
+    overflow-x: hidden;
 }
+
 #sidebar::--webkit-scrollbar {
 	display: none;
 }
+/* Collapsed Sidebar */
 #sidebar.hide {
-	width: 80px;
+    width: 80px;
 }
 .brand-logo{
   height: 80px;
@@ -209,8 +210,8 @@ ol, ul {
 	min-height: 100vh;
   }
 #sidebar.hide ~ #content {
-	width: calc(100% - 60px);
-	left: 60px;
+    width: calc(100% - 80px);
+    left: 80px;
 }
 
 
@@ -729,26 +730,28 @@ body.dark #content nav .profile-menu li a {
 
 
 
-/* Media Query for Smaller Screens */
+/* MOBILE RESPONSIVENESS */
 @media screen and (max-width: 768px) {
-    /* Reduce width of notification and profile menu */
-    #content nav .notification-menu,
-    #content nav .profile-menu {
-        width: 180px;
+    #sidebar {
+        width: 200px;
+        left: -200px; /* Hide sidebar by default */
     }
-	#sidebar {
-		width: 200px;
-	}
 
-	#content {
-		width: calc(100% - 60px);
-		left: 200px;
-	}
+    #sidebar.open {
+        left: 0; /* Show sidebar when toggled */
+    }
 
-	#content nav .nav-link {
-		display: none;
-	}
+    #content {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    #sidebar.open ~ #content {
+        width: calc(100% - 200px);
+        margin-left: 200px;
+    }
 }
+
 
 
 
