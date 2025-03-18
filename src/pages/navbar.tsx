@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
+import { getAuth, signOut, onAuthStateChanged } from "firebase/auth"; // Import Firebase Auth
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+
 
 
 const Navbar = () => {
+  const [role, setRole] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(
     window.innerWidth > 576
   );
@@ -31,6 +34,28 @@ const Navbar = () => {
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+  useEffect(() => {
+    const auth = getAuth();
+    const db = getFirestore();
+  
+    const fetchUserRole = async (uid: string) => {
+      const userDoc = await getDoc(doc(db, "users", uid)); // Change "users" to your collection name
+      if (userDoc.exists()) {
+        setRole(userDoc.data().role); // Assuming role is stored in Firestore
+      }
+    };
+  
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchUserRole(user.uid);
+      } else {
+        setRole(null);
+      }
+    });
+  
+    return () => unsubscribe();
+  }, []);
+  
 
   useEffect(() => {
     document.body.classList.toggle("dark", isDarkMode);
@@ -51,7 +76,6 @@ const Navbar = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -63,15 +87,39 @@ const Navbar = () => {
     }
   };
 
-  const menuItems = [
-    { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-    { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
-    { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" }, // Added Communication route
-    { name: "Inbox", icon: "bxs-message", path: "/evaluator/Inbox" },
-    { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
-    { name: "Message", icon: "bxs-message", path: "/evaluator/messages" },
-    { name: "Team", icon: "bxs-group", path: "/evaluator/team" },
-  ];
+  const menuItems: Record<string, { name: string; icon: string; path: string }[]> = {
+    Viewer: [
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
+      { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
+      { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
+      { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
+      { name: "Upload links", icon: "bxs-bar-chart-alt-2", path: "/viewer/uploadlinks" },
+      { name: "Team", icon: "bxs-group", path: "/viewer/team" },
+    ],
+    Evaluator: [
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
+      { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
+      { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
+      { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
+      { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
+      { name: "Team", icon: "bxs-group", path: "/evaluator/team" },
+    ],
+    LGU: [
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
+      { name: "Projects", icon: "bxs-briefcase", path: "/lgu/projects" },
+      { name: "Funding", icon: "bxs-bank", path: "/lgu/funding" },
+      { name: "Stakeholders", icon: "bxs-group", path: "/lgu/stakeholders" },
+    ],
+    Admin: [
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
+      { name: "User Management", icon: "bxs-user", path: "/admin/users" },
+      { name: "System Settings", icon: "bxs-cog", path: "/admin/settings" },
+      { name: "Reports", icon: "bxs-report", path: "/admin/reports" },
+    ],
+  };
+
+  if (!role) return null;
+
 
   return (
     <div className="d-flex">
@@ -82,15 +130,20 @@ const Navbar = () => {
   <span className="text"></span>
 </Link>
 <ul className="side-menu top">
-  {menuItems.map(({ name, icon, path }) => (
+{role && menuItems[role] ? (
+  menuItems[role].map(({ name, icon, path }) => (
     <li key={name} className={activeMenu === name ? "active" : ""}>
       <Link to={path} onClick={() => setActiveMenu(name)}>
         <i className={`bx ${icon} bx-sm`}></i>
         <span className="text">{name}</span>
       </Link>
     </li>
-  ))}
-</ul>
+  ))
+) : (
+  <li className="text-muted">Loading menu...</li>
+)}
+
+        </ul>
         <ul className="side-menu bottom">
   <li className={activeMenu === "Settings" ? "active" : ""}>
     <Link to="/settings" onClick={() => setActiveMenu("Settings")}>
@@ -114,7 +167,7 @@ const Navbar = () => {
       </section>
 
       {/* Main Content */}
-      <section id="content" className="flex-grow-5">
+      <section id="content" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i
             className="bx bx-menu bx-sm"
@@ -199,6 +252,7 @@ const Navbar = () => {
 
         </nav>
 
+      
 
 
       </section>
