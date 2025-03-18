@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
 import Dashboard from  "../dashboard.tsx" //Admin Dashboard
@@ -47,15 +47,10 @@ const Navbar = () => {
       ) {
         setIsProfileOpen(false);
       }
-      if (
-        notificationMenuRef.current &&
-        !notificationMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsNotificationOpen(false);
-      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+  
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   const toggleMenu = (menuId: string) => {
@@ -73,34 +68,34 @@ const Navbar = () => {
   };
 
   const menuItems = [
-    { name: "Dashboard", icon: "bxs-dashboard" },
-    { name: "My Store", icon: "bxs-store" },
-    { name: "Analytics", icon: "bxs-bar-chart-alt-2" },
-    { name: "Message", icon: "bxs-message" },
-    { name: "Team", icon: "bxs-group" },
+    { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
+    { name: "Profile", icon: "bxs-id-card", path: "/admin/profile" },
+    { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" }, // Added Communication route
+    { name: "Inbox", icon: "bxs-message", path: "/admin/Inbox" },
+    { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/admin/analytics" },
+    { name: "Message", icon: "bxs-message", path: "/admin/messages" },
+    { name: "Team", icon: "bxs-group", path: "/admin/team" },
+
   ];
 
   return (
     <div className="d-flex">
       {/* Sidebar */}
-      <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
+      <section id="sidebar" className={isSidebarOpen ? "open" : "hide"}>
       <Link to="/" className="brand">
   <img src="/images/logo.png" alt="DILG - Cavite Logo" className="brand-logo" />
   <span className="text"></span>
-</Link> 
-        <ul className="side-menu top">
-          {menuItems.map(({ name, icon }) => (
-            <li key={name} className={activeMenu === name ? "active" : ""}>
-              <Link
-                to={`/${name.toLowerCase().replace(/\s/g, "-")}`}
-                onClick={() => setActiveMenu(name)}
-              >
-                <i className={`bx ${icon} bx-sm`}></i>
-                <span className="text">{name}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+</Link>
+<ul className="side-menu top">
+  {menuItems.map(({ name, icon, path }) => (
+    <li key={name} className={activeMenu === name ? "active" : ""}>
+      <Link to={path} onClick={() => setActiveMenu(name)}>
+        <i className={`bx ${icon} bx-sm`}></i>
+        <span className="text">{name}</span>
+      </Link>
+    </li>
+  ))}
+</ul>
         <ul className="side-menu bottom">
   <li className={activeMenu === "Settings" ? "active" : ""}>
     <Link to="/settings" onClick={() => setActiveMenu("Settings")}>
@@ -126,10 +121,8 @@ const Navbar = () => {
       {/* Main Content */}
       <section id="content" className="flex-grow-5">
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
-          <i
-            className="bx bx-menu bx-sm"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          ></i>
+        <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
+
           <Link to="#" className="nav-link">
             Categories
           </Link>
@@ -181,20 +174,32 @@ const Navbar = () => {
           </div>
 
           {/* Profile Menu */}
-          <div className="position-relative" ref={profileMenuRef}>
-            <button className="btn profile" onClick={() => setIsProfileOpen(!isProfileOpen)}>
-              <img src="https://placehold.co/600x400/png" alt="Profile" />
-            </button>
-            {isProfileOpen && (
-              <div className="profile-menu menu">
-                <ul>
-                  <li><Link to="/profile">My Profile</Link></li>
-                  <li><Link to="/settings">Settings</Link></li>
-                  <li><button className="btn btn-link" onClick={handleLogout}>Log Out</button></li>
-                </ul>
-              </div>
-            )}
-          </div>
+<div className="position-relative" ref={profileMenuRef}>
+  <button 
+    className="btn profile" 
+    onClick={(e) => {
+      e.stopPropagation();
+      setIsProfileOpen(!isProfileOpen);
+    }}
+  >
+    <img src="https://placehold.co/600x400/png" alt="Profile" />
+  </button>
+
+  {isProfileOpen && (
+    <div className="profile-menu">
+      <ul>
+        <li><Link to="/profile">My Profile</Link></li>
+        <li><Link to="/settings">Settings</Link></li>
+        <li>
+          <button className="btn btn-link" onClick={handleLogout}>
+            Log Out
+          </button>
+        </li>
+      </ul>
+    </div>
+  )}
+</div>
+
         </nav>
 
         {/* Dashboard Container */}

@@ -1,22 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { db, auth } from "../../firebase";
+import { db, auth } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 
 const Inbox: React.FC = () => {
   const [communications, setCommunications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null); // Move inside component
   const navigate = useNavigate();
 
-  // Track authenticated user
+  // Track authenticated user and fetch role
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
+        
+        // Fetch user role from Firestore
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setUserRole(userSnap.data().role); // Ensure Firestore contains "role"
+        }
       } else {
         setUserId(null);
+        setUserRole(null);
       }
     });
 
@@ -67,9 +76,23 @@ const Inbox: React.FC = () => {
     fetchCommunications();
   }, [userId]);
 
-  // Function to open message details
+  // Function to open message based on role
   const openMessage = (id: string) => {
-    navigate(`/viewer/communication/${id}`); // Ensure it matches `App.tsx`
+    if (!userRole) {
+      console.error("User role not found.");
+      return;
+    }
+
+    // Define role-based routes
+    const rolePaths: { [key: string]: string } = {
+      Evaluator: "evaluator",
+      Viewer: "viewer",
+      LGU: "lgu",
+      Admin: "admin",
+    };
+
+    const rolePath = rolePaths[userRole] || "viewer"; // Default to "viewer" if role is unknown
+    navigate(`/${rolePath}/communication/${id}`);
   };
 
   return (

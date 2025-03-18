@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
-import Dashboard from  "../dashboard.tsx" //Viewer Dashboard
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 
@@ -17,7 +16,6 @@ const Navbar = () => {
   );
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
@@ -53,9 +51,6 @@ const Navbar = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const toggleMenu = (menuId: string) => {
-    setOpenMenu(openMenu === menuId ? null : menuId);
-  };
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -72,6 +67,7 @@ const Navbar = () => {
     { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
     { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
     { name: "Inbox", icon: "bxs-message", path: "/viewer/Inbox" }, // Added Communication route
+    { name: "Calendar", icon: "bxs-calendar", path: "/viewer/Calendar" },
     { name: "Upload links", icon: "bxs-bar-chart-alt-2", path: "/viewer/uploadlinks" },
     { name: "Team", icon: "bxs-group", path: "/viewer/team" },
 
@@ -204,11 +200,7 @@ const Navbar = () => {
 
         </nav>
 
-        {/* Dashboard Container */}
-        <div className="dashboard-container">
-          <h1>Dashboard</h1>
-          <Dashboard />
-        </div>
+      
 
 
       </section>
