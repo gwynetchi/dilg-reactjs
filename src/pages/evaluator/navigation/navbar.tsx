@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
-import Dashboard from  "../dashboard.tsx" //Evaluator Dashboard
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 
@@ -17,7 +16,6 @@ const Navbar = () => {
   );
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
@@ -53,9 +51,7 @@ const Navbar = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const toggleMenu = (menuId: string) => {
-    setOpenMenu(openMenu === menuId ? null : menuId);
-  };
+  
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -71,10 +67,10 @@ const Navbar = () => {
     { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
     { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
     { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" }, // Added Communication route
+    { name: "Inbox", icon: "bxs-message", path: "/evaluator/Inbox" },
     { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
     { name: "Message", icon: "bxs-message", path: "/evaluator/messages" },
     { name: "Team", icon: "bxs-group", path: "/evaluator/team" },
-
   ];
 
   return (
@@ -203,11 +199,6 @@ const Navbar = () => {
 
         </nav>
 
-        {/* Dashboard Container */}
-        <div className="dashboard-container">
-          <h1>Dashboard</h1>
-          <Dashboard />
-        </div>
 
 
       </section>

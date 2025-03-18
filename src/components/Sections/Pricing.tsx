@@ -12,7 +12,7 @@ export default function Pricing() {
       <div className="whiteBg">
         <div className="container">
           <HeaderInfo>
-            <h1 className="font40 extraBold">Check Our Pricing</h1>
+            <h1 className="font40 extraBold">The DILG's Quality Policies, Objectives and Goals</h1>
             <p className="font13">
               Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut
               <br />
@@ -22,17 +22,11 @@ export default function Pricing() {
           <TablesWrapper className="flexSpaceNull">
             <TableBox>
               <PricingTable
-                icon="roller"
-                price="$29,99/mo"
-                title="Starter"
-                text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor."
-                offers={[
-                  { name: "Product Offer", cheked: true },
-                  { name: "Offer", cheked: true },
-                  { name: "Product Offer #2", cheked: false },
-                  { name: "Product", cheked: false },
-                  { name: "Product Offer", cheked: false },
-                ]}
+                icon=""
+                price="DILG Quality Policies"
+                title=""
+                text="We, the DILG, imbued with the core values of Integrity, Commitment, Teamwork and Responsiveness, commit to formulate sound policies on strengthening local government capacities, performing oversight function over LGUs, and providing rewards and incentives. We pledge to provide effective technical and administrative services to uphold excellence in local governance and enhance the service delivery of our Regional and Field Offices for the LGUs to become transparent, resilient, socially-protective and competitive, where people in the community live happily. We commit to continually improve the effectiveness of our Quality Management System compliant with applicable statutory and regulatory requirements and international standards gearing towards organizational efficiency in pursuing our mandate and achieving our client’s satisfaction. We commit to consistently demonstrate a “Matino, Mahusay at Maasahang Kagawaran Para sa Mapagkalinga at Maunlad na Pamahalaang Lokal”."
+                
                 action={() => alert("clicked")}
               />
             </TableBox>
@@ -58,13 +52,7 @@ export default function Pricing() {
                 price="$59,99/mo"
                 title="Golden"
                 text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor."
-                offers={[
-                  { name: "Product Offer", cheked: true },
-                  { name: "Offer", cheked: true },
-                  { name: "Product Offer #2", cheked: true },
-                  { name: "Product", cheked: true },
-                  { name: "Product Offer", cheked: true },
-                ]}
+                
                 action={() => alert("clicked")}
               />
             </TableBox>

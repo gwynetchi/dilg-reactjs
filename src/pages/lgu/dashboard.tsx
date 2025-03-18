@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import NavBar from "./navigation/navbar";
 import "./navigation/dashboard.css";
 import { db } from "../../firebase"; // Firebase config

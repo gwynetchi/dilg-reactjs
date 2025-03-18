@@ -127,10 +127,10 @@ const fetchUsers = async () => {
       await addDoc(communicationRef, {
         subject,
         recipient,
-        deadline,
+        deadline: new Date(deadline), // Convert string to Date object
         remarks,
         link: inputLink,
-        createdBy: user.uid, // Store sender's user ID
+        createdBy: user.uid,
         createdAt: new Date(),
       });
   
@@ -202,8 +202,8 @@ const fetchUsers = async () => {
 
                 <div className="input-box">
                   <label>Deadline:</label>
-                  <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-                </div>
+                  <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                  </div>
 
                 <div className="input-box">
                   <label>Remarks/Comments:</label>
