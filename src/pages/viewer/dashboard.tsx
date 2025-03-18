@@ -159,7 +159,7 @@ const Dashboard = () => {
       await deleteDoc(doc(db, "links", id));
     } catch (error) {
       setMessage(`⚠️ Failed to delete link: ${error instanceof Error ? error.message : "Unknown error"}`);
-      setTimeout(() => setMessage(""), 2000);
+      setTimeout(() => setMessage(""), 2000); 
     }
   };
 
