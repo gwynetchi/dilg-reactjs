@@ -6,21 +6,20 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 // Import pages
 import AdminDashboard from "./pages/admin/dashboard";
-import EvaluatorDashboard from "./pages/evaluator/dashboard";
 import EvaluatorCommunication from "./pages/evaluator/communication";
 
 import LGUDashboard from "./pages/lgu/dashboard";
-import ViewerDashboard from "./pages/viewer/dashboard";
 import ViewerMessageDetails from "./pages/messagedetails";
-import ViewerInbox from "./pages/inbox";
-import ViewerCalendar from "./pages/calendar";
+
+//Import Inbox
+import Inbox from "./pages/inbox";
+
+//Import Calendar
+import Calendar from "./pages/calendar";
 
 
 // Import profile pages
-import AdminProfile from "./pages/profile";
-import EvaluatorProfile from "./pages/profile";
-import ViewerProfile from "./pages/profile";
-import LGUProfile from "./pages/profile";
+import Profile from "./pages/profile";
 
 // Import authentication and landing pages
 import NewAuthForm from "./components/NewAuthForm";
@@ -115,23 +114,27 @@ const App: React.FC = () => {
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="Admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/profile" element={<ProtectedRoute requiredRole="Admin"><AdminProfile /></ProtectedRoute>} />
+            <Route path="/admin/profile" element={<ProtectedRoute requiredRole="Admin"><Profile /></ProtectedRoute>} />
 
             {/* Evaluator Routes */}
-            <Route path="/evaluator/dashboard" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorDashboard /></ProtectedRoute>} />
-            <Route path="/evaluator/profile" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorProfile /></ProtectedRoute>} />
+            <Route path="/evaluator/inbox" element={<ProtectedRoute requiredRole="Evaluator"><Inbox /></ProtectedRoute>} />
+            <Route path="/evaluator/navigation/navbar" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorNavbar /></ProtectedRoute>} />
+            <Route path="/evaluator/profile" element={<ProtectedRoute requiredRole="Evaluator"><Profile /></ProtectedRoute>} />
             <Route path="/evaluator/communication" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorCommunication /></ProtectedRoute>} />
+            <Route path="/evaluator/calendar" element={<ProtectedRoute requiredRole="Evaluator"><Calendar /></ProtectedRoute>} />
 
             {/* LGU Routes */}
+            <Route path="/lgu/inbox" element={<ProtectedRoute requiredRole="LGU"><Inbox /></ProtectedRoute>} />
             <Route path="/lgu/dashboard" element={<ProtectedRoute requiredRole="LGU"><LGUDashboard /></ProtectedRoute>} />
-            <Route path="/lgu/profile" element={<ProtectedRoute requiredRole="LGU"><LGUProfile /></ProtectedRoute>} />
+            <Route path="/lgu/profile" element={<ProtectedRoute requiredRole="LGU"><Profile /></ProtectedRoute>} />
+            <Route path="/lgu/calendar" element={<ProtectedRoute requiredRole="LGU"><Calendar /></ProtectedRoute>} />
 
             {/* Viewer Routes */}
-            <Route path="/viewer/dashboard" element={<ProtectedRoute requiredRole="Viewer"><ViewerDashboard /></ProtectedRoute>} />
-            <Route path="/viewer/profile" element={<ProtectedRoute requiredRole="Viewer"><ViewerProfile /></ProtectedRoute>} />
+            <Route path="/viewer/profile" element={<ProtectedRoute requiredRole="Viewer"><Profile /></ProtectedRoute>} />
             <Route path="/viewer/communication/:id" element={<ProtectedRoute requiredRole="Viewer"><ViewerMessageDetails /></ProtectedRoute>} />
-            <Route path="/viewer/inbox" element={<ProtectedRoute requiredRole="Viewer"><ViewerInbox /></ProtectedRoute>} />
-            <Route path="/viewer/calendar" element={<ProtectedRoute requiredRole="Viewer"><ViewerCalendar /></ProtectedRoute>} />
+            <Route path="/viewer/inbox" element={<ProtectedRoute requiredRole="Viewer"><Inbox /></ProtectedRoute>} />
+            <Route path="/viewer/profile" element={<ProtectedRoute requiredRole="Viewer"><Profile /></ProtectedRoute>} />
+            <Route path="/viewer/calendar" element={<ProtectedRoute requiredRole="Viewer"><Calendar /></ProtectedRoute>} />
 
             {/* Catch-All Route */}
             <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/login"} replace />} />
