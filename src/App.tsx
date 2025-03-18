@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
+import Navbar from "./pages/navbar";
+
 
 // Import pages
 import AdminDashboard from "./pages/admin/dashboard";
@@ -25,11 +27,7 @@ import Profile from "./pages/profile";
 import NewAuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 
-// Import role-specific navbars
-import AdminNavbar from "./pages/admin/navigation/navbar";
-import EvaluatorNavbar from "./pages/evaluator/navigation/navbar";
-import LGUNavbar from "./pages/lgu/navigation/navbar";
-import ViewerNavbar from "./pages/viewer/navigation/navbar";
+
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -75,22 +73,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Select the correct Navbar
-  const renderNavbar = () => {
-    if (!user || !role) return null;
-    switch (role) {
-      case "Admin":
-        return <AdminNavbar />;
-      case "Evaluator":
-        return <EvaluatorNavbar />;
-      case "LGU":
-        return <LGUNavbar />;
-      case "Viewer":
-        return <ViewerNavbar />;
-      default:
-        return null;
-    }
-  };
+ 
 
   // Protected Route Component
   const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole: string }) => {
@@ -105,7 +88,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-        {renderNavbar()}
+       <Navbar />
         <div className="content">
           <Routes>
             {/* Public Routes */}
@@ -118,7 +101,6 @@ const App: React.FC = () => {
 
             {/* Evaluator Routes */}
             <Route path="/evaluator/inbox" element={<ProtectedRoute requiredRole="Evaluator"><Inbox /></ProtectedRoute>} />
-            <Route path="/evaluator/navigation/navbar" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorNavbar /></ProtectedRoute>} />
             <Route path="/evaluator/profile" element={<ProtectedRoute requiredRole="Evaluator"><Profile /></ProtectedRoute>} />
             <Route path="/evaluator/communication" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorCommunication /></ProtectedRoute>} />
             <Route path="/evaluator/calendar" element={<ProtectedRoute requiredRole="Evaluator"><Calendar /></ProtectedRoute>} />
