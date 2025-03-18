@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "../../firebase"; // Import Firebase Auth
-import { onAuthStateChanged } from "firebase/auth";
-import "./navigation/dashboard.css";
+import { auth, db } from "../firebase"; // Import Firebase Auth
+import { onAuthStateChanged, User } from "firebase/auth";
+import "./pages.css";
 
 const Profile = () => {
-  const [user, setUser] = useState(null); // Store current user
-  const [fname, setFirstName] = useState("");
-  const [mname, setMiddleName] = useState("");
-  const [lname, setLastName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null); // Store current user
+  const [fname, setFirstName] = useState<string>("");
+  const [mname, setMiddleName] = useState<string>("");
+  const [lname, setLastName] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   // Track authenticated user
   useEffect(() => {
@@ -25,7 +25,7 @@ const Profile = () => {
   }, []);
 
   // Load user profile from Firestore
-  const loadUserProfile = async (uid) => {
+  const loadUserProfile = async (uid: string) => {
     try {
       const userDocRef = doc(db, "users", uid);
       const userDoc = await getDoc(userDocRef);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase Auth
 import Dashboard from  "../dashboard.tsx" //LGU Dashboard
@@ -17,7 +17,6 @@ const Navbar = () => {
   );
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
@@ -58,9 +57,7 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const toggleMenu = (menuId: string) => {
-    setOpenMenu(openMenu === menuId ? null : menuId);
-  };
+
 
   const handleLogout = async () => {
     const auth = getAuth();
