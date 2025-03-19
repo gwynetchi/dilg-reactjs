@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase"; // Import Firebase Auth
 import { onAuthStateChanged, User } from "firebase/auth";
-import "./pages.css";
+import "../styles/components/pages.css";
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);

@@ -1,6 +1,5 @@
-
 //import React from 'react';
-import "./navigation/dashboard.css"; // Ensure you have the corresponding CSS file
+import "../../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
 const Dashboard = () => {
     return (
