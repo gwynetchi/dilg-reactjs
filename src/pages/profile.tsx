@@ -12,17 +12,23 @@ const Profile = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    let unsubscribeProfile: () => void = () => {};
+  
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        listenToUserProfile(currentUser.uid);
+        unsubscribeProfile = listenToUserProfile(currentUser.uid);
       } else {
         setUser(null);
       }
     });
-
-    return () => unsubscribeAuth();
+  
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProfile();
+    };
   }, []);
+  
 
   // Listen for real-time profile updates
   const listenToUserProfile = (uid: string) => {
@@ -48,26 +54,26 @@ const Profile = () => {
       alert("You must be logged in to update your profile.");
       return;
     }
-
+  
     if (!fname.trim() || !lname.trim()) {
       alert("First and Last names are required.");
       return;
     }
-
+  
     setLoading(true);
     try {
       const userDocRef = doc(db, "users", user.uid);
-      await setDoc(userDocRef, { fname, mname, lname }, { merge: true });
-
+      await setDoc(userDocRef, { fname, mname: mname || "", lname }, { merge: true });
+  
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error saving profile information:", error);
-      const errorMessage = (error as any).message || "Could not save profile. Please try again.";
-      alert(`Error: ${errorMessage}`);
+      alert(`Error: ${(error as any).message || "Could not save profile. Please try again."}`);
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="dashboard-container">
