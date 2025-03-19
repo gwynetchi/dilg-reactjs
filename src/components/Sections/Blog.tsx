@@ -1,4 +1,3 @@
-import React from "react";
 import styled from "styled-components";
 // Components
 import BlogBox from "../Elements/BlogBox";
@@ -79,7 +78,7 @@ export default function Blog() {
           </div>
           <div className="row flexCenter">
             <div style={{ margin: "50px 0", width: "200px" }}>
-              <FullButton title="Load More" action={() => alert("clicked")} />
+              <FullButton title="Load More" action={() => alert("clicked")} border={undefined} />
             </div>
           </div>
         </div>

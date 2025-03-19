@@ -1,11 +1,15 @@
-import React from "react";
 import styled from "styled-components";
 import { Link } from "react-scroll";
 // Assets
 import CloseIcon from "../../assets/svg/CloseIcon";
 import LogoIcon from "../../assets/svg/Logo";
 
-export default function Sidebar({ sidebarOpen, toggleSidebar }) {
+interface SidebarProps {
+  sidebarOpen: boolean;
+  toggleSidebar: (open: boolean) => void;
+}
+
+export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
   return (
     <Wrapper className="animate darkBg" sidebarOpen={sidebarOpen}>
       <SidebarHeader className="flexSpaceCenter">
@@ -122,7 +126,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }) {
   );
 }
 
-const Wrapper = styled.nav`
+const Wrapper = styled.nav<{ sidebarOpen: boolean }>`
   width: 400px;
   height: 100vh;
   position: fixed;

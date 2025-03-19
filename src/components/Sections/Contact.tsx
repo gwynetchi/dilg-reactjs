@@ -1,4 +1,3 @@
-import React from "react";
 import styled from "styled-components";
 // Assets
 import ContactImg1 from "../../assets/img/contact-1.png";
@@ -28,7 +27,7 @@ export default function Contact() {
                 <input type="text" id="email" name="email" className="font20 extraBold" />
                 <label className="font13">Subject:</label>
                 <input type="text" id="subject" name="subject" className="font20 extraBold" />
-                <textarea rows="4" cols="50" type="text" id="message" name="message" className="font20 extraBold" />
+                <textarea rows={4} cols={50} id="message" name="message" className="font20 extraBold" />
               </Form>
               <SumbitWrapper className="flex">
                 <ButtonInput type="submit" value="Send Message" className="pointer animate radius8" style={{ maxWidth: "220px" }} />

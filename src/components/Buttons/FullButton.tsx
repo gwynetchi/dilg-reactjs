@@ -1,11 +1,16 @@
-import React from "react";
 import styled from "styled-components";
 
-export default function FullButton({ title, action, border }) {
+interface FullButtonProps {
+  title: string;
+  action?: () => void;
+  border?: boolean;
+}
+
+export default function FullButton({ title, action, border }: FullButtonProps) {
   return (
     <Wrapper
       className="animate pointer radius8"
-      onClick={action ? () => action() : null}
+      onClick={action ? () => action() : undefined}
       border={border}
     >
       {title}
@@ -13,7 +18,11 @@ export default function FullButton({ title, action, border }) {
   );
 }
 
-const Wrapper = styled.button`
+interface WrapperProps {
+  border?: boolean;
+}
+
+const Wrapper = styled.button<WrapperProps>`
   border: 1px solid ${(props) => (props.border ? "#707070" : "#7620ff")};
   background-color: ${(props) => (props.border ? "transparent" : "#7620ff")};
   width: 100%;

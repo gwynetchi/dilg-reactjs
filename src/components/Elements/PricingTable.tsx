@@ -1,4 +1,3 @@
-import React from "react";
 import styled from "styled-components";
 // Components
 import FullButton from "../Buttons/FullButton";
@@ -9,7 +8,16 @@ import BrowserIcon from "../../assets/svg/Services/BrowserIcon";
 import PrinterIcon from "../../assets/svg/Services/PrinterIcon";
 import CheckMark from "../../assets/svg/Checkmark";
 
-export default function PricingTable({ icon, price, title, text,  offers, action }) {
+interface PricingTableProps {
+  icon: string;
+  price: string;
+  title: string;
+  text: string;
+  offers: { cheked: boolean; name: string }[];
+  action: () => void;
+}
+
+export default function PricingTable({ icon, price, title, text, offers, action }: PricingTableProps) {
   let getIcon;
 
   switch (icon) {
@@ -59,7 +67,7 @@ export default function PricingTable({ icon, price, title, text,  offers, action
           : null}
       </div>
       <div style={{ maxWidth: "120px", margin: "30px auto 0 auto" }}>
-        <FullButton title="" action={action} />
+        <FullButton title="" action={action} border={undefined} />
       </div>
     </Wrapper>
   );

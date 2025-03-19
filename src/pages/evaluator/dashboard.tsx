@@ -1,14 +1,12 @@
 
 //import React from 'react';
 //import NavBar from './navigation/navbar';   <NavBar />
-import "./navigation/dashboard.css"; // Ensure you have the corresponding CSS file
+import "../../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
 const Dashboard = () => {
     return (
         <div className="dashboard-container">
             {/* SIDEBAR (Handled by NavBar) */}
-          
-            
             {/* CONTENT */}
             <section id="content">
                 <main>
