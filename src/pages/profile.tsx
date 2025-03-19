@@ -1,60 +1,60 @@
 import { useState, useEffect } from "react";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase"; // Import Firebase Auth
 import { onAuthStateChanged, User } from "firebase/auth";
-import "./pages.css";
+import "../styles/components/pages.css";
 
 const Profile = () => {
-  const [user, setUser] = useState<User | null>(null); // Store current user
+  const [user, setUser] = useState<User | null>(null);
   const [fname, setFirstName] = useState<string>("");
   const [mname, setMiddleName] = useState<string>("");
   const [lname, setLastName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Track authenticated user
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        loadUserProfile(currentUser.uid); // Load existing profile if any
+        listenToUserProfile(currentUser.uid);
       } else {
         setUser(null);
       }
     });
-    return () => unsubscribe();
+
+    return () => unsubscribeAuth();
   }, []);
 
-  // Load user profile from Firestore
-  const loadUserProfile = async (uid: string) => {
-    try {
-      const userDocRef = doc(db, "users", uid);
-      const userDoc = await getDoc(userDocRef);
+  // Listen for real-time profile updates
+  const listenToUserProfile = (uid: string) => {
+    const userDocRef = doc(db, "users", uid);
 
-      if (userDoc.exists()) {
-        const data = userDoc.data();
+    const unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
         setFirstName(data.fname || "");
         setMiddleName(data.mname || "");
         setLastName(data.lname || "");
       }
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-    }
+    }, (error) => {
+      console.error("Error fetching real-time updates:", error);
+    });
+
+    // Cleanup listener when component unmounts
+    return () => unsubscribeProfile();
   };
 
-  // Save user profile under their UID
   const handleSubmit = async () => {
     if (!user) {
       alert("You must be logged in to update your profile.");
       return;
     }
 
-    if (!fname || !mname || !lname) {
-      alert("Please fill in all fields before saving.");
+    if (!fname.trim() || !lname.trim()) {
+      alert("First and Last names are required.");
       return;
     }
 
     setLoading(true);
-
     try {
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, { fname, mname, lname }, { merge: true });
@@ -62,7 +62,8 @@ const Profile = () => {
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error saving profile information:", error);
-      alert("Error saving profile information. Please try again.");
+      const errorMessage = (error as any).message || "Could not save profile. Please try again.";
+      alert(`Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -97,6 +98,7 @@ const Profile = () => {
                     placeholder="Enter first name" 
                     value={fname} 
                     onChange={(e) => setFirstName(e.target.value)} 
+                    disabled={loading}
                   />
                 </div>
 
@@ -107,6 +109,7 @@ const Profile = () => {
                     placeholder="Enter middle name" 
                     value={mname} 
                     onChange={(e) => setMiddleName(e.target.value)} 
+                    disabled={loading}
                   />
                 </div>
 
@@ -117,6 +120,7 @@ const Profile = () => {
                     placeholder="Enter last name"
                     value={lname} 
                     onChange={(e) => setLastName(e.target.value)} 
+                    disabled={loading}
                   />
                 </div>
               </div>

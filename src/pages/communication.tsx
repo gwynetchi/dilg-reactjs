@@ -1,9 +1,8 @@
 import { getAuth } from "firebase/auth"; // Import Firebase auth
 import React, { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, deleteDoc, collection, addDoc, getDocs } from "firebase/firestore";
-import { db } from "../../firebase"; // Ensure correct Firebase import
-import "./navigation/dashboard.css";
-
+import { db } from "../firebase"; // Ensure correct Firebase import
+import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 const Communication: React.FC = () => {
   const [subject, setSubject] = useState("");
   const [recipient, setRecipient] = useState("");

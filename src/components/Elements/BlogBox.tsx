@@ -1,9 +1,16 @@
-import React from "react";
 import styled from "styled-components";
 
-export default function BlogBox({ tag, title, text, action, author }) {
+interface BlogBoxProps {
+  tag: string;
+  title: string;
+  text: string;
+  action?: () => void;
+  author: string;
+}
+
+export default function BlogBox({ tag, title, text, action, author }: BlogBoxProps) {
   return (
-    <WrapperBtn className="animate pointer" onClick={action ? () => action() : null}>
+    <WrapperBtn className="animate pointer" onClick={action ? () => action() : undefined}>
       <Wrapper className="whiteBg radius8 shadow">
         <h3 className="font20 extraBold">{title}</h3>
         <p className="font13" style={{ padding: "30px 0" }}>

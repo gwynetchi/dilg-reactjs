@@ -1,8 +1,5 @@
-import React from "react";
 import styled from "styled-components";
-import ProjectBox from "../Elements/ProjectBox";
 import FullButton from "../Buttons/FullButton";
-import AddImage2 from "../../assets/img/add/add2.png";
 
 // Sample Facebook videos list (Replace with actual thumbnails & links)
 const facebookVideos = [
@@ -47,7 +44,7 @@ export default function Projects() {
 
           <div className="row flexCenter">
             <div style={{ margin: "50px 0", width: "200px" }}>
-              <FullButton title="Load More" action={() => alert("clicked")} />
+              <FullButton title="Load More" action={() => alert("clicked")} border={undefined} />
             </div>
           </div>
         </div>

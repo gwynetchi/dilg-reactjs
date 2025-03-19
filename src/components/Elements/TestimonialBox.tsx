@@ -1,9 +1,13 @@
-import React from "react";
 import styled from "styled-components";
 // Assets
 import QuoteIcon from "../../assets/svg/Quotes";
 
-export default function TestimonialBox({ text, author }) {
+interface TestimonialBoxProps {
+  text: string;
+  author: string;
+}
+
+export default function TestimonialBox({ text, author }: TestimonialBoxProps) {
   return (
     <Wrapper className="darkBg radius8 flexNullCenter flexColumn">
       <QuoteWrapper>

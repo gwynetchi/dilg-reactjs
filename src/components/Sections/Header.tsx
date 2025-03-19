@@ -1,4 +1,3 @@
-import React from "react";
 import styled from "styled-components";
 // Components
 import FullButton from "../Buttons/FullButton";
@@ -22,7 +21,7 @@ export default function Header() {
            
           </HeaderP>
           <BtnWrapper>
-            <FullButton title="Get Started" />
+            <FullButton title="Get Started" action={undefined} border={undefined} />
           </BtnWrapper>
         </div>
       </LeftSide>
