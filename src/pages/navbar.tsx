@@ -28,6 +28,8 @@ const Navbar = () => {
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
       { name: "Upload links", icon: "bxs-bar-chart-alt-2", path: "/viewer/uploadlinks" },
       { name: "Team", icon: "bxs-group", path: "/viewer/team" },
+      { name: "Message", icon: "bxs-message", path: "/viewer/message" },
+
     ],
     Evaluator: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
@@ -37,6 +39,8 @@ const Navbar = () => {
       { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
       { name: "Team", icon: "bxs-group", path: "/evaluator/team" },
+      { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
+
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
@@ -47,6 +51,8 @@ const Navbar = () => {
       { name: "Projects", icon: "bxs-briefcase", path: "/lgu/projects" },
       { name: "Funding", icon: "bxs-bank", path: "/lgu/funding" },
       { name: "Stakeholders", icon: "bxs-group", path: "/lgu/stakeholders" },
+      { name: "Message", icon: "bxs-message", path: "/lgu/message" },
+
     ],
     Admin: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
@@ -56,6 +62,7 @@ const Navbar = () => {
       { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
       { name: "System Settings", icon: "bxs-cog", path: "/admin/settings" },
       { name: "Reports", icon: "bxs-report", path: "/admin/reports" },
+      { name: "Message", icon: "bxs-message", path: "/admin/message" },
     ],
   };
 
@@ -127,20 +134,15 @@ const Navbar = () => {
   const handleSearch = async () => {
     if (searchQuery.trim()) {
       console.log("Searching for:", searchQuery);
-
+      const db = getFirestore();
+      const messagesRef = collection(db, "messages");
+      const q = query(messagesRef, where("sender", "==", searchQuery), where("text", "array-contains", searchQuery));
+      const querySnapshot = await getDocs(q);
+      const inboxResults = querySnapshot.docs.map((doc) => doc.data()); 
       // Search for sidebar items
       const filteredSidebarItems = role
         ? menuItems[role].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : [];
-
-      // Search Firestore for inbox messages
-      const db = getFirestore();
-      const messagesRef = collection(db, "messages");
-      const q = query(messagesRef, where("sender", "==", searchQuery)); // Modify this for better search logic
-
-      const querySnapshot = await getDocs(q);
-      const inboxResults = querySnapshot.docs.map((doc) => doc.data());
-
       navigate(`/search?query=${searchQuery}`, { state: { filteredSidebarItems, inboxResults } });
     }
   };
@@ -265,4 +267,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default Navbar; 

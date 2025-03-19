@@ -5,36 +5,39 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 
-
 // Import Dashboards
 import AdminDashboard from "./pages/admin/dashboard";
 import LGUDashboard from "./pages/lgu/dashboard";
 import EvaluatorDashboard from "./pages/evaluator/dashboard"; // Adjust the path as needed
 import ViewerDashboard from "./pages/viewer/dashboard"; // Adjust the path as needed
-//Import Message Details
+
+// Import Message Details
 import EvaluatorMessageDetails from "./pages/messagedetails"; // Adjust the path as needed
 import LGUMessageDetails from "./pages/messagedetails"; // Adjust the path as needed
 import ViewerMessageDetails from "./pages/messagedetails";
 import AdminMessageDetails from "./pages/messagedetails"; // Adjust the path as needed
 
+// Import Communication Pages
 import EvaluatorCommunication from "./pages/communication"; // Adjust the path as needed
 import LGUCommunication from "./pages/communication"; // Adjust the path as needed
 import ViewerCommunication from "./pages/communication";
-import AdminCommunication from "./pages/communication"; // Adjust the path as needed//Import Inbox
+import AdminCommunication from "./pages/communication"; // Adjust the path as needed
+
+// Import Inbox
 import Inbox from "./pages/inbox";
 
-//Import Calendar
+// Import Calendar
 import Calendar from "./pages/calendar";
 
+// Import Message
+import Messaging from "./pages/message";
 
-// Import profile pages
+// Import Profile Pages
 import Profile from "./pages/profile";
 
-// Import authentication and landing pages
+// Import Authentication and Landing Pages
 import NewAuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
-
-
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -48,39 +51,39 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-
-        // Fetch user role from Firestore
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userDocRef);
-
-        setRole(userDoc.exists() ? userDoc.data().role : null);
+  
+        if (userDoc.exists()) {
+          setRole(userDoc.data().role);
+        } else {
+          setRole(null);
+        }
       } else {
         setUser(null);
         setRole(null);
       }
-      setLoading(false);
+      setLoading(false); // Only set loading to false **after** getting the role
     });
-
+  
     return () => unsubscribe();
   }, []);
+  
 
-  // Determine user dashboard path based on role
-  const getDashboardPath = () => {
-    switch (role) {
-      case "Admin":
-        return "/admin/dashboard";
-      case "Evaluator":
-        return "/evaluator/dashboard";
-      case "LGU":
-        return "/lgu/dashboard";
-      case "Viewer":
-        return "/viewer/dashboard";
-      default:
-        return "/login";
-    }
+  // Simplified role-based route mapping
+  const roleRoutes: Record<string, string[]> = {
+    Admin: ["/admin/dashboard", "/admin/profile", "/admin/inbox", "/admin/calendar", "/admin/communication", "/admin/message"],
+    Evaluator: ["/evaluator/dashboard", "/evaluator/profile", "/evaluator/inbox", "/evaluator/calendar", "/evaluator/communication", "/evaluator/message"],
+    LGU: ["/lgu/dashboard", "/lgu/profile", "/lgu/inbox", "/lgu/calendar", "/lgu/communication", "/lgu/message"],
+    Viewer: ["/viewer/dashboard", "/viewer/profile", "/viewer/inbox", "/viewer/calendar", "/viewer/communication", "/viewer/message"]
   };
 
- 
+  const getDashboardPath = () => {
+    if (role && roleRoutes[role]) {
+      return roleRoutes[role][0]; // First route is typically the dashboard
+    }
+    return "/login";
+  };
 
   // Protected Route Component
   const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole: string }) => {
@@ -95,12 +98,14 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-       <Navbar />
+        <Navbar />
         <div className="content">
           <Routes>
+            
             {/* Public Routes */}
             <Route path="/" element={user ? <Navigate to={getDashboardPath()} replace /> : <Landing />} />
-            <Route path="/login" element={user ? <Navigate to={getDashboardPath()} replace /> : <NewAuthForm />} />
+            <Route path="/" element={user ? <Navigate to={getDashboardPath()} replace /> : <Navigate to="/login" replace />} />
+            <Route path="/login" element={!user || role === null ? <NewAuthForm /> : <Navigate to={getDashboardPath()} replace />} />
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="Admin"><AdminDashboard /></ProtectedRoute>} />
@@ -108,7 +113,7 @@ const App: React.FC = () => {
             <Route path="/admin/communication/:id" element={<ProtectedRoute requiredRole="Admin"><AdminMessageDetails /></ProtectedRoute>} />
             <Route path="/admin/communication" element={<ProtectedRoute requiredRole="Admin"><AdminCommunication /></ProtectedRoute>} />
             <Route path="/admin/inbox" element={<ProtectedRoute requiredRole="Admin"><Inbox /></ProtectedRoute>} />
-            
+            <Route path="/admin/message" element={<ProtectedRoute requiredRole="Admin"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
             <Route path="/admin/calendar" element={<ProtectedRoute requiredRole="Admin"><Calendar /></ProtectedRoute>} />
 
             {/* Evaluator Routes */}
@@ -118,6 +123,7 @@ const App: React.FC = () => {
             <Route path="/evaluator/communication" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorCommunication /></ProtectedRoute>} />
             <Route path="/evaluator/calendar" element={<ProtectedRoute requiredRole="Evaluator"><Calendar /></ProtectedRoute>} />
             <Route path="/evaluator/dashboard" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorDashboard /></ProtectedRoute>} />
+            <Route path="/evaluator/message" element={<ProtectedRoute requiredRole="Evaluator"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
 
             {/* LGU Routes */}
             <Route path="/lgu/inbox" element={<ProtectedRoute requiredRole="LGU"><Inbox /></ProtectedRoute>} />
@@ -126,15 +132,16 @@ const App: React.FC = () => {
             <Route path="/lgu/calendar" element={<ProtectedRoute requiredRole="LGU"><Calendar /></ProtectedRoute>} />
             <Route path="/lgu/communication/:id" element={<ProtectedRoute requiredRole="LGU"><LGUMessageDetails /></ProtectedRoute>} />
             <Route path="/lgu/communication" element={<ProtectedRoute requiredRole="LGU"><LGUCommunication /></ProtectedRoute>} />
-
+            <Route path="/lgu/message" element={<ProtectedRoute requiredRole="LGU"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
 
             {/* Viewer Routes */}
             <Route path="/viewer/profile" element={<ProtectedRoute requiredRole="Viewer"><Profile /></ProtectedRoute>} />
             <Route path="/viewer/communication/:id" element={<ProtectedRoute requiredRole="Viewer"><ViewerMessageDetails /></ProtectedRoute>} />
             <Route path="/viewer/communication" element={<ProtectedRoute requiredRole="Viewer"><ViewerCommunication /></ProtectedRoute>} />
             <Route path="/viewer/inbox" element={<ProtectedRoute requiredRole="Viewer"><Inbox /></ProtectedRoute>} />
-            <Route path="/viewer/calendar" element={<ProtectedRoute requiredRole="Viewer"><Calendar /></ProtectedRoute>} /> 
+            <Route path="/viewer/calendar" element={<ProtectedRoute requiredRole="Viewer"><Calendar /></ProtectedRoute>} />
             <Route path="/viewer/dashboard" element={<ProtectedRoute requiredRole="Viewer"><ViewerDashboard /></ProtectedRoute>} />
+            <Route path="/viewer/message" element={<ProtectedRoute requiredRole="Viewer"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
 
             {/* Catch-All Route */}
             <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/login"} replace />} />
