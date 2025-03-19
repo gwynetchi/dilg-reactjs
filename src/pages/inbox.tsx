@@ -13,12 +13,12 @@ const Inbox: React.FC = () => {
       seconds: number;
     };
   }
-  
+
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({}); // Store sender names
+  const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
 
   // Track authenticated user and fetch role
@@ -63,10 +63,11 @@ const Inbox: React.FC = () => {
       setCommunications(messages);
       setLoading(false);
 
-      // Fetch sender names in real-time
-      messages.forEach((msg) => {
-        if (msg.createdBy && !senderNames[msg.createdBy]) {
-          listenToSenderProfile(msg.createdBy);
+      // Fetch sender names in real-time (limit to unique senders)
+      const uniqueSenders = Array.from(new Set(messages.map((msg) => msg.createdBy)));
+      uniqueSenders.forEach((senderId) => {
+        if (!senderNames[senderId]) {
+          listenToSenderProfile(senderId);
         }
       });
     });
@@ -107,7 +108,7 @@ const Inbox: React.FC = () => {
       Admin: "admin",
     };
 
-    navigate(`/${rolePaths[userRole] || "viewer"}/communication/${id}`);
+    navigate(`/${rolePaths[userRole] || "viewer" || "evaluator" || "admin" || "lgu"}/communication/${id}`);
   };
 
   return (
