@@ -17,9 +17,9 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
 
   // Delete messages older than 30 minutes
   const deleteOldMessages = async () => {
-    const thirtyDaysAgo = Date.now() - 30 * 60 * 1000; // 30 days in milliseconds
+    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000; // 30 minutes in milliseconds
     const messagesRef = collection(db, "messages");
-    const oldMessagesQuery = query(messagesRef, where("timestamp", "<", thirtyDaysAgo));
+    const oldMessagesQuery = query(messagesRef, where("timestamp", "<", thirtyMinutesAgo));
 
     const snapshot = await getDocs(oldMessagesQuery);
     snapshot.forEach(async (docSnap) => {
@@ -79,6 +79,12 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
     }
   };
 
+  // Function to format messages with clickable links
+  const formatMessage = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  };
+
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
@@ -86,7 +92,8 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
       <div className="chat-box">
         {messages.map((msg, index) => (
           <div key={index} className="chat-message">
-            <strong>{msg.sender}:</strong> {msg.text}
+            <strong>{msg.sender}:</strong>
+            <span dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
           </div>
         ))}
         <div ref={messagesEndRef} />
