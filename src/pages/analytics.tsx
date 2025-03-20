@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
   collection,
-  getDocs,
   query,
   where,
   doc,
   updateDoc,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -20,7 +20,6 @@ import {
 } from "recharts";
 import { Form, Table, Button } from "react-bootstrap";
 import "../styles/components/pages.css";
-
 
 interface Communication {
   id: string;
@@ -47,49 +46,47 @@ const Analytics: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchCommunications = async () => {
-      const querySnapshot = await getDocs(collection(db, "communications"));
-      const fetchedCommunications = querySnapshot.docs.map((doc) => ({
+    const unsubscribe = onSnapshot(collection(db, "communications"), (snapshot) => {
+      const fetchedCommunications = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as Communication[];
       setCommunications(fetchedCommunications);
-    };
-    fetchCommunications();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    const fetchSubmissions = async () => {
-      if (!selectedSubject) {
-        setSubmissions({});
-        setChartData([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        console.log("Fetching submissions for:", selectedSubject);
+    if (!selectedSubject) {
+      setSubmissions({});
+      setChartData([]);
+      return;
+    }
 
-        // Get deadline from communication
-        const commRef = doc(db, "communications", selectedSubject);
-        const commSnap = await getDoc(commRef);
-        const deadline = commSnap.exists() ? commSnap.data().deadline?.seconds * 1000 : null;
+    setLoading(true);
 
-        // Query submissions
-        const submissionsQuery = query(
-          collection(db, "submittedDetails"),
-          where("messageId", "==", selectedSubject)
-        );
-        const querySnapshot = await getDocs(submissionsQuery);
-        const fetchedSubmissions = querySnapshot.docs.map((doc) => ({
+    const fetchDeadline = async () => {
+      const commRef = doc(db, "communications", selectedSubject);
+      const commSnap = await getDoc(commRef);
+      return commSnap.exists() ? commSnap.data().deadline?.seconds * 1000 : null;
+    };
+
+    fetchDeadline().then((deadline) => {
+      const submissionsQuery = query(
+        collection(db, "submittedDetails"),
+        where("messageId", "==", selectedSubject)
+      );
+
+      const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
+        const fetchedSubmissions = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Submission[];
 
-        console.log(`Found ${fetchedSubmissions.length} submissions for ${selectedSubject}:`, fetchedSubmissions);
-
-        // Default statuses
         const statusCounts: Record<string, number> = {
           "On Time": 0,
           Late: 0,
@@ -98,7 +95,6 @@ const Analytics: React.FC = () => {
           "For Revision": 0,
         };
 
-        // Process each submission
         fetchedSubmissions.forEach((sub) => {
           let status = sub.status || "No Submission";
 
@@ -114,42 +110,39 @@ const Analytics: React.FC = () => {
           statusCounts[status]++;
         });
 
-        // Convert to chart data format
-        const formattedData: ChartData[] = Object.entries(statusCounts).map(([status, count]) => ({
-          status,
-          count,
-        }));
-
-        // Include all received communications, even those without submissions
         if (fetchedSubmissions.length === 0) {
           statusCounts["No Submission"]++;
-          setSubmissions((prev) => ({ ...prev, [selectedSubject]: [] }));
-        } else {
-          setSubmissions((prev) => ({ ...prev, [selectedSubject]: fetchedSubmissions }));
         }
 
-        setChartData(formattedData);
-      } catch (error) {
-        console.error("Error fetching submissions:", error);
-      }
-      setLoading(false);
-    };
+        setSubmissions({ [selectedSubject]: fetchedSubmissions });
+        setChartData(Object.entries(statusCounts).map(([status, count]) => ({ status, count })));
+        setLoading(false);
+      });
 
-    fetchSubmissions();
+      return () => unsubscribe();
+    });
   }, [selectedSubject]);
 
-  const handleStatusChange = async (submissionId: string, newStatus: string) => {
+  const handleStatusChange = (submissionId: string, newStatus: string) => {
+    setPendingStatus((prev) => ({
+      ...prev,
+      [submissionId]: newStatus,
+    }));
+  };
+
+  const handleSaveStatus = async (submissionId: string) => {
+    if (!pendingStatus[submissionId]) return;
+
     try {
       const submissionRef = doc(db, "submittedDetails", submissionId);
-      await updateDoc(submissionRef, { manualStatus: newStatus });
+      await updateDoc(submissionRef, { manualStatus: pendingStatus[submissionId] });
 
-      setSubmissions((prev) => ({
-        ...prev,
-        [selectedSubject]: prev[selectedSubject].map((sub) =>
-          sub.id === submissionId ? { ...sub, manualStatus: newStatus } : sub
-        ),
-      }));
       alert("Status updated successfully!");
+      setPendingStatus((prev) => {
+        const updatedStatus = { ...prev };
+        delete updatedStatus[submissionId];
+        return updatedStatus;
+      });
     } catch (error) {
       console.error("Error updating status:", error);
       alert("Failed to update status.");
@@ -206,7 +199,10 @@ const Analytics: React.FC = () => {
                       <td>{sub.submittedAt ? new Date(sub.submittedAt.seconds * 1000).toLocaleString() : "Not Submitted"}</td>
                       <td>{sub.status || "No Submission"}</td>
                       <td>
-                        <Form.Select value={sub.manualStatus || ""} onChange={(e) => handleStatusChange(sub.id, e.target.value)}>
+                        <Form.Select
+                          value={pendingStatus[sub.id] ?? sub.manualStatus ?? ""}
+                          onChange={(e) => handleStatusChange(sub.id, e.target.value)}
+                        >
                           <option value="">Select Status</option>
                           <option value="On Time">On Time</option>
                           <option value="Late">Late</option>
@@ -216,7 +212,7 @@ const Analytics: React.FC = () => {
                         </Form.Select>
                       </td>
                       <td>
-                        <Button variant="primary" onClick={() => handleStatusChange(sub.id, sub.manualStatus || "")}>
+                        <Button variant="primary" onClick={() => handleSaveStatus(sub.id)} disabled={!pendingStatus[sub.id]}>
                           Save
                         </Button>
                       </td>
