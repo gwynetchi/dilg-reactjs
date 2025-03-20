@@ -36,7 +36,7 @@ import Messaging from "./pages/message";
 import Profile from "./pages/profile";
 
 // Import Authentication and Landing Pages
-import NewAuthForm from "./components/NewAuthForm";
+import AuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 
 const App: React.FC = () => {
@@ -98,58 +98,64 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-        <Navbar />
+        {/* Show Navbar only if user is authenticated and role is determined */}
+        {user && role && <Navbar />}
+  
         <div className="content">
           <Routes>
-            
             {/* Public Routes */}
-            <Route path="/" element={user ? <Navigate to={getDashboardPath()} replace /> : <Landing />} />
-            <Route path="/" element={user ? <Navigate to={getDashboardPath()} replace /> : <Navigate to="/login" replace />} />
-            <Route path="/login" element={!user || role === null ? <NewAuthForm /> : <Navigate to={getDashboardPath()} replace />} />
-
-            {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="Admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/profile" element={<ProtectedRoute requiredRole="Admin"><Profile /></ProtectedRoute>} />
-            <Route path="/admin/communication/:id" element={<ProtectedRoute requiredRole="Admin"><AdminMessageDetails /></ProtectedRoute>} />
-            <Route path="/admin/communication" element={<ProtectedRoute requiredRole="Admin"><AdminCommunication /></ProtectedRoute>} />
-            <Route path="/admin/inbox" element={<ProtectedRoute requiredRole="Admin"><Inbox /></ProtectedRoute>} />
-            <Route path="/admin/message" element={<ProtectedRoute requiredRole="Admin"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
-            <Route path="/admin/calendar" element={<ProtectedRoute requiredRole="Admin"><Calendar /></ProtectedRoute>} />
-
-            {/* Evaluator Routes */}
-            <Route path="/evaluator/inbox" element={<ProtectedRoute requiredRole="Evaluator"><Inbox /></ProtectedRoute>} />
-            <Route path="/evaluator/profile" element={<ProtectedRoute requiredRole="Evaluator"><Profile /></ProtectedRoute>} />
-            <Route path="/evaluator/communication/:id" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorMessageDetails /></ProtectedRoute>} />
-            <Route path="/evaluator/communication" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorCommunication /></ProtectedRoute>} />
-            <Route path="/evaluator/calendar" element={<ProtectedRoute requiredRole="Evaluator"><Calendar /></ProtectedRoute>} />
-            <Route path="/evaluator/dashboard" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorDashboard /></ProtectedRoute>} />
-            <Route path="/evaluator/message" element={<ProtectedRoute requiredRole="Evaluator"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
-
-            {/* LGU Routes */}
-            <Route path="/lgu/inbox" element={<ProtectedRoute requiredRole="LGU"><Inbox /></ProtectedRoute>} />
-            <Route path="/lgu/dashboard" element={<ProtectedRoute requiredRole="LGU"><LGUDashboard /></ProtectedRoute>} />
-            <Route path="/lgu/profile" element={<ProtectedRoute requiredRole="LGU"><Profile /></ProtectedRoute>} />
-            <Route path="/lgu/calendar" element={<ProtectedRoute requiredRole="LGU"><Calendar /></ProtectedRoute>} />
-            <Route path="/lgu/communication/:id" element={<ProtectedRoute requiredRole="LGU"><LGUMessageDetails /></ProtectedRoute>} />
-            <Route path="/lgu/communication" element={<ProtectedRoute requiredRole="LGU"><LGUCommunication /></ProtectedRoute>} />
-            <Route path="/lgu/message" element={<ProtectedRoute requiredRole="LGU"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
-
-            {/* Viewer Routes */}
-            <Route path="/viewer/profile" element={<ProtectedRoute requiredRole="Viewer"><Profile /></ProtectedRoute>} />
-            <Route path="/viewer/communication/:id" element={<ProtectedRoute requiredRole="Viewer"><ViewerMessageDetails /></ProtectedRoute>} />
-            <Route path="/viewer/communication" element={<ProtectedRoute requiredRole="Viewer"><ViewerCommunication /></ProtectedRoute>} />
-            <Route path="/viewer/inbox" element={<ProtectedRoute requiredRole="Viewer"><Inbox /></ProtectedRoute>} />
-            <Route path="/viewer/calendar" element={<ProtectedRoute requiredRole="Viewer"><Calendar /></ProtectedRoute>} />
-            <Route path="/viewer/dashboard" element={<ProtectedRoute requiredRole="Viewer"><ViewerDashboard /></ProtectedRoute>} />
-            <Route path="/viewer/message" element={<ProtectedRoute requiredRole="Viewer"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
-
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<AuthForm />} />
+            <Route path="/register-success" element={<Navigate to="/login" replace />} />
+  
+            {/* Protected Routes */}
+            {role && (
+              <>
+                {/* Admin Routes */}
+                <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="Admin"><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/profile" element={<ProtectedRoute requiredRole="Admin"><Profile /></ProtectedRoute>} />
+                <Route path="/admin/communication/:id" element={<ProtectedRoute requiredRole="Admin"><AdminMessageDetails /></ProtectedRoute>} />
+                <Route path="/admin/communication" element={<ProtectedRoute requiredRole="Admin"><AdminCommunication /></ProtectedRoute>} />
+                <Route path="/admin/inbox" element={<ProtectedRoute requiredRole="Admin"><Inbox /></ProtectedRoute>} />
+                <Route path="/admin/message" element={<ProtectedRoute requiredRole="Admin"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
+                <Route path="/admin/calendar" element={<ProtectedRoute requiredRole="Admin"><Calendar /></ProtectedRoute>} />
+  
+                {/* Evaluator Routes */}
+                <Route path="/evaluator/inbox" element={<ProtectedRoute requiredRole="Evaluator"><Inbox /></ProtectedRoute>} />
+                <Route path="/evaluator/profile" element={<ProtectedRoute requiredRole="Evaluator"><Profile /></ProtectedRoute>} />
+                <Route path="/evaluator/communication/:id" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorMessageDetails /></ProtectedRoute>} />
+                <Route path="/evaluator/communication" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorCommunication /></ProtectedRoute>} />
+                <Route path="/evaluator/calendar" element={<ProtectedRoute requiredRole="Evaluator"><Calendar /></ProtectedRoute>} />
+                <Route path="/evaluator/dashboard" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorDashboard /></ProtectedRoute>} />
+                <Route path="/evaluator/message" element={<ProtectedRoute requiredRole="Evaluator"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
+  
+                {/* LGU Routes */}
+                <Route path="/lgu/inbox" element={<ProtectedRoute requiredRole="LGU"><Inbox /></ProtectedRoute>} />
+                <Route path="/lgu/dashboard" element={<ProtectedRoute requiredRole="LGU"><LGUDashboard /></ProtectedRoute>} />
+                <Route path="/lgu/profile" element={<ProtectedRoute requiredRole="LGU"><Profile /></ProtectedRoute>} />
+                <Route path="/lgu/calendar" element={<ProtectedRoute requiredRole="LGU"><Calendar /></ProtectedRoute>} />
+                <Route path="/lgu/communication/:id" element={<ProtectedRoute requiredRole="LGU"><LGUMessageDetails /></ProtectedRoute>} />
+                <Route path="/lgu/communication" element={<ProtectedRoute requiredRole="LGU"><LGUCommunication /></ProtectedRoute>} />
+                <Route path="/lgu/message" element={<ProtectedRoute requiredRole="LGU"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
+  
+                {/* Viewer Routes */}
+                <Route path="/viewer/profile" element={<ProtectedRoute requiredRole="Viewer"><Profile /></ProtectedRoute>} />
+                <Route path="/viewer/communication/:id" element={<ProtectedRoute requiredRole="Viewer"><ViewerMessageDetails /></ProtectedRoute>} />
+                <Route path="/viewer/communication" element={<ProtectedRoute requiredRole="Viewer"><ViewerCommunication /></ProtectedRoute>} />
+                <Route path="/viewer/inbox" element={<ProtectedRoute requiredRole="Viewer"><Inbox /></ProtectedRoute>} />
+                <Route path="/viewer/calendar" element={<ProtectedRoute requiredRole="Viewer"><Calendar /></ProtectedRoute>} />
+                <Route path="/viewer/dashboard" element={<ProtectedRoute requiredRole="Viewer"><ViewerDashboard /></ProtectedRoute>} />
+                <Route path="/viewer/message" element={<ProtectedRoute requiredRole="Viewer"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
+              </>
+            )}
+  
             {/* Catch-All Route */}
             <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/login"} replace />} />
           </Routes>
         </div>
       </div>
     </Router>
-  );
+  );  
 };
 
 export default App;
