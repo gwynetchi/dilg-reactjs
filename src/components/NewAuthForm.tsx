@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom"; // Import for redirection
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
 const AuthForm = () => {
-  const navigate = useNavigate(); // React Router navigation
-  const [isActive, setIsActive] = useState(false); // Tracks whether to show login or register form
+  const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +15,7 @@ const AuthForm = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsVisible(true);
@@ -23,111 +23,123 @@ const AuthForm = () => {
 
   useEffect(() => {
     if (!successMessage && !error) return; // Prevent running on first load
-
+  
     let loadingTimer: NodeJS.Timeout | null = null;
     let errorTimer: NodeJS.Timeout | null = null;
-
+  
     loadingTimer = setTimeout(() => setLoading(false), 1000);
-
+    
     if (error) {
       errorTimer = setTimeout(() => setError(""), 5000);
     }
+  
     return () => {
       if (loadingTimer) clearTimeout(loadingTimer);
       if (errorTimer) clearTimeout(errorTimer);
     };
   }, [successMessage, error]);
-
+  
+  
   const resetForm = () => {
     setEmail("");
     setPassword("");
-    setRole("Admin"); // Default role
+    setRole("Admin"); // Default to "Admin" instead of empty
     setError("");
-    setSuccessMessage("");
     setLoading(false);
+    setSuccessMessage("");
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    setSuccessMessage("");
+  
     try {
-      // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // Store user details in Firestore, including the role
+  
+      // Store user details in Firestore (without saving password)
       await setDoc(doc(db, "users", user.uid), { email: user.email, role });
-
-      console.log("✅ Account Created Successfully!");
-
-      // Automatically log in the user after registration
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("✅ Logged in successfully!");
-
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userRole = userDoc.data().role;
-        console.log("User Role:", userRole);
-
-        // Redirect based on role
-        if (userRole === "Admin") {
-          navigate("/admin/dashboard");
-        } else if (userRole === "Evaluator") {
-          navigate("/evaluator/dashboard");
-        } else if (userRole === "LGU") {
-          navigate("/lgu/dashboard");
-        } else if (userRole === "Viewer") {
-          navigate("/viewer/dashboard");
-        }
-      }
-
-      setLoading(false);
+  
+      console.log("Account Created Successfully");
+  
+      // Sign out user immediately to prevent auto-login
+      await auth.signOut();
+  
+      // Show success message and switch back to login form
+      setSuccessMessage("✅ Account Created Successfully! Please log in.");
+      
+      setTimeout(() => {
+        setIsActive(false); // Switch to login form
+        resetForm(); // Clear input fields
+        setLoading(false);
+      }, 1500);
+  
     } catch (err) {
       console.error(err);
       setError("❌ Error creating account. Try again.");
       setLoading(false);
     }
   };
-
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    setSuccessMessage("");
+  
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("✅ Logged in successfully!");
-
-      const user = auth.currentUser;
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userRole = userDoc.data().role;
-          console.log("User Role:", userRole);
-
-          // Redirect based on role
-          if (userRole === "Admin") {
-            navigate("/admin/dashboard");
-          } else if (userRole === "Evaluator") {
-            navigate("/evaluator/dashboard");
-          } else if (userRole === "LGU") {
-            navigate("/lgu/dashboard");
-          } else if (userRole === "Viewer") {
-            navigate("/viewer/dashboard");
-          }
-        }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("Logged in successfully");
+  
+      // Get user info from userCredential instead of auth.currentUser
+      const user = userCredential.user;
+  
+      if (!user) {
+        setError("❌ User authentication failed.");
+        setLoading(false);
+        return;
       }
-
-      setLoading(false);
-    } catch (err) {
+  
+      // Fetch user role from Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        const userRole = userDoc.data().role;
+        console.log(`User role: ${userRole}`);
+  
+        setSuccessMessage("✅ Logged in successfully!");
+        
+        setTimeout(() => {
+          resetForm();
+          navigate(`/${userRole.toLowerCase()}/dashboard`);
+          setLoading(false);
+        }, 1000);
+      } else {
+        setError("❌ User data not found.");
+        await auth.signOut(); // Sign out if no role is found
+        setLoading(false);
+      }
+    } catch (err: any) {
       console.error(err);
-      setError("❌ Invalid email or password.");
+  
+      // More specific error handling
+      if (err.code === "auth/user-not-found") {
+        setError("❌ No account found with this email.");
+      } else if (err.code === "auth/wrong-password") {
+        setError("❌ Incorrect password.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("❌ Invalid email format.");
+      } else {
+        setError("❌ Error logging in. Please try again.");
+      }
+  
       setLoading(false);
     }
   };
-
+  
   return (
     <div className={styles.authWrapper}>
       <AnimatePresence>
@@ -145,32 +157,15 @@ const AuthForm = () => {
                 {successMessage && <p className={styles.success}>{successMessage}</p>}
                 {error && <p className={styles.error}>{error}</p>}
                 <div className={styles.inputBox}>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className={styles.inputBox}>
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 {loading ? (
                   <div className={styles.loadingSpinner}></div>
                 ) : (
-                  <motion.button
-                    type="submit"
-                    className={styles.btn}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
+                  <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     Login
                   </motion.button>
                 )}
@@ -184,44 +179,21 @@ const AuthForm = () => {
                 {successMessage && <p className={styles.success}>{successMessage}</p>}
                 {error && <p className={styles.error}>{error}</p>}
                 <div className={styles.inputBox}>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className={styles.inputBox}>
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 <div className={styles.inputBox}>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    required
-                  >
+                  <select value={role} onChange={(e) => setRole(e.target.value)} required>
                     <option value="Admin">Admin</option>
                     <option value="LGU">LGU User</option>
                     <option value="Viewer">Viewer</option>
                     <option value="Evaluator">Evaluator</option>
                   </select>
                 </div>
-                {loading ? (
-                  <div className={styles.loadingSpinner}></div>
-                ) : (
-                  <motion.button
-                    type="submit"
-                    className={styles.btn}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
+                {loading ? <div className={styles.loadingSpinner}></div> : (
+                  <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     Register
                   </motion.button>
                 )}
@@ -239,7 +211,7 @@ const AuthForm = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => {
-                    setIsActive(true); // Show the Register form
+                    setIsActive(true);
                     resetForm();
                   }}
                 >
@@ -256,9 +228,8 @@ const AuthForm = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => {
-                    setIsActive(false); // Show the Login form
+                    setIsActive(false);
                     resetForm();
-                    setSuccessMessage(""); // Ensure success message is cleared
                   }}
                 >
                   Login
@@ -269,7 +240,7 @@ const AuthForm = () => {
         )}
       </AnimatePresence>
     </div>
-  );  
+  );
 };
 
 export default AuthForm;
