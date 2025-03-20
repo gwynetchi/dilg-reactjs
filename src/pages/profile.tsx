@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase"; // Import Firebase Auth
 import { onAuthStateChanged, User } from "firebase/auth";
-import "../styles/components/pages.css";
+import "../styles/components/dashboard.css";
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -76,9 +76,11 @@ const Profile = () => {
   
 
   return (
+    <section id="content">
+    <main>
     <div className="dashboard-container">
-      <section id="content">
-        <main>
+
+
           <div className="head-title">
             <div className="left">
               <h1>Profile</h1>
@@ -138,9 +140,10 @@ const Profile = () => {
               
             </div>
           </div>
-        </main>
+          </div>
+        </main>    
       </section>
-    </div>
+
   );
 };
 
