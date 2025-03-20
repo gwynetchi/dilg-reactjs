@@ -92,7 +92,7 @@ const App: React.FC = () => {
   // Protected Route Component
   const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole: string }) => {
     if (loading) return <div>Loading...</div>;
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) return <Navigate to="/" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
     return children;
   };
@@ -155,8 +155,8 @@ const App: React.FC = () => {
             )}
   
             {/* Catch-All Route */}
-            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/login"} replace />} />
-          </Routes>
+            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/"} replace />} />
+            </Routes>
         </div>
       </div>
     </Router>

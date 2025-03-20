@@ -4,6 +4,7 @@ import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { auth } from "../firebase";
 
 const Navbar = () => {
   const [role, setRole] = useState<string | null>(null);
@@ -122,10 +123,9 @@ const Navbar = () => {
   }, [role, searchQuery]);
 
   const handleLogout = async () => {
-    const auth = getAuth();
     try {
       await signOut(auth);
-      navigate("/login");
+      navigate("/"); // Redirect to Landing page
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -183,7 +183,7 @@ const Navbar = () => {
           </li>
           <li className={activeMenu === "Logout" ? "active" : ""}>
             <Link
-              to="#"
+              to="/"
               onClick={(e) => {
                 e.preventDefault();
                 handleLogout();
