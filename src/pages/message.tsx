@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
 import "../styles/components/pages.css";
 
@@ -15,8 +15,22 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
   const location = useLocation();
   const isMessagingPage = location.pathname.includes("/message");
 
-  // Fetch real-time messages
+  // Delete messages older than 30 minutes
+  const deleteOldMessages = async () => {
+    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000; // 30 minutes in milliseconds
+    const messagesRef = collection(db, "messages");
+    const oldMessagesQuery = query(messagesRef, where("timestamp", "<", thirtyMinutesAgo));
+
+    const snapshot = await getDocs(oldMessagesQuery);
+    snapshot.forEach(async (docSnap) => {
+      await deleteDoc(doc(db, "messages", docSnap.id));
+    });
+  };
+
+  // Fetch real-time messages & delete old ones
   useEffect(() => {
+    deleteOldMessages(); // Cleanup old messages on load
+
     const messagesRef = collection(db, "messages");
     const q = query(messagesRef, orderBy("timestamp", "asc"));
 
@@ -27,8 +41,8 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
         timestamp: doc.data().timestamp,
       }));
       setMessages(messagesData);
+
       if (!isMessagingPage) {
-        // If the user is not on the message page, update the unread message count
         setUnreadMessages((prev) => prev + snapshot.docs.length);
       }
     }, (error) => {
@@ -46,15 +60,16 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
   const sendMessage = async () => {
     if (newMessage.trim() === "") return;
     const messageToSend = newMessage;
-    setNewMessage(""); // Clear input field immediately
+    setNewMessage("");
+
     try {
       await addDoc(collection(db, "messages"), {
         sender: auth.currentUser?.email || "Anonymous",
         text: messageToSend,
         timestamp: Date.now(),
       });
-      setError(null); // Clear previous errors
-      // If the user is not on the messaging page, increment the unread messages count
+      setError(null);
+
       if (!isMessagingPage) {
         setUnreadMessages((prev) => prev + 1);
       }
@@ -64,6 +79,12 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
     }
   };
 
+  // Function to format messages with clickable links
+  const formatMessage = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  };
+
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
@@ -71,7 +92,8 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
       <div className="chat-box">
         {messages.map((msg, index) => (
           <div key={index} className="chat-message">
-            <strong>{msg.sender}:</strong> {msg.text}
+            <strong>{msg.sender}:</strong>
+            <span dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
           </div>
         ))}
         <div ref={messagesEndRef} />

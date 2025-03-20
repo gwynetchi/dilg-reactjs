@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { db } from "../firebase";
 
 const MessageDetails: React.FC = () => {
   const { id } = useParams();
   const [message, setMessage] = useState<any>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
   useEffect(() => {
     const fetchMessage = async () => {
@@ -31,10 +35,16 @@ const MessageDetails: React.FC = () => {
             }
           }
 
-          setMessage({
-            ...msgData,
-            senderName,
-          });
+          setMessage({ ...msgData, senderName });
+
+          // Fetch submission status
+          if (currentUser) {
+            const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
+            const submissionSnap = await getDoc(submissionRef);
+            if (submissionSnap.exists()) {
+              setSubmissionStatus(submissionSnap.data());
+            }
+          }
         } else {
           console.error("Message not found");
         }
@@ -46,7 +56,27 @@ const MessageDetails: React.FC = () => {
     };
 
     fetchMessage();
-  }, [id]);
+  }, [id, currentUser]);
+
+  const handleMarkAsSubmitted = async () => {
+    if (!message || !id || !currentUser) return;
+
+    try {
+      const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
+      await setDoc(submissionRef, {
+        messageId: id,
+        submittedBy: currentUser.uid,
+        status: "Submitted",
+        submittedAt: serverTimestamp(),
+      });
+
+      setSubmissionStatus({ status: "Submitted", submittedAt: new Date() });
+      alert("Marked as Submitted!");
+    } catch (error) {
+      console.error("Error updating submission status:", error);
+      alert("Failed to mark as submitted.");
+    }
+  };
 
   if (loading) return <p>Loading message details...</p>;
   if (!message) return <p>Message not found.</p>;
@@ -88,6 +118,17 @@ const MessageDetails: React.FC = () => {
               </p>
             )}
             <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
+
+            {/* Show submission status */}
+            {submissionStatus ? (
+              <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
+            ) : (
+              currentUser?.uid === message.recipient && (
+                <button onClick={handleMarkAsSubmitted} className="btn-submit">
+                  Mark as Submitted
+                </button>
+              )
+            )}
           </div>
         </main>
       </section>

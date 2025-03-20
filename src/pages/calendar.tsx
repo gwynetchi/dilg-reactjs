@@ -8,6 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
+
 const Calendar: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -101,7 +102,9 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="calendar-container">
+    <div className="dashboard-container">
+      <section id="content">
+        <main>
       <h2>Deadlines</h2>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -124,6 +127,8 @@ const Calendar: React.FC = () => {
           </div>
         )}
       />
+      </main>
+      </section>
     </div>
   );
 };

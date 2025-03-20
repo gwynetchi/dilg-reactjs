@@ -26,6 +26,7 @@
     "react-router-dom": "^7.1.5",
     "react-scroll": "^1.9.3",
     "react-slick": "^0.30.3",
+    "recharts": "^2.15.1",
     "sass": "^1.85.1",
     "slick-carousel": "^1.8.1",
     "styled-components": "^6.1.15"
