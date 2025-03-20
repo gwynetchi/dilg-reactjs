@@ -4,9 +4,13 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
+import "./styles/components/pages.css";
 
 // Import Dashboards
 import AdminDashboard from "./pages/admin/dashboard";
+import Analytics from "./pages/analytics";
+
+
 import LGUDashboard from "./pages/lgu/dashboard";
 import EvaluatorDashboard from "./pages/evaluator/dashboard"; // Adjust the path as needed
 import ViewerDashboard from "./pages/viewer/dashboard"; // Adjust the path as needed
@@ -128,7 +132,8 @@ const App: React.FC = () => {
                 <Route path="/evaluator/calendar" element={<ProtectedRoute requiredRole="Evaluator"><Calendar /></ProtectedRoute>} />
                 <Route path="/evaluator/dashboard" element={<ProtectedRoute requiredRole="Evaluator"><EvaluatorDashboard /></ProtectedRoute>} />
                 <Route path="/evaluator/message" element={<ProtectedRoute requiredRole="Evaluator"><Messaging setUnreadMessages={() => {}} /></ProtectedRoute>} />
-  
+                <Route path="/evaluator/analytics" element={<ProtectedRoute requiredRole="Evaluator"><Analytics /></ProtectedRoute>} />
+
                 {/* LGU Routes */}
                 <Route path="/lgu/inbox" element={<ProtectedRoute requiredRole="LGU"><Inbox /></ProtectedRoute>} />
                 <Route path="/lgu/dashboard" element={<ProtectedRoute requiredRole="LGU"><LGUDashboard /></ProtectedRoute>} />
