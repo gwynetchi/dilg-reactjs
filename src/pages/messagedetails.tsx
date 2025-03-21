@@ -123,7 +123,7 @@ const MessageDetails: React.FC = () => {
             {submissionStatus ? (
               <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
             ) : (
-              currentUser?.uid === message.recipient && (
+              message.recipients?.includes(currentUser?.uid) && (
                 <button onClick={handleMarkAsSubmitted} className="btn-submit">
                   Mark as Submitted
                 </button>

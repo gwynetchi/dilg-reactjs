@@ -1,11 +1,12 @@
 import { getAuth } from "firebase/auth"; // Import Firebase auth
 import React, { useState, useEffect } from "react";
+import Select, { MultiValue } from "react-select";
 import { doc, getDoc, setDoc, deleteDoc, collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 const Communication: React.FC = () => {
   const [subject, setSubject] = useState("");
-  const [recipient, setRecipient] = useState("");
+  const [recipients, setRecipients] = useState<string[]>([]);
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
   const [inputLink, setInputLink] = useState("");
@@ -102,9 +103,17 @@ const fetchUsers = async () => {
 
     setPreviewLink(modifiedLink);
   };
-
+  const options: { value: string; label: string }[] = users.map((user) => ({
+    value: user.id,
+    label: user.fullName,
+  }));
+  const handleRecipientChange = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
+    setRecipients(selectedOptions.map(option => option.value));
+  };
+  
+  
   const handleSubmit = async () => {
-    if (!subject || !recipient || !deadline || !remarks) {
+    if (!subject || recipients.length === 0 || !deadline || !remarks) {
       alert("Please fill in all fields before sending.");
       return;
     }
@@ -115,8 +124,8 @@ const fetchUsers = async () => {
     }
       setLoading(true);
     try {
-      const auth = getAuth(); // Get Firebase auth instance
-      const user = auth.currentUser; // Get logged-in user
+      const auth = getAuth();
+      const user = auth.currentUser;
   
       if (!user) {
         alert("You must be logged in to send a communication.");
@@ -127,17 +136,19 @@ const fetchUsers = async () => {
       const communicationRef = collection(db, "communications");
       await addDoc(communicationRef, {
         subject,
-        recipient,
-        deadline: new Date(deadline), // Convert string to Date object
+        recipients, // Now storing only an array of strings
+        deadline: new Date(deadline),
         remarks,
         link: inputLink,
         createdBy: user.uid,
         createdAt: new Date(),
       });
+      
+      
   
       alert("Message sent successfully!");
       setSubject("");
-      setRecipient("");
+      setRecipients([]); // Reset selection
       setDeadline("");
       setRemarks("");
       setInputLink("");
@@ -185,20 +196,18 @@ const fetchUsers = async () => {
                 </div>
 
                 <div className="input-box">
-                  <label>Recipient:</label>
-                  <select value={recipient} onChange={(e) => setRecipient(e.target.value)}>
-                    <option value="">Select a recipient</option>
-                    {users.length > 0 ? (
-                      users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.fullName}
-                        </option>
-                      ))
-                    ) : (
-                      <option disabled>Loading users...</option>
-                    )}
-                  </select>
-                </div>
+  <label>Recipients:</label>
+  <Select
+  options={options}
+  isMulti
+  value={options.filter(option => recipients.includes(option.value))}
+  onChange={handleRecipientChange}
+  className="basic-multi-select"
+  classNamePrefix="select"
+  placeholder="Select recipients..."
+/>
+
+</div>
 
                 <div className="input-box">
                   <label>Deadline:</label>
@@ -227,7 +236,7 @@ const fetchUsers = async () => {
                   />
                 </div>
               </div>
-
+              </div>
               {previewLink && (
                 <div className="google-file-preview">
                   {isDriveFolder ? (
@@ -243,7 +252,7 @@ const fetchUsers = async () => {
                 <span className="text">{loading ? "Sending..." : "Send"}</span>
               </button>
             </div>
-          </div>
+          
         </main>
       </section>
     </div>
