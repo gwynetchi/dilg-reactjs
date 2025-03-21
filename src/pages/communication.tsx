@@ -37,7 +37,6 @@ const fetchUsers = async () => {
   }
 };
 
-
   // Ensure users' emails are fetched on component mount
   useEffect(() => {
     fetchUsers();
@@ -110,8 +109,11 @@ const fetchUsers = async () => {
       return;
     }
   
-    setLoading(true);
-  
+    if (inputLink && !inputLink.startsWith("https://")) {
+      alert("Only HTTPS links are allowed.");
+      return;
+    }
+      setLoading(true);
     try {
       const auth = getAuth(); // Get Firebase auth instance
       const user = auth.currentUser; // Get logged-in user
@@ -149,7 +151,6 @@ const fetchUsers = async () => {
     }
   };
   
-
   return (
     <div className="dashboard-container">
       <section id="content">
@@ -211,7 +212,19 @@ const fetchUsers = async () => {
 
                 <div className="input-box">
                   <label>Attachment/Link:</label>
-                  <input type="text" placeholder="Paste Google Drive link" value={inputLink} onChange={(e) => setInputLink(e.target.value)} />
+                  <input
+                    type="text"
+                    placeholder="Paste Google Drive link"
+                    value={inputLink}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || value.startsWith("https://")) {
+                        setInputLink(value);
+                      } else {
+                        alert("Only secure HTTPS links are allowed.");
+                      }
+                    }}
+                  />
                 </div>
               </div>
 

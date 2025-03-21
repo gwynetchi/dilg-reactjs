@@ -69,12 +69,12 @@ const AuthForm = () => {
   
       // Show success message and switch back to login form
       setSuccessMessage("✅ Account Created Successfully! Please log in.");
-      
+      setLoading(false);
+
       setTimeout(() => {
         setIsActive(false); // Switch to login form
         resetForm(); // Clear input fields
-        setLoading(false);
-      }, 1500);
+      }, 500);
   
     } catch (err) {
       console.error(err);
@@ -111,11 +111,12 @@ const AuthForm = () => {
         console.log(`User role: ${userRole}`);
   
         setSuccessMessage("✅ Logged in successfully!");
-        
+        setLoading(false); // Move this here before navigation
+
         setTimeout(() => {
           resetForm();
+          setLoading(false); // Ensure this runs before navigating
           navigate(`/${userRole.toLowerCase()}/dashboard`);
-          setLoading(false);
         }, 1000);
       } else {
         setError("❌ User data not found.");
