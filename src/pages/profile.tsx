@@ -76,9 +76,9 @@ const Profile = () => {
   
 
   return (
-    <section id="content">
-    <main>
     <div className="dashboard-container">
+      <section id="content">
+        <main>
 
 
           <div className="head-title">
@@ -140,10 +140,10 @@ const Profile = () => {
               
             </div>
           </div>
-          </div>
+      
         </main>    
       </section>
-
+    </div>
   );
 };
 
