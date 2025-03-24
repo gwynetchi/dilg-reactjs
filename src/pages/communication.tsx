@@ -231,14 +231,13 @@ const Communication: React.FC = () => {
                   <label>Attachment/Link:</label>
                   <input
                     type="text"
-                    placeholder="Paste Google Drive link"
+                    placeholder="Paste or type Google Drive link"
                     value={inputLink}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || value.startsWith("https://")) {
-                        setInputLink(value);
-                      } else {
+                    onChange={(e) => setInputLink(e.target.value)} // Allow free typing
+                    onBlur={() => {
+                      if (inputLink && !inputLink.startsWith("https://")) {
                         alert("Only secure HTTPS links are allowed.");
+                        setInputLink(""); // Clear invalid input
                       }
                     }}
                   />
