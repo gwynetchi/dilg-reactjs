@@ -17,9 +17,9 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
 
   // Delete messages older than 30 minutes
   const deleteOldMessages = async () => {
-    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000; // 30 minutes in milliseconds
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
     const messagesRef = collection(db, "messages");
-    const oldMessagesQuery = query(messagesRef, where("timestamp", "<", thirtyMinutesAgo));
+    const oldMessagesQuery = query(messagesRef, where("timestamp", "<", thirtyDaysAgo));
 
     const snapshot = await getDocs(oldMessagesQuery);
     snapshot.forEach(async (docSnap) => {
