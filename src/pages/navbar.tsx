@@ -5,11 +5,12 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth } from "../firebase";
-
+import { useLocation } from "react-router-dom";
 interface NavbarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 }
+
 
 const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [role, setRole] = useState<string | null>(null);
@@ -18,7 +19,18 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem("darkMode") === "true");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
+  const location = useLocation();
+  useEffect(() => {
+    if (role) {
+      // Find the menu item that matches the current path
+      const currentItem = menuItems[role].find((item) => location.pathname.includes(item.path));
+      
+      if (currentItem) {
+        setActiveMenu(currentItem.name); // Set the active menu item based on the route
+      }
+    }
+  }, [location.pathname, role]); // Run when the route or role changes
+  
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredMenuItems, setFilteredMenuItems] = useState<any[]>([]);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -182,9 +194,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="content" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
-          <Link to="#" className="nav-link">Categories</Link>
           <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}>
-            <i className={`bx ${isSearchOpen ? "bx-x" : "bx-search"}`}></i>
           </button>
           <form className={`d-flex ${isSearchOpen ? "show" : ""}`}>
             <input

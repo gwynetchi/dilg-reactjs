@@ -305,10 +305,7 @@ const Communication: React.FC = () => {
                   ></iframe>
                 )}
               </div>
-              
             )}
-
-            
           </div>
         </main>
       </section>
