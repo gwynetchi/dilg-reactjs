@@ -6,6 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
 
+
 // Import Dashboards
 import AdminDashboard from "./pages/admin/dashboard";
 import Analytics from "./pages/analytics";
@@ -79,6 +80,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
 
   const auth = getAuth();
   const db = getFirestore();
@@ -117,8 +119,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-        {user && role && <Navbar />}
-        <div className="content">
+        {user && role && (
+          <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
+        <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />

@@ -189,6 +189,7 @@ ol, ul {
 #content {
 	position: relative;
 	transition: width 0.3s ease, left 0.3s ease;
+	
   }
   
   /* When sidebar is open */
@@ -205,9 +206,10 @@ ol, ul {
   
   /* Dashboard container inside content */
   .dashboard-container {
-	max-width: 600px;
-	margin: 20px auto;
-	padding: 20px;
+	max-height: auto;
+	max-width: auto;
+	margin: 20px 20px;
+	padding: 60px;
 	background: var(--light);
 	border-radius: 8px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -485,7 +487,7 @@ body.dark #content nav .profile-menu li a {
 /* MAIN */
 #content main {
 	width: 100%;
-	padding: 36px 24px;
+	/* padding: 24px 24px; */
 	font-family: var(--poppins);
 	max-height: calc(100vh - 56px);
 	overflow-y: auto;
