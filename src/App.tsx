@@ -120,7 +120,7 @@ const App: React.FC = () => {
       <div className="app-container">
         {user && role && (
           <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
-        <div className={`content-layout ${isSidebarOpen ? "expanded" : "collapsed"}`}>
+        <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
