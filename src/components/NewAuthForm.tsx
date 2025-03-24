@@ -167,7 +167,7 @@ const AuthForm = () => {
                   <div className={styles.loadingSpinner}></div>
                 ) : (
                   <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    Login
+                      Login
                   </motion.button>
                 )}
               </form>

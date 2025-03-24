@@ -1,12 +1,12 @@
 import Slider from "react-slick";
 import styled from "styled-components";
 // Assets
-import ClientLogo01 from "../../assets/img/clients/logo01.svg"
-import ClientLogo02 from "../../assets/img/clients/logo02.svg";
-import ClientLogo03 from "../../assets/img/clients/logo03.svg";
-import ClientLogo04 from "../../assets/img/clients/logo04.svg";
-import ClientLogo05 from "../../assets/img/clients/logo05.svg";
-import ClientLogo06 from "../../assets/img/clients/logo06.svg";
+import ClientLogo01 from "../../assets/img/clients/dilg-logo.svg";
+import ClientLogo02 from "../../assets/img/clients/bagongphlogo.png";
+import ClientLogo03 from "../../assets/img/clients/lgrcLogo.png";
+import ClientLogo04 from "../../assets/img/clients/calabarzonlogo.png";
+import ClientLogo05 from "../../assets/img/clients/dilg-logo.svg";
+import ClientLogo06 from "../../assets/img/clients/dilg-logo.svg";
 
 export default function ClientSlider() {
   const settings = {
@@ -89,5 +89,9 @@ const LogoWrapper = styled.div`
 const ImgStyle = styled.img`
   width: 100%;
   height: 100%;
-  padding: 10%;
+  padding: %;
+  object-fit: contain;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+
+  
 `;

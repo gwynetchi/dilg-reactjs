@@ -6,10 +6,16 @@ import HeaderImage from "../../assets/img/pd.png";
 import QuotesIcon from "../../assets/svg/Quotes";
 import Dots from "../../assets/svg/Dots";
 
+import { useNavigate } from "react-router-dom";
+// import { motion } from "framer-motion"; //Animated Button
 
 
 
 export default function Header() {
+  const navigate = useNavigate();
+
+
+  
   return (
     <Wrapper id="home" className="container flexSpaceCenter">
       <LeftSide className="flexCenter">
@@ -21,7 +27,7 @@ export default function Header() {
            
           </HeaderP>
           <BtnWrapper>
-            <FullButton title="Get Started" action={undefined} border={undefined} />
+            <FullButton title="Get Started" action={() => navigate("/login")} border={undefined} />
           </BtnWrapper>
         </div>
       </LeftSide>

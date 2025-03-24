@@ -76,7 +76,7 @@ export default function TopNavbar() {
               </a>
             </li>
             <li className="semiBold font15 pointer flexCenter">
-              <a href="/" className="radius8 lightBg" style={{ padding: "10px 15px" }}>
+              <a href="/login" className="radius8 lightBg" style={{ padding: "10px 15px" }}>
                 Get Started
               </a>
             </li>
@@ -105,18 +105,18 @@ const BurderWrapper = styled.button`
   height: 100%;
   padding: 0 15px;
   display: none;
-  @media (max-width: 760px) {
+  @media (max-width: 999px) {
     display: block;
   }
 `;
 const UlWrapper = styled.ul`
   display: flex;
-  @media (max-width: 760px) {
+  @media (max-width: 999px) {
     display: none;
   }
 `;
 const UlWrapperRight = styled.ul`
-  @media (max-width: 760px) {
+  @media (max-width: 999px) {
     display: none;
   }
 `;
