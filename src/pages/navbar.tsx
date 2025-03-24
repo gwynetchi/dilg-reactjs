@@ -27,49 +27,36 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
   const menuItems: Record<string, { name: string; icon: string; path: string }[]> = {
     Viewer: [
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
-      { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
-      { name: "Upload links", icon: "bxs-bar-chart-alt-2", path: "/viewer/uploadlinks" },
-      { name: "Team", icon: "bxs-group", path: "/viewer/team" },
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
+      { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Message", icon: "bxs-message", path: "/viewer/message" },
-
+      { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
     ],
     Evaluator: [
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
-      { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
-      { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
-      { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
-      { name: "Team", icon: "bxs-group", path: "/evaluator/team" },
+      { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
+      { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
+      { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
       { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
-      
-
+      { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
     ],
     LGU: [
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
-      { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
+      { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
       { name: "Inbox", icon: "bxs-message", path: "/lgu/inbox" },
-      { name: "Profile", icon: "bxs-id-card", path: "/lgu/profile" },
-      { name: "Projects", icon: "bxs-briefcase", path: "/lgu/projects" },
-      { name: "Funding", icon: "bxs-bank", path: "/lgu/funding" },
-      { name: "Stakeholders", icon: "bxs-group", path: "/lgu/stakeholders" },
       { name: "Message", icon: "bxs-message", path: "/lgu/message" },
-
+      { name: "Profile", icon: "bxs-id-card", path: "/lgu/profile" },
     ],
     Admin: [
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/admin/profile" },
-      { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
+      { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
       { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
-      { name: "System Settings", icon: "bxs-cog", path: "/admin/settings" },
-      { name: "Reports", icon: "bxs-report", path: "/admin/reports" },
       { name: "Message", icon: "bxs-message", path: "/admin/message" },
-      
+      { name: "Profile", icon: "bxs-id-card", path: "/admin/profile" },
     ],
   };
 
@@ -151,7 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   return (
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
-        <Link to="/" className="brand">
+        <Link to="/dashboards" className="brand">
           <img src="/images/logo.png" alt="Logo" className="brand-logo" />
           <span className="text"></span>
         </Link>
