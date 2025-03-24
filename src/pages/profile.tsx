@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
-import { auth, db } from "../firebase"; // Import Firebase Auth
+import { auth, db } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import "../styles/components/dashboard.css";
 
@@ -28,9 +28,7 @@ const Profile = () => {
       unsubscribeProfile();
     };
   }, []);
-  
 
-  // Listen for real-time profile updates
   const listenToUserProfile = (uid: string) => {
     const userDocRef = doc(db, "users", uid);
 
@@ -45,7 +43,6 @@ const Profile = () => {
       console.error("Error fetching real-time updates:", error);
     });
 
-    // Cleanup listener when component unmounts
     return () => unsubscribeProfile();
   };
 
@@ -73,14 +70,11 @@ const Profile = () => {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="dashboard-container">
       <section id="content">
         <main>
-
-
           <div className="head-title">
             <div className="left">
               <h1>Profile</h1>
@@ -98,49 +92,54 @@ const Profile = () => {
                 <h3>Information</h3>
               </div>
 
-              <div className="input-container">
-                <div className="input-box">
-                  <label>First Name:</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter first name" 
-                    value={fname} 
-                    onChange={(e) => setFirstName(e.target.value)} 
-                    disabled={loading}
-                  />
-                </div>
+              <div className="container">
+  <div className="mb-2">
+    <label className="form-label">First Name:</label>
+    <input 
+      type="text" 
+      className="form-control form-control-sm w-50"  // Smaller input
+      placeholder="Enter first name" 
+      value={fname} 
+      onChange={(e) => setFirstName(e.target.value)} 
+      disabled={loading}
+    />
+  </div>
 
-                <div className="input-box">
-                  <label>Middle Name:</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter middle name" 
-                    value={mname} 
-                    onChange={(e) => setMiddleName(e.target.value)} 
-                    disabled={loading}
-                  />
-                </div>
+  <div className="mb-2">
+    <label className="form-label">Middle Name:</label>
+    <input 
+      type="text" 
+      className="form-control form-control-sm w-50"  // Smaller input
+      placeholder="Enter middle name" 
+      value={mname} 
+      onChange={(e) => setMiddleName(e.target.value)} 
+      disabled={loading}
+    />
+  </div>
 
-                <div className="input-box">
-                  <label>Last Name:</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter last name"
-                    value={lname} 
-                    onChange={(e) => setLastName(e.target.value)} 
-                    disabled={loading}
-                  />
-                </div>
-              </div>
+  <div className="mb-2">
+    <label className="form-label">Last Name:</label>
+    <input 
+      type="text" 
+      className="form-control form-control-sm w-50"  // Smaller input
+      placeholder="Enter last name"
+      value={lname} 
+      onChange={(e) => setLastName(e.target.value)} 
+      disabled={loading}
+    />
+  </div>
 
-              <button className="btn-send" onClick={handleSubmit} disabled={loading}>
-                <i className="bx bxs-send bx-tada-hover"></i>
-                <span className="text">{loading ? "Saving..." : "Save Profile"}</span>
-              </button>
-              
+  <button 
+    className="btn btn-primary btn-sm w-50"  // Smaller button
+    onClick={handleSubmit} 
+    disabled={loading}
+  >
+    {loading ? "Saving..." : "Save Profile"}
+  </button>
+</div>
+
             </div>
           </div>
-      
         </main>    
       </section>
     </div>

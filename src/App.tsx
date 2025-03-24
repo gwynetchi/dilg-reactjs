@@ -6,6 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
 
+
 // Import Dashboards
 import AdminDashboard from "./pages/admin/dashboard";
 import Analytics from "./pages/analytics";
