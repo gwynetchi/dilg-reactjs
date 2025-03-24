@@ -102,7 +102,7 @@ const App: React.FC = () => {
 
     return () => unsubscribe();
   }, []);
-
+  
   const getDashboardPath = () => {
     return role && roleRoutesConfig[role] ? roleRoutesConfig[role][0].path : "/login";
   };
