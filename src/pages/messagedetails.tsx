@@ -107,7 +107,8 @@ const MessageDetails: React.FC = () => {
           </div>
 
           <div className="message-details-container">
-            <button onClick={() => navigate(-1)} className="back-button">Back</button>
+            <button onClick={() => navigate(-1)} className="bx bx-arrow-back btn btn-primary btn-sm w-20"> Go Back to Inbox</button>
+            <br></br><br></br>
             <h2>{message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
             <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
@@ -118,14 +119,14 @@ const MessageDetails: React.FC = () => {
               </p>
             )}
             <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
-
+            <br></br>
             {/* Show submission status */}
             {submissionStatus ? (
               <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
             ) : (
               message.recipients?.includes(currentUser?.uid) && (
-                <button onClick={handleMarkAsSubmitted} className="btn-submit">
-                  Mark as Submitted
+                <button onClick={handleMarkAsSubmitted} className="btn-submit bx bx-check btn btn-success btn-md w-20">
+                  Mark Submitted/Acknowledged
                 </button>
               )
             )}

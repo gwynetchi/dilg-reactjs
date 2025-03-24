@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import {
   collection,
   query,
@@ -17,6 +18,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  Cell,
 } from "recharts";
 import { Form, Table, Button } from "react-bootstrap";
 import "../styles/components/pages.css";
@@ -33,12 +35,25 @@ interface Submission {
   submittedAt?: { seconds: number };
   status?: string;
   manualStatus?: string;
+  autoStatus?: string;
 }
 
 interface ChartData {
   status: string;
   count: number;
 }
+
+// Define all possible statuses
+const allStatuses = ["On Time", "Late", "Incomplete", "No Submission", "For Revision"];
+
+// Define colors for each status
+const statusColors: Record<string, string> = {
+  "On Time": "#28a745",
+  "Late": "#dc3545",
+  "Incomplete": "#ffc107",
+  "No Submission": "#6c757d",
+  "For Revision": "#17a2b8",
+};
 
 const Analytics: React.FC = () => {
   const [communications, setCommunications] = useState<Communication[]>([]);
@@ -47,6 +62,8 @@ const Analytics: React.FC = () => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
+  const [selectedDeadline, setSelectedDeadline] = useState<string | null>(null);
+  const [users, setUsers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "communications"), (snapshot) => {
@@ -64,6 +81,7 @@ const Analytics: React.FC = () => {
     if (!selectedSubject) {
       setSubmissions({});
       setChartData([]);
+      setSelectedDeadline(null);
       return;
     }
 
@@ -72,7 +90,12 @@ const Analytics: React.FC = () => {
     const fetchDeadline = async () => {
       const commRef = doc(db, "communications", selectedSubject);
       const commSnap = await getDoc(commRef);
-      return commSnap.exists() ? commSnap.data().deadline?.seconds * 1000 : null;
+      if (commSnap.exists()) {
+        const deadline = commSnap.data().deadline?.seconds * 1000;
+        setSelectedDeadline(deadline ? new Date(deadline).toLocaleString() : "No Deadline");
+        return deadline;
+      }
+      return null;
     };
 
     fetchDeadline().then((deadline) => {
@@ -82,40 +105,19 @@ const Analytics: React.FC = () => {
       );
 
       const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
-        const fetchedSubmissions = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Submission[];
+        const fetchedSubmissions = snapshot.docs.map((doc) => {
+          const data = doc.data() as Submission;
+          let autoStatus = "No Submission";
 
-        const statusCounts: Record<string, number> = {
-          "On Time": 0,
-          Late: 0,
-          Incomplete: 0,
-          "No Submission": 0,
-          "For Revision": 0,
-        };
-
-        fetchedSubmissions.forEach((sub) => {
-          let status = sub.status || "No Submission";
-
-          if (sub.submittedAt && deadline) {
-            const submittedAt = sub.submittedAt.seconds * 1000;
-            status = submittedAt <= deadline ? "On Time" : "Late";
+          if (data.submittedAt && deadline) {
+            const submittedAt = data.submittedAt.seconds * 1000;
+            autoStatus = submittedAt <= deadline ? "On Time" : "Late";
           }
 
-          if (sub.manualStatus && statusCounts.hasOwnProperty(sub.manualStatus)) {
-            status = sub.manualStatus;
-          }
-
-          statusCounts[status]++;
+          return { ...data, autoStatus };
         });
 
-        if (fetchedSubmissions.length === 0) {
-          statusCounts["No Submission"]++;
-        }
-
         setSubmissions({ [selectedSubject]: fetchedSubmissions });
-        setChartData(Object.entries(statusCounts).map(([status, count]) => ({ status, count })));
         setLoading(false);
       });
 
@@ -123,11 +125,50 @@ const Analytics: React.FC = () => {
     });
   }, [selectedSubject]);
 
-  const handleStatusChange = (submissionId: string, newStatus: string) => {
-    setPendingStatus((prev) => ({
-      ...prev,
-      [submissionId]: newStatus,
+  useEffect(() => {
+    // Fetch user data to map user IDs to full names
+    const unsubscribe = onSnapshot(collection(db, "users"), (querySnapshot) => {
+      const usersList = querySnapshot.docs.reduce((acc, doc) => {
+        const data = doc.data();
+        const fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
+        acc[doc.id] = fullName;
+        return acc;
+      }, {} as Record<string, string>);
+
+      setUsers(usersList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Update chart data based on submissions
+  useEffect(() => {
+    if (!selectedSubject || !submissions[selectedSubject]) {
+      setChartData(allStatuses.map((status) => ({ status, count: 0 })));
+      return;
+    }
+
+    const statusCount: Record<string, number> = {};
+
+    // Initialize all statuses with 0
+    allStatuses.forEach((status) => (statusCount[status] = 0));
+
+    // Count actual submissions
+    submissions[selectedSubject].forEach((sub) => {
+      const status = sub.manualStatus || sub.autoStatus || "No Submission";
+      statusCount[status] = (statusCount[status] || 0) + 1;
+    });
+
+    const formattedChartData = allStatuses.map((status) => ({
+      status,
+      count: statusCount[status],
     }));
+
+    setChartData(formattedChartData);
+  }, [submissions, selectedSubject]);
+
+  const handleStatusChange = (submissionId: string, newStatus: string) => {
+    setPendingStatus((prev) => ({ ...prev, [submissionId]: newStatus }));
   };
 
   const handleSaveStatus = async (submissionId: string) => {
@@ -154,29 +195,39 @@ const Analytics: React.FC = () => {
       <section id="content">
         <main>
           <h2>Submission Analytics</h2>
-          <Form.Select onChange={(e) => setSelectedSubject(e.target.value)} value={selectedSubject}>
-            <option value="">Select Subject</option>
-            {communications.map((comm) => (
-              <option key={comm.id} value={comm.id}>
-                {comm.subject}
-              </option>
-            ))}
-          </Form.Select>
+          <Select
+            options={communications.map((comm) => ({
+              value: comm.id,
+              label: comm.subject,
+            }))}
+            onChange={(selectedOption) => setSelectedSubject(selectedOption?.value || "")}
+            placeholder="Search or Select Subject"
+            isClearable
+          />
+
+          {selectedSubject && <p>Deadline: {selectedDeadline || "No Deadline"}</p>}
 
           {loading ? (
             <p>Loading data...</p>
-          ) : chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis dataKey="status" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="count" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
           ) : (
-            <p style={{ textAlign: "center", marginTop: "20px" }}>No data available for this subject.</p>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+  <XAxis dataKey="status" />
+  <YAxis allowDecimals={false} />
+  <Tooltip />
+  <Legend />
+  <Bar
+    dataKey="count"
+    name="Submissions"
+    barSize={50} // Adjust bar size if needed
+    isAnimationActive={true}
+  >
+    {chartData.map((entry, index) => (
+      <Cell key={`cell-${index}`} fill={statusColors[entry.status] || "#8884d8"} />
+    ))}
+  </Bar>
+</BarChart>
+            </ResponsiveContainer>
           )}
 
           <h3>Modify Submission Status</h3>
@@ -191,41 +242,38 @@ const Analytics: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {selectedSubject && submissions[selectedSubject] ? (
-                submissions[selectedSubject].length > 0 ? (
-                  submissions[selectedSubject].map((sub) => (
-                    <tr key={sub.id}>
-                      <td>{sub.submittedBy}</td>
-                      <td>{sub.submittedAt ? new Date(sub.submittedAt.seconds * 1000).toLocaleString() : "Not Submitted"}</td>
-                      <td>{sub.status || "No Submission"}</td>
-                      <td>
-                        <Form.Select
-                          value={pendingStatus[sub.id] ?? sub.manualStatus ?? ""}
-                          onChange={(e) => handleStatusChange(sub.id, e.target.value)}
-                        >
-                          <option value="">Select Status</option>
-                          <option value="On Time">On Time</option>
-                          <option value="Late">Late</option>
-                          <option value="Incomplete">Incomplete</option>
-                          <option value="No Submission">No Submission</option>
-                          <option value="For Revision">For Revision</option>
-                        </Form.Select>
-                      </td>
-                      <td>
-                        <Button variant="primary" onClick={() => handleSaveStatus(sub.id)} disabled={!pendingStatus[sub.id]}>
-                          Save
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5}>No submissions found.</td>
+              {selectedSubject && submissions[selectedSubject]?.length > 0 ? (
+                submissions[selectedSubject].map((sub) => (
+                  <tr key={sub.id}>
+                    <td>{users[sub.submittedBy] || "Unknown User"}</td>
+                    <td>
+                      {sub.submittedAt
+                        ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
+                        : "Not Submitted"}
+                    </td>
+                    <td>{sub.autoStatus || "No Submission"}</td>
+                    <td>
+                      <Form.Select
+                        value={pendingStatus[sub.id] ?? sub.manualStatus ?? ""}
+                        onChange={(e) => handleStatusChange(sub.id, e.target.value)}
+                      >
+                        {allStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </td>
+                    <td>
+                      <Button variant="primary" onClick={() => handleSaveStatus(sub.id)}>
+                        Save
+                      </Button>
+                    </td>
                   </tr>
-                )
+                ))
               ) : (
                 <tr>
-                  <td colSpan={5}>Please select a subject.</td>
+                  <td colSpan={5}>No submissions found.</td>
                 </tr>
               )}
             </tbody>
