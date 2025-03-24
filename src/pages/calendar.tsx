@@ -41,7 +41,7 @@ const Calendar: React.FC = () => {
     if (!userId) return;
 
     const commRef = collection(db, "communications");
-    const q = query(commRef, where("recipient", "==", userId));
+    const q = query(commRef, where("recipients", "array-contains", userId));
 
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const updatedEvents = await Promise.all(

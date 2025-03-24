@@ -46,7 +46,7 @@ const Inbox: React.FC = () => {
     if (!userId) return;
 
     const commRef = collection(db, "communications");
-    const q = query(commRef, where("recipient", "==", userId));
+    const q = query(commRef, where("recipients", "array-contains", userId));
 
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setLoading(true);
@@ -55,10 +55,12 @@ const Inbox: React.FC = () => {
         return {
           id: docSnapshot.id,
           createdBy: data.createdBy,
+          recipients: data.recipients, // Now an array
           subject: data.subject,
           createdAt: data.createdAt,
         };
       });
+      
 
       setCommunications(messages);
       setLoading(false);
