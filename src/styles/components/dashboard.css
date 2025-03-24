@@ -220,6 +220,13 @@ ol, ul {
     left: 80px;
 }
 
+.timestamp {
+	font-size: 12px;
+	color: gray;
+	display: block; /* Ensure it appears below the message */
+	margin-top: 2px;
+  }
+  
 
 
 

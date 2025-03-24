@@ -28,28 +28,31 @@ const Communication: React.FC = () => {
       console.log("Fetching users...");
       const usersRef = collection(db, "users");
       const querySnapshot = await getDocs(usersRef);
-
+  
       if (querySnapshot.empty) {
         console.warn("No users found in Firestore.");
       }
-
+  
       const usersList = querySnapshot.docs.map((doc) => {
         const data = doc.data();
-        const fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${
-          data.lname
-        }`.trim();
+        let fullName = "";
+  
+        if (data.fname && data.lname) {
+          fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
+        } else {
+          fullName = data.email || "Unknown User"; // Default to email if full name is missing
+        }
+  
         return { id: doc.id, fullName };
       });
-
+  
       setUsers(usersList);
       console.log("Final User List:", usersList);
     } catch (error) {
-      console.error(
-        "Error fetching users:",
-        error instanceof Error ? error.message : error
-      );
+      console.error("Error fetching users:", error instanceof Error ? error.message : error);
     }
   };
+  
 
   // Ensure users' emails are fetched on component mount
   useEffect(() => {
@@ -257,12 +260,11 @@ const Communication: React.FC = () => {
                     placeholder="Paste Google Drive link"
                     className="form-control form-control-sm w-50"
                     value={inputLink}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || value.startsWith("https://")) {
-                        setInputLink(value);
-                      } else {
+                    onChange={(e) => setInputLink(e.target.value)} // Allow free typing
+                    onBlur={() => {
+                      if (inputLink && !inputLink.startsWith("https://")) {
                         alert("Only secure HTTPS links are allowed.");
+                        setInputLink(""); // Clear invalid input
                       }
                     }}
                   />

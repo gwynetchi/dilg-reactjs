@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { getAuth } from "firebase/auth";
 import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
-import "../styles/components/pages.css";
 
 const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<React.SetStateAction<number>> }) => {
   const [messages, setMessages] = useState<{ sender: string; text: string; timestamp: number }[]>([]);
@@ -15,7 +14,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
   const location = useLocation();
   const isMessagingPage = location.pathname.includes("/message");
 
-  // Delete messages older than 30 minutes
+  // Delete messages older than 30 Days
   const deleteOldMessages = async () => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
     const messagesRef = collection(db, "messages");
@@ -26,6 +25,18 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
       await deleteDoc(doc(db, "messages", docSnap.id));
     });
   };
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+  
 
   // Fetch real-time messages & delete old ones
   useEffect(() => {
@@ -94,6 +105,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
           <div key={index} className="chat-message">
             <strong>{msg.sender}:</strong>
             <span dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
+            <div className="timestamp">{formatTimestamp(msg.timestamp)}</div>
           </div>
         ))}
         <div ref={messagesEndRef} />
