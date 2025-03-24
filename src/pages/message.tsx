@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { getAuth } from "firebase/auth";
 import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
-
 const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<React.SetStateAction<number>> }) => {
   const [messages, setMessages] = useState<{ sender: string; text: string; timestamp: number }[]>([]);
   const [newMessage, setNewMessage] = useState("");
