@@ -109,7 +109,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
           </div>
         ))}
         <div ref={messagesEndRef} />
-      </div>;
+      </div>
       <div className="chat-input">
         <input
           type="text"
