@@ -65,3 +65,17 @@
 .chat-input button:hover {
 	background: darken(var(--blue), 10%);
 }
+
+
+
+.content-layout {
+	transition: margin-left 0.3s ease;
+  }
+  
+  .content-layout.expanded {
+	margin-left: 220px; /* Adjust width based on sidebar size */
+  }
+  
+  .content-layout.collapsed {
+	margin-left: 60px;
+  }

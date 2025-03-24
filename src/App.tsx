@@ -79,6 +79,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
 
   const auth = getAuth();
   const db = getFirestore();
@@ -117,8 +118,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-        {user && role && <Navbar />}
-        <div className="content">
+        {user && role && (
+          <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
+        <div className={`content-layout ${isSidebarOpen ? "expanded" : "collapsed"}`}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
