@@ -6,9 +6,13 @@ import "boxicons/css/boxicons.min.css";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth } from "../firebase";
 
-const Navbar = () => {
+interface NavbarProps {
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [role, setRole] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem("darkMode") === "true");
@@ -41,6 +45,7 @@ const Navbar = () => {
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
       { name: "Team", icon: "bxs-group", path: "/evaluator/team" },
       { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
+      
 
     ],
     LGU: [
@@ -64,19 +69,9 @@ const Navbar = () => {
       { name: "System Settings", icon: "bxs-cog", path: "/admin/settings" },
       { name: "Reports", icon: "bxs-report", path: "/admin/reports" },
       { name: "Message", icon: "bxs-message", path: "/admin/message" },
+      
     ],
   };
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsSidebarOpen(window.innerWidth > 576);
-    };
-
-    window.addEventListener("resize", handleResize);
-    handleResize(); // Call on mount
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     const auth = getAuth();
@@ -156,7 +151,7 @@ const Navbar = () => {
   return (
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
-        <Link to="/" className="brand">
+        <Link to="/dashboards" className="brand">
           <img src="/images/logo.png" alt="Logo" className="brand-logo" />
           <span className="text"></span>
         </Link>
