@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { Link } from "react-scroll";
 // Assets
 import CloseIcon from "../../assets/svg/CloseIcon";
-import LogoIcon from "../../assets/svg/Logo";
+import LogoImage from "../../public/images/logo.png";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -14,9 +14,9 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
     <Wrapper className="animate darkBg" sidebarOpen={sidebarOpen}>
       <SidebarHeader className="flexSpaceCenter">
         <div className="flexNullCenter">
-          <LogoIcon />
+          <img src={LogoImage} alt="DILG-CAVITE Logo" width="50" height="50" />
           <h1 className="whiteColor font20" style={{ marginLeft: "15px" }}>
-            fanatic
+            DILG-CAVITE
           </h1>
         </div>
         <CloseBtn onClick={() => toggleSidebar(!sidebarOpen)} className="animate pointer">
@@ -64,7 +64,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
             smooth={true}
             offset={-60}
           >
-            Projects
+            Videos
           </Link>
         </li>
         <li className="semiBold font15 pointer">
@@ -78,7 +78,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
             smooth={true}
             offset={-60}
           >
-            Blog
+            About Us
           </Link>
         </li>
         <li className="semiBold font15 pointer">
@@ -92,7 +92,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
             smooth={true}
             offset={-60}
           >
-            Pricing
+            Projects
           </Link>
         </li>
         <li className="semiBold font15 pointer">
@@ -112,12 +112,12 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
       </UlStyle>
       <UlStyle className="flexSpaceCenter">
         <li className="semiBold font15 pointer">
-          <a href="/" style={{ padding: "10px 30px 10px 0" }} className="whiteColor">
+          <a href="/login" style={{ padding: "10px 30px 10px 0" }} className="whiteColor">
             Log in
           </a>
         </li>
         <li className="semiBold font15 pointer flexCenter">
-          <a href="/" className="radius8 lightBg" style={{ padding: "10px 15px" }}>
+          <a href="/login" className="radius8 lightBg" style={{ padding: "10px 15px" }}>
             Get Started
           </a>
         </li>

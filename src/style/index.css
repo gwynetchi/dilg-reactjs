@@ -42,7 +42,7 @@
     color: #0B093B;
   }
   a:hover {
-    color: #7620FF;
+    color: #F2B300;
   }
 
   body {
@@ -100,7 +100,7 @@
   }
   .active {
     /*border-bottom: 2px solid #7620FF;*/
-    color: #7620FF;
+    color: #F2B300;
   }
   .tag {
     padding: 5px 10px;
