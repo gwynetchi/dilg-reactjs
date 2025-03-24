@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
-import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  sendEmailVerification,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
@@ -18,25 +12,14 @@ const AuthForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Admin");
-  
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
-
   useEffect(() => {
     setIsVisible(true);
-    onAuthStateChanged(auth, async (user) => {
-      if (user && user.emailVerified) {
-        // Fetch user role from Firestore
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          navigate(`/${userDoc.data().role.toLowerCase()}/dashboard`);
-        }
-      }
-    });
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     if (!successMessage && !error) return; // Prevent running on first load
@@ -77,11 +60,15 @@ const AuthForm = () => {
       const user = userCredential.user;
   
       // Store user details in Firestore (without saving password)
-      await sendEmailVerification(user);
-      console.log("Email verification sent");  
-      setSuccessMessage("✉️ Verification email sent! Please verify your email.");  
+      await setDoc(doc(db, "users", user.uid), { email: user.email, role });
+  
+      console.log("Account Created Successfully");
+  
       // Sign out user immediately to prevent auto-login
       await auth.signOut();
+  
+      // Show success message and switch back to login form
+      setSuccessMessage("✅ Account Created Successfully! Please log in.");
       setLoading(false);
 
       setTimeout(() => {
@@ -104,54 +91,55 @@ const AuthForm = () => {
   
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("Logged in successfully");
+  
+      // Get user info from userCredential instead of auth.currentUser
       const user = userCredential.user;
   
-      // Check if email is verified
-      if (!user.emailVerified) {
-        setError("❌ Please verify your email before logging in.");
+      if (!user) {
+        setError("❌ User authentication failed.");
         setLoading(false);
-        await signOut(auth); // Sign out unverified users
         return;
       }
   
       // Fetch user role from Firestore
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-  
-      let userRole = role; // Default to selected role if not found
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
   
       if (userDoc.exists()) {
-        userRole = userDoc.data().role;
+        const userRole = userDoc.data().role;
         console.log(`User role: ${userRole}`);
+  
+        setSuccessMessage("✅ Logged in successfully!");
+        setLoading(false); // Move this here before navigation
+
+        setTimeout(() => {
+          resetForm();
+          setLoading(false); // Ensure this runs before navigating
+          navigate(`/${userRole.toLowerCase()}/dashboard`);
+        }, 1000);
       } else {
-        // If no role is found, assign a new one
-        await setDoc(userRef, { email: user.email, role: userRole });
-        console.log("User registered in Firestore.");
+        setError("❌ User data not found.");
+        await auth.signOut(); // Sign out if no role is found
+        setLoading(false);
       }
-  
-      setSuccessMessage("✅ Logged in successfully!");
-      setLoading(false);
-  
-      setTimeout(() => {
-        resetForm();
-        navigate(`/${userRole.toLowerCase()}/dashboard`);
-      }, 1000);
     } catch (err: any) {
       console.error(err);
   
-      // Handle different Firebase auth errors
-      const errorMessages: Record<string, string> = {
-        "auth/user-not-found": "❌ No account found with this email.",
-        "auth/wrong-password": "❌ Incorrect password.",
-        "auth/invalid-email": "❌ Invalid email format.",
-        "auth/too-many-requests": "⚠️ Too many failed attempts. Try again later.",
-      };
+      // More specific error handling
+      if (err.code === "auth/user-not-found") {
+        setError("❌ No account found with this email.");
+      } else if (err.code === "auth/wrong-password") {
+        setError("❌ Incorrect password.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("❌ Invalid email format.");
+      } else {
+        setError("❌ Error logging in. Please try again.");
+      }
   
-      setError(errorMessages[err.code] || "❌ Error logging in. Please try again.");
       setLoading(false);
     }
   };
-  
   
   return (
     <div className={styles.authWrapper}>
