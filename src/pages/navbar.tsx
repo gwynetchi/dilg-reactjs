@@ -27,38 +27,39 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
   const menuItems: Record<string, { name: string; icon: string; path: string }[]> = {
     Viewer: [
-      { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
       { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
-      { name: "Message", icon: "bxs-message", path: "/viewer/message" },
       { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
+      { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
+      { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
+      { name: "Message", icon: "bxs-message", path: "/viewer/message" }, // Included at the end if present
     ],
     Evaluator: [
-      { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
+      { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
+      { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
-      { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
-      { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
+      { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
+      { name: "Message", icon: "bxs-message", path: "/evaluator/message" }, // Included at the end if present
     ],
     LGU: [
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
+      { name: "Profile", icon: "bxs-id-card", path: "/lgu/profile" },
+      { name: "Inbox", icon: "bxs-message", path: "/lgu/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/lgu/inbox" },
-      { name: "Message", icon: "bxs-message", path: "/lgu/message" },
-      { name: "Profile", icon: "bxs-id-card", path: "/lgu/profile" },
+      { name: "Message", icon: "bxs-message", path: "/lgu/message" }, // Included at the end if present
     ],
     Admin: [
+      { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
+      { name: "Profile", icon: "bxs-id-card", path: "/admin/profile" },
+      { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
-      { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
-      { name: "Message", icon: "bxs-message", path: "/admin/message" },
-      { name: "Profile", icon: "bxs-id-card", path: "/admin/profile" },
+      { name: "Message", icon: "bxs-message", path: "/admin/message" }, // Included at the end if present
     ],
   };
+  
 
   useEffect(() => {
     const auth = getAuth();

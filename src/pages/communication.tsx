@@ -1,7 +1,15 @@
 import { getAuth } from "firebase/auth"; // Import Firebase auth
 import React, { useState, useEffect } from "react";
 import Select, { MultiValue } from "react-select";
-import { doc, getDoc, setDoc, deleteDoc, collection, addDoc, getDocs } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  collection,
+  addDoc,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 const Communication: React.FC = () => {
@@ -115,32 +123,33 @@ const Communication: React.FC = () => {
     value: user.id,
     label: user.fullName,
   }));
-  const handleRecipientChange = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
-    setRecipients(selectedOptions.map(option => option.value));
+  const handleRecipientChange = (
+    selectedOptions: MultiValue<{ value: string; label: string }>
+  ) => {
+    setRecipients(selectedOptions.map((option) => option.value));
   };
-  
-  
+
   const handleSubmit = async () => {
     if (!subject || recipients.length === 0 || !deadline || !remarks) {
       alert("Please fill in all fields before sending.");
       return;
     }
-  
+
     if (inputLink && !inputLink.startsWith("https://")) {
       alert("Only HTTPS links are allowed.");
       return;
     }
-      setLoading(true);
+    setLoading(true);
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-  
+
       if (!user) {
         alert("You must be logged in to send a communication.");
         setLoading(false);
         return;
       }
-  
+
       const communicationRef = collection(db, "communications");
       await addDoc(communicationRef, {
         subject,
@@ -151,9 +160,7 @@ const Communication: React.FC = () => {
         createdBy: user.uid,
         createdAt: new Date(),
       });
-      
-      
-  
+
       alert("Message sent successfully!");
       setSubject("");
       setRecipients([]); // Reset selection
@@ -169,7 +176,7 @@ const Communication: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="dashboard-container">
       <section id="content">
@@ -178,60 +185,80 @@ const Communication: React.FC = () => {
             <div className="left">
               <h1>Communication</h1>
               <ul className="breadcrumb">
-                <li><a href="#">LGU Field Officers Communication</a></li>
-                <li><i className="bx bx-chevron-right"></i></li>
-                <li><a className="active" href="#">Home</a></li>
+                <li>
+                  <a href="#">LGU Field Officers Communication</a>
+                </li>
+                <li>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
+                <li>
+                  <a className="active" href="#">
+                    Home
+                  </a>
+                </li>
               </ul>
             </div>
-            <a href="#" className="btn-download">
-              <i className="bx bxs-cloud-download bx-fade-down-hover"></i>
-              <span className="text">PDF Export</span>
-            </a>
+            
           </div>
 
           <div className="table-data">
             <div className="order">
               <div className="head">
                 <h3>Announcement</h3>
-                <i className="bx bx-search"></i>
-                <i className="bx bx-filter"></i>
+
+                <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="btn-send btn btn-primary btn-lg w-40"
+            > 
+              <i className="bx bxs-send bx-tada-hover"></i>
+              <span className="text">{loading ? "Sending..." : "Send"}</span>
+            </button>
               </div>
 
               <div className="input-container">
                 <div className="input-box">
                   <label>Subject:</label>
-                  <input type="text" placeholder="Enter subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+                  <input
+                    type="text"
+                    className="form-control form-control-sm w-50"
+                    placeholder="Enter subject"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                  />
                 </div>
 
                 <div className="input-box">
-  <label>Recipients:</label>
-  <Select
-  options={options}
-  isMulti
-  value={options.filter(option => recipients.includes(option.value))}
-  onChange={handleRecipientChange}
-  className="basic-multi-select"
-  classNamePrefix="select"
-  placeholder="Select recipients..."
-/>
-
-</div>
+                  <label>Recipients:</label>
+                  <Select
+                    options={options}
+                    isMulti
+                    value={options.filter((option) =>
+                      recipients.includes(option.value)
+                    )}
+                    onChange={handleRecipientChange}
+                    className="basic-multi-select "
+                    classNamePrefix="select"
+                    placeholder="Select recipients..."
+                  />
+                </div>
 
                 <div className="input-box">
                   <label>Deadline:</label>
-                  <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-                  </div>
-
-                <div className="input-box">
-                  <label>Remarks/Comments:</label>
-                  <textarea placeholder="Enter remarks or comments" value={remarks} onChange={(e) => setRemarks(e.target.value)}></textarea>
+                  <input
+                    type="datetime-local"
+                    className="form-control form-control-sm w-50"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                  />
                 </div>
 
                 <div className="input-box">
                   <label>Attachment/Link:</label>
                   <input
                     type="text"
-                    placeholder="Paste or type Google Drive link"
+                    placeholder="Paste Google Drive link"
+                    className="form-control form-control-sm w-50"
                     value={inputLink}
                     onChange={(e) => setInputLink(e.target.value)} // Allow free typing
                     onBlur={() => {
@@ -243,23 +270,46 @@ const Communication: React.FC = () => {
                   />
                 </div>
               </div>
-              </div>
-              {previewLink && (
-                <div className="google-file-preview">
-                  {isDriveFolder ? (
-                    <p><strong>Google Drive Folder:</strong> <a href={previewLink} target="_blank" rel="noopener noreferrer">Open Folder</a></p>
-                  ) : (
-                    <iframe src={previewLink} width="100%" height="400px" style={{ border: "none" }} title="Google File Preview"></iframe>
-                  )}
+              <div className="input-box">
+                  <label>Remarks/Comments:</label>
+                  <textarea
+                    placeholder="Enter remarks or comments"
+                    value={remarks}
+                    className="form-control form-control-sm w-50"
+                    onChange={(e) => setRemarks(e.target.value)}
+                  ></textarea>
                 </div>
-              )}
-
-              <button className="btn-send" onClick={handleSubmit} disabled={loading}>
-                <i className="bx bxs-send bx-tada-hover"></i>
-                <span className="text">{loading ? "Sending..." : "Send"}</span>
-              </button>
+              <br></br>
+             
             </div>
-          
+            {previewLink && (
+              <div className="google-file-preview">
+                {isDriveFolder ? (
+                  <p>
+                    <strong>Google Drive Folder:</strong>{" "}
+                    <a
+                      href={previewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open Folder
+                    </a>
+                  </p>
+                ) : (
+                  <iframe
+                    src={previewLink}
+                    width="100%"
+                    height="400px"
+                    style={{ border: "none" }}
+                    title="Google File Preview"
+                  ></iframe>
+                )}
+              </div>
+              
+            )}
+
+            
+          </div>
         </main>
       </section>
     </div>
