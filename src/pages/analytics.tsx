@@ -248,7 +248,7 @@ const Analytics: React.FC = () => {
                   <Cell key={`auto-cell-${index}`} fill={statusColors[entry.status] + "80"} /> // Lightened
                 ))}
               </Bar>
-          
+                
               {/* Manual Status Bar (Darker Color) */}
               <Bar dataKey="manualCount" name="Evaluator Status" barSize={40} isAnimationActive={true}>
                 {chartData.map((entry, index) => (

@@ -31,10 +31,10 @@ const Wrapper = styled.button<WrapperProps>`
   padding: 15px;
   outline: none;
   color: ${(props) => (props.border ? "#707070" : "#fff")};
-  :hover {
+  &:hover {
     background-color: ${(props) => (props.border ? "transparent" : "#ffce1b")};
     border: 1px solid #ffce1b;
-    color: ${(props) => (props.border ? "#0B093B" : "#fff")};
+    color: ${(props) => (props.border ? "#ffce1b" : "#fff")};
   }
 `;
 

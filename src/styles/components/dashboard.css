@@ -179,8 +179,6 @@ ol, ul {
 #sidebar .side-menu.bottom li:nth-last-of-type(2) {
   bottom: 40px; /* İkinci son öğeyi yukarı kaydır */
 }
-/* SIDEBAR */
-
 
 /* Example styles for the todo input section */
 .todo-input {

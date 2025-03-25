@@ -1,12 +1,12 @@
 import styled from "styled-components";
 // Assets
-import RollerIcon from "../../assets/svg/Services/RollerIcon";
-import MonitorIcon from "../../assets/svg/Services/MonitorIcon";
-import BrowserIcon from "../../assets/svg/Services/BrowserIcon";
+import CDDIcon from "../../assets/img/dilgsections/cddlogo.png";
+import FADIcon from "../../assets/img/dilgsections/fadlogo.png";
+import MEDIcon from "../../assets/img/dilgsections/medlogo.png";
 import PrinterIcon from "../../assets/svg/Services/PrinterIcon";
 
 interface ServiceBoxProps {
-  icon: "roller" | "monitor" | "browser" | "printer";
+  icon: "CDDlogo" | "FADlogo" | "MEDlogo" | "printer";
   title: string;
   subtitle: string;
 }
@@ -15,20 +15,20 @@ export default function ServiceBox({icon, title, subtitle}: ServiceBoxProps) {
   let getIcon;
 
   switch (icon) {
-    case "roller":
-      getIcon = <RollerIcon />;
+    case "CDDlogo":
+      getIcon = <img src={CDDIcon} alt="CDD Logo" className="section-icon" />;
       break;
-    case "monitor":
-      getIcon = <MonitorIcon />;
+    case "FADlogo":
+      getIcon = <img src={FADIcon} alt="FAD Logo" className="section-icon" />;
       break;
-    case "browser":
-      getIcon = <BrowserIcon />;
+    case "MEDlogo":
+      getIcon = <img src={MEDIcon} alt="MED Logo" className="section-icon" />;
       break;
     case "printer":
       getIcon = <PrinterIcon />;
       break;
     default:
-      getIcon = <RollerIcon />;
+      getIcon = <FADIcon />;
       break;
   }
 
@@ -46,15 +46,21 @@ const Wrapper = styled.div`
   width: 100%;
 `;
 const IconStyle = styled.div`
+  .section-icon {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+  }
   @media (max-width: 860px) {
     margin: 0 auto;
   }
+
 `;
 const TitleStyle = styled.h2`
   width: 100%;
   max-width: 300px;
   margin: 0 auto;
-  padding: 40px 0;
+  padding: 30px 0;
   @media (max-width: 860px) {
     padding: 20px 0;
   }

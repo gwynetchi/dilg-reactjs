@@ -167,10 +167,6 @@ const Inbox: React.FC = () => {
 
           <div className="table-data">
             <div className="order">
-              <div className="head">
-                <h3>Announcements</h3>
-              </div>
-
               <div className="inbox-container">
                 <h2>Inbox</h2>
                 {loading ? (

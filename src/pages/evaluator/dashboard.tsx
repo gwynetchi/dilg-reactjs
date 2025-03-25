@@ -51,7 +51,7 @@ const Dashboard = () => {
 
     // Function to handle adding a new task to Firestore
     const addTask = async () => {
-        if (newTask.trim()) {
+        if (newTask.trim() && currentUser?.id) {
             const newTaskObj = { text: newTask, completed: false, userId: currentUser.id };
             try {
                 const docRef = await addDoc(collection(db, 'tasks'), newTaskObj);
@@ -62,7 +62,7 @@ const Dashboard = () => {
             }
         }
     };
-
+    
     // Function to toggle the completion status of a task in Firestore
     const toggleTaskCompletion = async (id: string) => {
         const taskToUpdate = tasks.find((task) => task.id === id);
@@ -137,6 +137,7 @@ const Dashboard = () => {
                                 tasks.map(({ id, text, completed }) => (
                                     <li key={id} className={completed ? "completed" : "not-completed"}>
                                         <p onClick={() => toggleTaskCompletion(id)}>{text}</p>
+                                            <p onClick={() => toggleTaskCompletion(id)}>{text}</p>
                                         <i className='bx bx-dots-vertical-rounded' onClick={() => removeTask(id)}></i>
                                     </li>
                                 ))

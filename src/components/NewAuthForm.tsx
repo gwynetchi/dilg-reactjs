@@ -188,7 +188,7 @@ const AuthForm = () => {
                 <div className={styles.inputBox}>
                   <select value={role} onChange={(e) => setRole(e.target.value)} required>
                     <option value="Admin">Admin</option>
-                    <option value="LGU">LGU User</option>
+                    <option value="LGU">LGU</option>
                     <option value="Viewer">Viewer</option>
                     <option value="Evaluator">Evaluator</option>
                   </select>

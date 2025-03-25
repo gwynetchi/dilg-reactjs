@@ -1,15 +1,28 @@
 import styled from "styled-components";
+import { Link } from "react-scroll";
+import { useEffect, useState } from "react";
 // Components
 import ClientSlider from "../Elements/ClientSlider";
 import ServiceBox from "../Elements/ServiceBox";
 import FullButton from "../Buttons/FullButton";
 // Assets
-import AddImage1 from "../../assets/img/add/1.png";
-import AddImage2 from "../../assets/img/add/2.png";
-import AddImage3 from "../../assets/img/add/3.png";
-import AddImage4 from "../../assets/img/add/4.png";
+import AddImage1 from "../../assets/img/add/pd1.png";
+import AddImage2 from "../../assets/img/add/pic2.png";
+import AddImage3 from "../../assets/img/add/pic3.png";
+import AddImage4 from "../../assets/img/add/pic4.png";
+
 
 export default function Services() {
+  const [y, setY] = useState(window.scrollY);
+  useEffect(() => {
+      window.addEventListener("scroll", () => setY(window.scrollY));
+      return () => {
+        window.removeEventListener("scroll", () => setY(window.scrollY));
+      };
+    }, [y]);
+
+
+
   return (
     <Wrapper id="services">
       <div className="lightBg" style={{ padding: "50px 0" }}>
@@ -20,37 +33,35 @@ export default function Services() {
       <div className="whiteBg" style={{ padding: "60px 0" }}>
         <div className="container">
           <HeaderInfo>
-            <h1 className="font40 extraBold">Our Awesome Services</h1>
+            <h1 className="font40 extraBold">DILG-Cavite's Divisions:</h1>
             <p className="font13">
-              Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut
+            The Department of the Interior and Local Government (DILG) is composed of three key divisions.
               <br />
-              labore et dolore magna aliquyam erat, sed diam voluptua.
+              Each plays a vital role in ensuring <strong>effective governance, accountability, and support</strong> for local government units.
+              
             </p>
           </HeaderInfo>
           <ServiceBoxRow className="flex">
             <ServiceBoxWrapper>
               <ServiceBox
-                icon="roller"
-                title="Graphic Design"
-                subtitle="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+                icon="MEDlogo"
+                title="Monitoring and Evaluation Division (MED)"
+                subtitle="Oversees the performance of local government units (LGUs) by implementing monitoring, evaluation, and assessment programs to ensure effective governance and service delivery."
               />
             </ServiceBoxWrapper>
             <ServiceBoxWrapper>
               <ServiceBox
-                icon="monitor"
-                title="Web Design"
-                subtitle="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore."
+                icon="CDDlogo"
+                title="Capability Development Division (CDD)"
+                subtitle="Enhances the skills and competencies of local government officials and employees through training programs, technical assistance, and capacity-building initiatives to strengthen local governance."
               />
             </ServiceBoxWrapper>
             <ServiceBoxWrapper>
               <ServiceBox
-                icon="browser"
-                title="Development"
-                subtitle="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat."
+                icon="FADlogo"
+                title="Financial and Administrative Division (FAD)"
+                subtitle="Nangangasiwa sa pinansyal, human resource, at administratibong operasyon upang matiyak ang maayos at transparent na paggamit ng mga pondo at mapagkukunan ng ahensya."
               />
-            </ServiceBoxWrapper>
-            <ServiceBoxWrapper>
-              <ServiceBox icon="printer" title="Print" subtitle="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor." />
             </ServiceBoxWrapper>
           </ServiceBoxRow>
         </div>
@@ -58,18 +69,20 @@ export default function Services() {
           <div className="container">
             <Advertising className="flexSpaceCenter">
               <AddLeft>
-                <h4 className="font15 semiBold">A few words about company</h4>
-                <h2 className="font40 extraBold">A Study of Creativity</h2>
+                <h4 className="font15 semiBold">A few words about</h4>
+                <h2 className="font40 extraBold">Strengthening Local Governance</h2>
                 <p className="font12">
-                  Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed
-                  diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.
+                The Department of the Interior and Local Government (DILG) Cavite is committed to fostering transparency, efficiency, and innovation in local governance. Through monitoring, capacity-building, and financial oversight, we empower communities for sustainable development and responsive leadership.
                 </p>
                 <ButtonsRow className="flexNullCenter" style={{ margin: "30px 0"}}>
                   <div style={{ width: "190px" }}>
-                    <FullButton title="Get Started" action={() => alert("clicked")} border={undefined} />
+                    <FullButton title="Visit our FB page" action={() => window.open("https://www.facebook.com/dilgcavite", "_blank")} border={undefined} />
                   </div>
                   <div style={{ width: "190px", marginLeft: "15px" }}>
-                    <FullButton title="Contact Us" action={() => alert("clicked")} border />
+                    {/* <FullButton title="Contact Us" action={() => alert("clicked")} border /> */}
+                    <Link to="contact" spy={true} smooth={true} offset={-60} duration={500}>
+                      <FullButton title="Contact Us" border />
+                    </Link>
                   </div>
                 </ButtonsRow>
               </AddLeft>
@@ -110,9 +123,9 @@ const ServiceBoxRow = styled.div`
   }
 `;
 const ServiceBoxWrapper = styled.div`
-  width: 20%;
+  width: 45%;
   margin-right: 5%;
-  padding: 80px 0;
+  padding: 40px 0;
   @media (max-width: 860px) {
     width: 100%;
     text-align: center;
