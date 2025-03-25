@@ -61,6 +61,7 @@ const Inbox: React.FC = () => {
           recipients: data.recipients,
           createdAt: data.createdAt || serverTimestamp(), // Ensure timestamp exists
           seenBy: data.seenBy || [], // Add default empty array for seenBy
+          subject: data.subject || "No Subject", // Make sure subject is included, default to "No Subject" if missing
         };
       });
 
@@ -211,7 +212,6 @@ const Inbox: React.FC = () => {
                               <span style={{ color: "red" }}>No Timestamp</span>
                             )}
                           </td>
-                          console.log("Messages received:", communications);
 
                           <td>
                             <button
