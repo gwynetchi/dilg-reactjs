@@ -50,7 +50,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
             smooth={true}
             offset={-60}
           >
-            Services
+            About Us
           </Link>
         </li>
         <li className="semiBold font15 pointer">
@@ -78,7 +78,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
             smooth={true}
             offset={-60}
           >
-            About Us
+            Blogs
           </Link>
         </li>
         <li className="semiBold font15 pointer">
