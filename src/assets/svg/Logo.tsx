@@ -15,3 +15,4 @@ function SvgComponent(props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) 
 }
 
 export default SvgComponent;
+
