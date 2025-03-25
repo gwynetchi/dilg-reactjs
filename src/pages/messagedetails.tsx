@@ -96,9 +96,6 @@ const MessageDetails: React.FC = () => {
       alert("Failed to mark as submitted.");
     }
   };
-  
-  
-
 
   if (loading) return <p>Loading message details...</p>;
   if (!message) return <p>Message not found.</p>;
