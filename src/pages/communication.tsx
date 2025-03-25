@@ -205,8 +205,6 @@ const Communication: React.FC = () => {
           <div className="table-data">
             <div className="order">
               <div className="head">
-                <h3>Announcement</h3>
-
                 <button
               onClick={handleSubmit}
               disabled={loading}
