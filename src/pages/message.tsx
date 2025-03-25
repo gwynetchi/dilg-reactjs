@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { getAuth } from "firebase/auth";
 import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
+import DOMPurify from "dompurify";
+
 const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<React.SetStateAction<number>> }) => {
   const [messages, setMessages] = useState<{ sender: string; text: string; timestamp: number }[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -35,7 +37,6 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
       hour12: true,
     });
   };
-  
 
   // Fetch real-time messages & delete old ones
   useEffect(() => {
@@ -92,9 +93,14 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
   // Function to format messages with clickable links
   const formatMessage = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+    const formattedText = text.replace(
+      urlRegex,
+      (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
+  
+    return DOMPurify.sanitize(formattedText);
   };
-
+  
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
