@@ -21,7 +21,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem("darkMode") === "true");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const location = useLocation();
@@ -94,10 +93,13 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         setUserRole(null);
       }
     });
-    
+
     return () => unsubscribe();
   }, []);
-
+  useEffect(() => {
+    console.log("Current User ID:", userId);
+  }, [userId]);
+  
   useEffect(() => {
     if (!userRole) return;
 
@@ -136,11 +138,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
     fetchUnreadMessages();
   }, [userRole]);
-
-  useEffect(() => {
-    document.body.classList.toggle("dark", isDarkMode);
-    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
 
   const handleEventClick = async (clickInfo: any) => {
     const messageId = clickInfo.event.extendedProps.messageId;
@@ -285,13 +282,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
             </button>
           </form>
 
-          <input type="checkbox" id="switch-mode" hidden checked={isDarkMode} onChange={() => setIsDarkMode(!isDarkMode)} />
-          <label className="switch-lm" htmlFor="switch-mode">
-            <i className="bx bxs-moon"></i>
-            <i className="bx bx-sun"></i>
-            <div className="ball"></div>
-          </label>
-
           <div className="position-relative" ref={notificationMenuRef}>
             <button className="btn notification" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
               <i className="bx bxs-bell bx-tada-hover"></i>
@@ -318,7 +308,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
                           <p><strong>Subject:</strong> {message.subject}</p>
                           <p>{message.content}</p>
                           <p><strong>Deadline:</strong> {message.deadline?.toDate ? new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}</p>
-                          <span>{message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() :  "No Timestamp"}</span>
+                          <span><strong>Sent: </strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() :  "No Timestamp"}  </span>
                         </div>
                       </Link>
                     </li>
