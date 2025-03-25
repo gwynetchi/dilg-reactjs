@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, getDocs, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
 import DOMPurify from "dompurify";
 
@@ -15,9 +15,8 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
   const location = useLocation();
   const isMessagingPage = location.pathname.includes("/message");
 
-  // Delete messages older than 30 Days
   const deleteOldMessages = async () => {
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const messagesRef = collection(db, "messages");
     const oldMessagesQuery = query(messagesRef, where("timestamp", "<", thirtyDaysAgo));
 
@@ -26,6 +25,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
       await deleteDoc(doc(db, "messages", docSnap.id));
     });
   };
+
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleString("en-US", {
@@ -38,19 +38,24 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
     });
   };
 
-  // Fetch real-time messages & delete old ones
   useEffect(() => {
-    deleteOldMessages(); // Cleanup old messages on load
+    deleteOldMessages();
 
     const messagesRef = collection(db, "messages");
     const q = query(messagesRef, orderBy("timestamp", "asc"));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messagesData = snapshot.docs.map((doc) => ({
-        sender: doc.data().sender,
-        text: doc.data().text,
-        timestamp: doc.data().timestamp,
-      }));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const messagesData = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          return {
+            sender: data.sender,
+            text: data.text,
+            timestamp: data.timestamp,
+          };
+        })
+      );
+
       setMessages(messagesData);
 
       if (!isMessagingPage) {
@@ -68,17 +73,41 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const fetchUserFullName = async (uid: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return data.fname && data.lname
+          ? `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`
+          : auth.currentUser?.email || "Anonymous";
+      }
+    } catch (error) {
+      console.error("Error fetching user full name:", error);
+    }
+    return auth.currentUser?.email || "Anonymous";
+  };
+
   const sendMessage = async () => {
     if (newMessage.trim() === "") return;
     const messageToSend = newMessage;
     setNewMessage("");
 
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        setError("You must be logged in to send a message.");
+        return;
+      }
+
+      const fullName = await fetchUserFullName(user.uid);
+
       await addDoc(collection(db, "messages"), {
-        sender: auth.currentUser?.email || "Anonymous",
+        sender: fullName,
         text: messageToSend,
         timestamp: Date.now(),
       });
+
       setError(null);
 
       if (!isMessagingPage) {
@@ -90,17 +119,16 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
     }
   };
 
-  // Function to format messages with clickable links
   const formatMessage = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const formattedText = text.replace(
       urlRegex,
       (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
     );
-  
+
     return DOMPurify.sanitize(formattedText);
   };
-  
+
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
