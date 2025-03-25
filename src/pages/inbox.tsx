@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, doc, onSnapshot } from "firebase/firestore";
+import { collection, query, where, doc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
+import { updateDoc, arrayUnion, deleteDoc } from "firebase/firestore";
 
 const Inbox: React.FC = () => {
   interface Communication {
+    seenBy: any;
     id: string;
     createdBy: string;
     subject?: string;
     createdAt?: {
       seconds: number;
-    };
+      nanoseconds?: number; // Optional for Firestore compatibility
+    } | null;
   }
 
   const [communications, setCommunications] = useState<Communication[]>([]);
@@ -55,12 +58,11 @@ const Inbox: React.FC = () => {
         return {
           id: docSnapshot.id,
           createdBy: data.createdBy,
-          recipients: data.recipients, // Now an array
-          subject: data.subject,
-          createdAt: data.createdAt,
+          recipients: data.recipients,
+          createdAt: data.createdAt || serverTimestamp(), // Ensure timestamp exists
+          seenBy: data.seenBy || [], // Add default empty array for seenBy
         };
       });
-      
 
       setCommunications(messages);
       setLoading(false);
@@ -77,18 +79,37 @@ const Inbox: React.FC = () => {
     return () => unsubscribe();
   }, [userId]);
 
+  // Function to delete a message
+  const deleteMessage = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+
+    try {
+      await deleteDoc(doc(db, "communications", id));
+      setCommunications((prev) => prev.filter((msg) => msg.id !== id));
+      console.log("Message deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
   // Listen for sender name updates in real-time
   const listenToSenderProfile = (senderId: string) => {
     const senderRef = doc(db, "users", senderId);
     const unsubscribeSender = onSnapshot(senderRef, (senderSnap) => {
       if (senderSnap.exists()) {
         const senderData = senderSnap.data();
-        const senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
-        
+        const { fname, mname, lname, email } = senderData;
+
+        // Check if at least one name field is set
+        const hasName = fname || mname || lname;
+        const senderDisplayName = hasName
+          ? `${fname || ""} ${mname ? mname + " " : ""}${lname || ""}`.trim()
+          : email || "Unknown Email"; // Use email if name is missing
+
         // Update senderNames state
         setSenderNames((prev) => ({
           ...prev,
-          [senderId]: senderName,
+          [senderId]: senderDisplayName,
         }));
       }
     });
@@ -97,9 +118,9 @@ const Inbox: React.FC = () => {
   };
 
   // Function to open message based on role
-  const openMessage = (id: string) => {
-    if (!userRole) {
-      console.error("User role not found.");
+  const openMessage = async (id: string) => {
+    if (!userRole || !userId) {
+      console.error("User role or ID not found.");
       return;
     }
 
@@ -110,7 +131,17 @@ const Inbox: React.FC = () => {
       Admin: "admin",
     };
 
-    navigate(`/${rolePaths[userRole] || "viewer" || "evaluator" || "admin" || "lgu"}/communication/${id}`);
+    const messageRef = doc(db, "communications", id);
+
+    try {
+      await updateDoc(messageRef, {
+        seenBy: arrayUnion(userId), // Add the user ID to "seenBy"
+      });
+    } catch (error) {
+      console.error("Error marking message as seen:", error);
+    }
+
+    navigate(`/${rolePaths[userRole] || "viewer"}/inbox/${id}`);
   };
 
   return (
@@ -132,18 +163,12 @@ const Inbox: React.FC = () => {
                 </li>
               </ul>
             </div>
-            <button className="btn-download">
-              <i className="bx bxs-cloud-download bx-fade-down-hover"></i>
-              <span className="text">PDF Export</span>
-            </button>
           </div>
 
           <div className="table-data">
             <div className="order">
               <div className="head">
                 <h3>Announcements</h3>
-                <i className="bx bx-search"></i>
-                <i className="bx bx-filter"></i>
               </div>
 
               <div className="inbox-container">
@@ -159,6 +184,7 @@ const Inbox: React.FC = () => {
                         <th>Sender</th>
                         <th>Subject</th>
                         <th>Date</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -166,14 +192,41 @@ const Inbox: React.FC = () => {
                         <tr
                           key={msg.id}
                           onClick={() => openMessage(msg.id)}
-                          style={{ cursor: "pointer" }}
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold", // Bold if unread
+                            backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5", // Highlight unread
+                          }}
                         >
                           <td>{senderNames[msg.createdBy] || "Loading..."}</td>
                           <td>{msg.subject}</td>
                           <td>
-                            {msg.createdAt
-                              ? new Date(msg.createdAt.seconds * 1000).toLocaleString()
-                              : "N/A"}
+                            {msg.createdAt && typeof msg.createdAt.seconds === "number" ? (
+                              new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: true,
+                              })
+                            ) : (
+                              <span style={{ color: "red" }}>No Timestamp</span>
+                            )}
+                          </td>
+                          console.log("Messages received:", communications);
+
+                          <td>
+                            <button
+                              className="delete-btn"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent row click event
+                                deleteMessage(msg.id);
+                              }}
+                            >
+                              🗑️ Delete
+                            </button>
                           </td>
                         </tr>
                       ))}

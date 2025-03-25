@@ -1,38 +1,42 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { auth } from "../firebase";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import { useLocation } from "react-router-dom";
+
 interface NavbarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 }
 
-
 const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
-  const [role, setRole] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userProfilePic, setUserProfilePic] = useState<string>("");
+
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem("darkMode") === "true");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const location = useLocation();
+
   useEffect(() => {
-    if (role) {
-      // Find the menu item that matches the current path
-      const currentItem = menuItems[role].find((item) => location.pathname.includes(item.path));
-      
+    if (userRole && menuItems[userRole]) {
+      const currentItem = menuItems[userRole].find((item) => location.pathname.startsWith(item.path));
       if (currentItem) {
-        setActiveMenu(currentItem.name); // Set the active menu item based on the route
+        setActiveMenu(currentItem.name);
       }
     }
-  }, [location.pathname, role]); // Run when the route or role changes
+  }, [location.pathname, userRole]);
   
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredMenuItems, setFilteredMenuItems] = useState<any[]>([]);
+
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -43,7 +47,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
       { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
-      { name: "Message", icon: "bxs-message", path: "/viewer/message" }, // Included at the end if present
+      { name: "Message", icon: "bxs-message", path: "/viewer/message" },
     ],
     Evaluator: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
@@ -52,7 +56,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
-      { name: "Message", icon: "bxs-message", path: "/evaluator/message" }, // Included at the end if present
+      { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
@@ -60,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Inbox", icon: "bxs-message", path: "/lgu/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
-      { name: "Message", icon: "bxs-message", path: "/lgu/message" }, // Included at the end if present
+      { name: "Message", icon: "bxs-message", path: "/lgu/message" },
     ],
     Admin: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
@@ -68,37 +72,116 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
-      { name: "Message", icon: "bxs-message", path: "/admin/message" }, // Included at the end if present
+      { name: "Message", icon: "bxs-message", path: "/admin/message" },
     ],
   };
-  
 
+  // Track authenticated user and fetch role
   useEffect(() => {
-    const auth = getAuth();
-    const db = getFirestore();
-
-    const fetchUserRole = async (uid: string) => {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        setRole(userDoc.data().role); // Assuming role is stored in Firestore
-      }
-    };
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        fetchUserRole(user.uid);
+        setUserId(user.uid);
+
+        // Fetch user role from Firestore
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setUserRole(userSnap.data().role);
+          setUserProfilePic(userSnap.data().profilePic || "https://placehold.co/600x400/png"); // Default profile image if none available
+        }
       } else {
-        setRole(null);
+        setUserId(null);
+        setUserRole(null);
       }
     });
-
+    
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!userRole) return;
+
+    const fetchUnreadMessages = () => {
+      const messagesRef = collection(db, "communications");
+      const q = query(messagesRef, where("recipients", "array-contains", auth.currentUser?.uid));
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        let unread = 0;
+        const newUnseenMessages: any[] = [];
+
+        querySnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          const message = {
+            id: doc.id,
+            sender: data.sender,          // Sender of the message
+            deadline: data.deadline,      // Deadline of the message
+            subject: data.subject,        // Subject of the message
+            content: data.content,        // Message content
+            timestamp: data.timestamp,    // Timestamp of when it was sent
+            ...data, // Include all other fields from the document
+          };
+
+          if (!data.seenBy?.includes(auth.currentUser?.uid)) {
+            unread++;
+            newUnseenMessages.push(message); // Add the entire message details to the list
+          }
+        });
+
+        setUnreadCount(unread); // Set the unread message count
+        setUnreadMessages(newUnseenMessages); // Store the message details in state
+      });
+
+      return () => unsubscribe();
+    };
+
+    fetchUnreadMessages();
+  }, [userRole]);
 
   useEffect(() => {
     document.body.classList.toggle("dark", isDarkMode);
     localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
   }, [isDarkMode]);
+
+  const handleEventClick = async (clickInfo: any) => {
+    const messageId = clickInfo.event.extendedProps.messageId;
+    if (!userRole) {
+      console.error("User role not found.");
+      return;
+    }
+  
+    // Define role-based paths
+    const rolePaths: { [key: string]: string } = {
+      Evaluator: "evaluator",
+      Viewer: "viewer",
+      LGU: "lgu",
+      Admin: "admin",
+    };
+  
+    const rolePath = rolePaths[userRole] || "viewer"; // Default to "viewer" if role is unknown
+    navigate(`/${rolePath}/inbox/${messageId}`);
+  
+    // Mark the notification as read by adding the current user's ID to the "seenBy" array in Firestore
+    try {
+      const messageRef = doc(db, "communications", messageId);
+      const messageDoc = await getDoc(messageRef);
+  
+      if (messageDoc.exists()) {
+        const data = messageDoc.data();
+        const seenBy = data?.seenBy || [];
+  
+        // Check if the user has already seen this message
+        if (!seenBy.includes(auth.currentUser?.uid)) {
+          // Add current user to "seenBy" array
+          await updateDoc(messageRef, {
+            seenBy: [...seenBy, auth.currentUser?.uid],
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+    }
+  };
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -110,12 +193,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (role) {
-      setFilteredMenuItems(menuItems[role].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase())));
-    }
-  }, [role, searchQuery]);
 
   const handleLogout = async () => {
     try {
@@ -133,10 +210,9 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       const messagesRef = collection(db, "messages");
       const q = query(messagesRef, where("sender", "==", searchQuery), where("text", "array-contains", searchQuery));
       const querySnapshot = await getDocs(q);
-      const inboxResults = querySnapshot.docs.map((doc) => doc.data()); 
-      // Search for sidebar items
-      const filteredSidebarItems = role
-        ? menuItems[role].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      const inboxResults = querySnapshot.docs.map((doc) => doc.data());
+      const filteredSidebarItems = userRole
+        ? menuItems[userRole].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : [];
       navigate(`/search?query=${searchQuery}`, { state: { filteredSidebarItems, inboxResults } });
     }
@@ -146,7 +222,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     setIsSearchOpen(prevState => !prevState);
   };
 
-  if (!role) return null;
+  if (!userRole) return null;
 
   return (
     <div className="d-flex">
@@ -156,18 +232,14 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           <span className="text"></span>
         </Link>
         <ul className="side-menu top">
-          {filteredMenuItems.length > 0 ? (
-            filteredMenuItems.map(({ name, icon, path }) => (
-              <li key={name} className={activeMenu === name ? "active" : ""}>
-                <Link to={path} onClick={() => setActiveMenu(name)}>
-                  <i className={`bx ${icon} bx-sm`}></i>
-                  <span className="text">{name}</span>
-                </Link>
-              </li>
-            ))
-          ) : (
-            <li className="text-muted">No results found</li>
-          )}
+          {menuItems[userRole].map(({ name, icon, path }) => (
+            <li key={name} className={activeMenu === name ? "active" : ""}>
+              <Link to={path} onClick={() => setActiveMenu(name)}>
+                <i className={`bx ${icon} bx-sm`}></i>
+                <span className="text">{name}</span>
+              </Link>
+            </li>
+          ))}
         </ul>
         <ul className="side-menu bottom">
           <li className={activeMenu === "Settings" ? "active" : ""}>
@@ -194,8 +266,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="content" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
-          <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}>
-          </button>
+          <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}></button>
           <form className={`d-flex ${isSearchOpen ? "show" : ""}`}>
             <input
               type="search"
@@ -224,16 +295,34 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           <div className="position-relative" ref={notificationMenuRef}>
             <button className="btn notification" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
               <i className="bx bxs-bell bx-tada-hover"></i>
-              <span className="num">8</span>
+              {unreadCount > 0 && <span className="num">{unreadCount}</span>}
             </button>
-            {isNotificationOpen && (
-              <div className="notification-menu menu">
+
+            {isNotificationOpen && unreadMessages.length > 0 && (
+              <div className="notification-dropdown">
                 <ul>
-                  <li>New message from John</li>
-                  <li>Your order has been shipped</li>
-                  <li>New comment on your post</li>
-                  <li>Update available for your app</li>
-                  <li>Reminder: Meeting at 3PM</li>
+                  {unreadMessages.map((message) => (
+                    <li key={message.id}>
+                      <Link
+                        to={`/inbox/${message.id}`}
+                        className="notification-item"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleEventClick({
+                            event: { extendedProps: { messageId: message.id } },
+                          });
+                        }}
+                      >
+                        <div>
+                          <strong>{message.sender}</strong>
+                          <p><strong>Subject:</strong> {message.subject}</p>
+                          <p>{message.content}</p>
+                          <p><strong>Deadline:</strong> {message.deadline?.toDate ? new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}</p>
+                          <span>{message.timestamp?.toDate ? new Date(message.timestamp.toDate()).toLocaleString() : "No Timestamp"}</span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -241,7 +330,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
           <div className="position-relative" ref={profileMenuRef}>
             <button className="btn profile" onClick={(e) => { e.stopPropagation(); setIsProfileOpen(!isProfileOpen); }}>
-              <img src="https://placehold.co/600x400/png" alt="Profile" />
+              <img src={userProfilePic} alt="Profile" />
             </button>
 
             {isProfileOpen && (
@@ -260,4 +349,4 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   );
 };
 
-export default Navbar; 
+export default Navbar;
