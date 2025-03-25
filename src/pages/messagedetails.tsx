@@ -60,23 +60,45 @@ const MessageDetails: React.FC = () => {
 
   const handleMarkAsSubmitted = async () => {
     if (!message || !id || !currentUser) return;
-
+  
     try {
       const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
+  
+      // Determine Auto-Status based on deadline
+      let autoStatus = "On Time"; // Default to On Time
+      if (message.deadline?.seconds) {
+        const deadlineDate = new Date(message.deadline.seconds * 1000);
+        const now = new Date();
+        if (now > deadlineDate) {
+          autoStatus = "Late"; // Mark as Late if past the deadline
+        }
+      }
+  
+      // Save submission status in Firestore
       await setDoc(submissionRef, {
         messageId: id,
         submittedBy: currentUser.uid,
         status: "Submitted",
         submittedAt: serverTimestamp(),
-      });
-
-      setSubmissionStatus({ status: "Submitted", submittedAt: new Date() });
-      alert("Marked as Submitted!");
+        autoStatus, // Auto-generated status
+        evaluatorStatus: "Pending", // Default evaluator status
+      }, { merge: true });
+  
+      // Fetch the latest submission data from Firestore before updating local state
+      const updatedSubmissionSnap = await getDoc(submissionRef);
+      if (updatedSubmissionSnap.exists()) {
+        setSubmissionStatus(updatedSubmissionSnap.data());
+      }
+  
+      alert(`Marked as Submitted! Status: ${autoStatus}`);
     } catch (error) {
       console.error("Error updating submission status:", error);
       alert("Failed to mark as submitted.");
     }
   };
+  
+  
+
 
   if (loading) return <p>Loading message details...</p>;
   if (!message) return <p>Message not found.</p>;
