@@ -318,7 +318,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
                           <p><strong>Subject:</strong> {message.subject}</p>
                           <p>{message.content}</p>
                           <p><strong>Deadline:</strong> {message.deadline?.toDate ? new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}</p>
-                          <span>{message.timestamp?.toDate ? new Date(message.timestamp.toDate()).toLocaleString() : "No Timestamp"}</span>
+                          <span>{message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() :  "No Timestamp"}</span>
                         </div>
                       </Link>
                     </li>
