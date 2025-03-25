@@ -9,6 +9,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
@@ -158,7 +159,7 @@ const Communication: React.FC = () => {
         remarks,
         link: inputLink,
         createdBy: user.uid,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       });
 
       alert("Message sent successfully!");
