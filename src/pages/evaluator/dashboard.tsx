@@ -51,7 +51,7 @@ const Dashboard = () => {
 
     // Function to handle adding a new task to Firestore
     const addTask = async () => {
-        if (newTask.trim()) {
+        if (newTask.trim() && currentUser?.id) {
             const newTaskObj = { text: newTask, completed: false, userId: currentUser.id };
             try {
                 const docRef = await addDoc(collection(db, 'tasks'), newTaskObj);
