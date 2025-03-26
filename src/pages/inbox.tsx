@@ -7,6 +7,7 @@ import { updateDoc, arrayUnion, deleteDoc } from "firebase/firestore";
 
 const Inbox: React.FC = () => {
   interface Communication {
+    recipients: string[];
     seenBy: any;
     id: string;
     createdBy: string;
@@ -58,7 +59,7 @@ const Inbox: React.FC = () => {
         return {
           id: docSnapshot.id,
           createdBy: data.createdBy,
-          recipients: data.recipients,
+          recipients: data.recipients as string[], // Explicitly type recipients as string[]
           createdAt: data.createdAt || serverTimestamp(), // Ensure timestamp exists
           seenBy: data.seenBy || [], // Add default empty array for seenBy
           subject: data.subject || "No Subject", // Make sure subject is included, default to "No Subject" if missing
@@ -81,18 +82,38 @@ const Inbox: React.FC = () => {
   }, [userId]);
 
   // Function to delete a message
-  const deleteMessage = async (id: string) => {
+  const deleteMessage = async (id: string, recipients: string[]) => {
     if (!window.confirm("Are you sure you want to delete this message?")) return;
-
+  
+    // Check if the current user is in the recipients list
+    if (userId && !recipients.includes(userId)) {
+      alert("You can't delete a message that wasn't sent to you.");
+      return;
+    }
+  
     try {
-      await deleteDoc(doc(db, "communications", id));
-      setCommunications((prev) => prev.filter((msg) => msg.id !== id));
-      console.log("Message deleted successfully!");
+      // Remove the current user from the recipients array
+      const updatedRecipients = recipients.filter((recipient) => recipient !== userId);
+  
+      if (updatedRecipients.length === 0) {
+        // If no recipients are left, delete the entire message
+        await deleteDoc(doc(db, "communications", id));
+        console.log("Message deleted successfully!");
+      } else {
+        // Otherwise, just update the recipients list
+        await updateDoc(doc(db, "communications", id), {
+          recipients: updatedRecipients,
+        });
+        console.log("Message removed for this user.");
+      }
+  
+      // Update the local state
+      setCommunications((prev) => prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0));
     } catch (error) {
       console.error("Error deleting message:", error);
     }
   };
-
+  
   // Listen for sender name updates in real-time
   const listenToSenderProfile = (senderId: string) => {
     const senderRef = doc(db, "users", senderId);
@@ -185,48 +206,48 @@ const Inbox: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {communications.map((msg) => (
-                        <tr
-                          key={msg.id}
-                          onClick={() => openMessage(msg.id)}
-                          style={{
-                            cursor: "pointer",
-                            fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold", // Bold if unread
-                            backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5", // Highlight unread
-                          }}
-                        >
-                          <td>{senderNames[msg.createdBy] || "Loading..."}</td>
-                          <td>{msg.subject}</td>
-                          <td>
-                            {msg.createdAt && typeof msg.createdAt.seconds === "number" ? (
-                              new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                second: "2-digit",
-                                hour12: true,
-                              })
-                            ) : (
-                              <span style={{ color: "red" }}>No Timestamp</span>
-                            )}
-                          </td>
+  {communications.map((msg) => (
+    <tr
+      key={msg.id}
+      onClick={() => openMessage(msg.id)}
+      style={{
+        cursor: "pointer",
+        fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold", // Bold if unread
+        backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5", // Highlight unread
+      }}
+    >
+      <td>{senderNames[msg.createdBy] || "Loading..."}</td>
+      <td>{msg.subject}</td>
+      <td>
+        {msg.createdAt && typeof msg.createdAt.seconds === "number" ? (
+          new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+          })
+        ) : (
+          <span style={{ color: "red" }}>No Timestamp</span>
+        )}
+      </td>
 
-                          <td>
-                            <button
-                              className="delete-btn"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent row click event
-                                deleteMessage(msg.id);
-                              }}
-                            >
-                              🗑️ Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+      <td>
+        <button
+          className="delete-btn"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent row click event
+            deleteMessage(msg.id, msg.recipients); // Pass recipients array to the delete function
+          }}
+        >
+          🗑️ Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
                   </table>
                 )}
               </div>
