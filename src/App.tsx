@@ -35,6 +35,8 @@ import Profile from "./pages/profile";
 // Import Authentication and Landing Pages
 import AuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
+import SubmissionAnalytics from "./pages/submission-analytics";
+import UserAnalytics from "./pages/user-analytics";
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
@@ -55,6 +57,10 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/evaluator/analytics", element: <Analytics /> },
+    { path: "/evaluator/analytics/submission-analytics", element: <SubmissionAnalytics /> },
+    { path: "/evaluator/analytics/user-analytics", element: <UserAnalytics /> },
+
+
   ],
   LGU: [
     { path: "/lgu/dashboard", element: <LGUDashboard /> },
