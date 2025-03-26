@@ -6,10 +6,11 @@ import "../styles/components/dashboard.css";
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [fname, setFirstName] = useState("");
-  const [mname, setMiddleName] = useState("");
-  const [lname, setLastName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [fname, setFirstName] = useState<string>("");
+  const [mname, setMiddleName] = useState<string>("");
+  const [lname, setLastName] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -50,12 +51,12 @@ const Profile = () => {
 
   const handleSubmit = async () => {
     if (!user) {
-      alert("You must be logged in to update your profile.");
+      showAlert("You must be logged in to update your profile", "danger"); 
       return;
     }
 
     if (!fname.trim() || !lname.trim()) {
-      alert("First and Last names are required.");
+      showAlert("First and Last names are required", "warning"); 
       return;
     }
 
@@ -64,13 +65,19 @@ const Profile = () => {
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, { fname, mname: mname || "", lname }, { merge: true });
 
-      alert("Profile updated successfully!");
+      showAlert("Profile Updated Successfully!", "success"); 
     } catch (error) {
-      console.error("Error saving profile information:", error);
-      alert(`Error: ${(error as any).message || "Could not save profile. Please try again."}`);
+      console.error("Error Saving Profile Information:", error);
+      showAlert(`Error: ${(error as any).message || "Could not save profile. Please try again!"}`, "danger");
     } finally {
       setLoading(false);
     }
+  };
+
+  const showAlert = (message: string, type: string) => {
+    setAlert({ message, type });
+
+    setTimeout(() => setAlert(null), 10000); // Hide after 5 seconds
   };
 
   return (
@@ -92,11 +99,20 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="table-data">
+          
+            {alert && (
+              <div className={`custom-alert alert-${alert.type}`}>
+              <span className="alert-icon">{getIcon(alert.type)}</span>
+              <span>{alert.message}</span>
+          </div>
+          )}
+
+        <div className="relative-container"> 
+            <div className="table-data">
             <div className="order">
-              <div className="head">
-                <h3>Information</h3>
-              </div>
+            <div className="head">
+              <h3>Information</h3>
+        </div>
 
               <div className="container">
                 <div className="row">
@@ -154,6 +170,20 @@ const Profile = () => {
       </section>
     </div>
   );
+};
+
+// ✅ Function to get an icon based on the alert type
+const getIcon = (type: string) => {
+  switch (type) {
+    case "success":
+      return "✅";
+    case "warning":
+      return "⚠️";
+    case "danger":
+      return "❌";
+    default:
+      return "ℹ️";
+  }
 };
 
 export default Profile;
