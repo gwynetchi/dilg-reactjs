@@ -6,14 +6,14 @@ import "../styles/components/dashboard.css";
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [fname, setFirstName] = useState<string>("");
-  const [mname, setMiddleName] = useState<string>("");
-  const [lname, setLastName] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [fname, setFirstName] = useState("");
+  const [mname, setMiddleName] = useState("");
+  const [lname, setLastName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let unsubscribeProfile: () => void = () => {};
-  
+    let unsubscribeProfile: (() => void) | null = null;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
@@ -22,28 +22,30 @@ const Profile = () => {
         setUser(null);
       }
     });
-  
+
     return () => {
       unsubscribeAuth();
-      unsubscribeProfile();
+      if (unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
 
   const listenToUserProfile = (uid: string) => {
     const userDocRef = doc(db, "users", uid);
 
-    const unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setFirstName(data.fname || "");
-        setMiddleName(data.mname || "");
-        setLastName(data.lname || "");
+    return onSnapshot(
+      userDocRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setFirstName(data.fname || "");
+          setMiddleName(data.mname || "");
+          setLastName(data.lname || "");
+        }
+      },
+      (error) => {
+        console.error("Error fetching real-time updates:", error);
       }
-    }, (error) => {
-      console.error("Error fetching real-time updates:", error);
-    });
-
-    return () => unsubscribeProfile();
+    );
   };
 
   const handleSubmit = async () => {
@@ -51,17 +53,17 @@ const Profile = () => {
       alert("You must be logged in to update your profile.");
       return;
     }
-  
+
     if (!fname.trim() || !lname.trim()) {
       alert("First and Last names are required.");
       return;
     }
-  
+
     setLoading(true);
     try {
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, { fname, mname: mname || "", lname }, { merge: true });
-  
+
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error saving profile information:", error);
@@ -79,9 +81,13 @@ const Profile = () => {
             <div className="left">
               <h1>Profile</h1>
               <ul className="breadcrumb">
-                <li><a className="active" href="/Dashboards">Home</a></li>
+                <li>
+                  <a className="active" href="/Dashboards">Home</a>
+                </li>
                 <li><i className="bx bx-chevron-right"></i></li>
-                <li><a className="active" href={`/profile/${user?.uid}`}>Profile</a></li>
+                <li>
+                  <a className="active" href={`/profile/${user?.uid}`}>Profile</a>
+                </li>
               </ul>
             </div>
           </div>
@@ -93,51 +99,55 @@ const Profile = () => {
               </div>
 
               <div className="container">
-                <div className="mb-2">
-                  <label className="form-label">First Name:</label>
-                  <input 
-                    type="text" 
-                    className="form-control form-control-sm w-50"  // Smaller input
-                    placeholder="Enter first name" 
-                    value={fname} 
-                    onChange={(e) => setFirstName(e.target.value)} 
-                    disabled={loading}
-                  />
-                </div>
+                <div className="row">
+                  {/* First Name */}
+                  <div className="col-md-4 mb-2">
+                    <label className="form-label">First Name:</label>
+                    <input 
+                      type="text" 
+                      className="form-control form-control-sm" 
+                      placeholder="Enter first name" 
+                      value={fname} 
+                      onChange={(e) => setFirstName(e.target.value)} 
+                      disabled={loading}
+                    />
+                  </div>
 
-                <div className="mb-2">
-                  <label className="form-label">Middle Name:</label>
-                  <input 
-                    type="text" 
-                    className="form-control form-control-sm w-50"  // Smaller input
-                    placeholder="Enter middle name" 
-                    value={mname} 
-                    onChange={(e) => setMiddleName(e.target.value)} 
-                    disabled={loading}
-                  />
-                </div>
+                  {/* Middle Name */}
+                  <div className="col-md-4 mb-2">
+                    <label className="form-label">Middle Name:</label>
+                    <input 
+                      type="text" 
+                      className="form-control form-control-sm" 
+                      placeholder="Enter middle name" 
+                      value={mname} 
+                      onChange={(e) => setMiddleName(e.target.value)} 
+                      disabled={loading}
+                    />
+                  </div>
 
-                <div className="mb-2">
-                  <label className="form-label">Last Name:</label>
-                  <input 
-                    type="text" 
-                    className="form-control form-control-sm w-50"  // Smaller input
-                    placeholder="Enter last name"
-                    value={lname} 
-                    onChange={(e) => setLastName(e.target.value)} 
-                    disabled={loading}
-                  />
+                  {/* Last Name */}
+                  <div className="col-md-4 mb-2">
+                    <label className="form-label">Last Name:</label>
+                    <input 
+                      type="text" 
+                      className="form-control form-control-sm" 
+                      placeholder="Enter last name"
+                      value={lname} 
+                      onChange={(e) => setLastName(e.target.value)} 
+                      disabled={loading}
+                    />
+                  </div>
                 </div>
-
-                <button 
-                  className="btn btn-primary btn-sm w-50"  // Smaller button
-                  onClick={handleSubmit} 
-                  disabled={loading}
-                >
-                  {loading ? "Saving..." : "Save Profile"}
-                </button>
               </div>
 
+              <button 
+                className="btn btn-primary btn-sm w-50" 
+                onClick={handleSubmit} 
+                disabled={loading}
+              >
+                {loading ? "Saving..." : "Save Profile"}
+              </button>
             </div>
           </div>
         </main>    
