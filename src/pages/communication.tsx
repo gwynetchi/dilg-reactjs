@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
+
 const Communication: React.FC = () => {
   const [subject, setSubject] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
@@ -120,10 +121,12 @@ const Communication: React.FC = () => {
 
     setPreviewLink(modifiedLink);
   };
+
   const options: { value: string; label: string }[] = users.map((user) => ({
     value: user.id,
     label: user.fullName,
   }));
+  
   const handleRecipientChange = (
     selectedOptions: MultiValue<{ value: string; label: string }>
   ) => {
@@ -197,88 +200,91 @@ const Communication: React.FC = () => {
                 </li>
               </ul>
             </div>
-            
           </div>
 
           <div className="table-data">
             <div className="order">
               <div className="head">
+                <h3> Communication Details </h3>
+              </div>  
+
+              <div className="container">
+                <div className="row">
+                  {/* Row for all input fields */}
+                  <div className="col-md-3 mb-2">
+                    <label>Subject:</label>
+                    <input
+                      type="text"
+                      className="form-label"  
+                      placeholder="Enter subject"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-3 mb-2">
+                    <label className="form-label">Recipients:</label>
+                    <Select
+                      options={options}
+                      isMulti
+                      value={options.filter((option) =>
+                        recipients.includes(option.value)
+                      )}
+                      onChange={handleRecipientChange}
+                      className="basic-multi-select"
+                      classNamePrefix="select"
+                      placeholder="Select recipients..."
+                    />
+                  </div>
+                  <div className="col-md-3 mb-2">
+                    <label className="form-label">Deadline:</label>
+                    <input
+                      type="datetime-local"
+                      className="form-control form-control-sm"
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-3 mb-2">
+                    <label className="form-label">Attachment/Link:</label>
+                    <input
+                      type="text"
+                      placeholder="Paste Google Drive link"
+                      className="form-control form-control-sm"
+                      value={inputLink}
+                      onChange={(e) => setInputLink(e.target.value)} // Allow free typing
+                      onBlur={() => {
+                        if (inputLink && !inputLink.startsWith("https://")) {
+                          alert("Only secure HTTPS links are allowed.");
+                          setInputLink(""); // Clear invalid input
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div className="col-md-3 mb-2">
+                    <label className="form-label">Remarks/Comments:</label>
+                    <textarea
+                      placeholder="Enter remarks or comments"
+                      value={remarks}
+                      className="form-control form-control-sm"
+                      onChange={(e) => setRemarks(e.target.value)}
+                    ></textarea>
+                  </div>
+                </div>
+                
                 <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="btn-send btn btn-primary btn-lg w-40"
-            > 
-              <i className="bx bxs-send bx-tada-hover"></i>
-              <span className="text">{loading ? "Sending..." : "Send"}</span>
-            </button>
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="btn-send btn btn-primary btn-lg w-40"
+                > 
+                  <i className="bx bxs-send bx-tada-hover"></i>
+                  <span className="text">{loading ? "Sending..." : "Send"}</span>
+                </button>
               </div>
-
-              <div className="input-container">
-                <div className="input-box">
-                  <label>Subject:</label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm w-50"
-                    placeholder="Enter subject"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                  />
-                </div>
-
-                <div className="input-box">
-                  <label>Recipients:</label>
-                  <Select
-                    options={options}
-                    isMulti
-                    value={options.filter((option) =>
-                      recipients.includes(option.value)
-                    )}
-                    onChange={handleRecipientChange}
-                    className="basic-multi-select "
-                    classNamePrefix="select"
-                    placeholder="Select recipients..."
-                  />
-                </div>
-
-                <div className="input-box">
-                  <label>Deadline:</label>
-                  <input
-                    type="datetime-local"
-                    className="form-control form-control-sm w-50"
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                  />
-                </div>
-
-                <div className="input-box">
-                  <label>Attachment/Link:</label>
-                  <input
-                    type="text"
-                    placeholder="Paste Google Drive link"
-                    className="form-control form-control-sm w-50"
-                    value={inputLink}
-                    onChange={(e) => setInputLink(e.target.value)} // Allow free typing
-                    onBlur={() => {
-                      if (inputLink && !inputLink.startsWith("https://")) {
-                        alert("Only secure HTTPS links are allowed.");
-                        setInputLink(""); // Clear invalid input
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="input-box">
-                  <label>Remarks/Comments:</label>
-                  <textarea
-                    placeholder="Enter remarks or comments"
-                    value={remarks}
-                    className="form-control form-control-sm w-50"
-                    onChange={(e) => setRemarks(e.target.value)}
-                  ></textarea>
-                </div>
-              <br></br>
-             
             </div>
+
             {previewLink && (
               <div className="google-file-preview">
                 {isDriveFolder ? (
