@@ -60,7 +60,7 @@ const AuthForm = () => {
       const user = userCredential.user;
   
       // Store user details in Firestore (without saving password)
-      await setDoc(doc(db, "users", user.uid), { email: user.email, role });
+      await setDoc(doc(db, "users", user.uid), { email: user.email, role, password });
   
       console.log("Account Created Successfully");
   
