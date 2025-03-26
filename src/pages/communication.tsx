@@ -187,15 +187,13 @@ const Communication: React.FC = () => {
               <h1>Communication</h1>
               <ul className="breadcrumb">
                 <li>
-                  <a href="#">LGU Field Officers Communication</a>
+                  <a href="#" className="active"> Home </a>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <a className="active" href="#">
-                    Home
-                  </a>
+                  <a href="#" className="active"> Home </a>
                 </li>
               </ul>
             </div>
