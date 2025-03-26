@@ -151,16 +151,16 @@ const Inbox: React.FC = () => {
         <main>
           <div className="head-title">
             <div className="left">
-              <h1>Communication</h1>
+              <h1>Inbox</h1>
               <ul className="breadcrumb">
                 <li>
-                  <Link to="#">LGU Field Officers Communication</Link>
+                  <Link to="/dashboards" className="active">Home</Link>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <Link to="#" className="active">Home</Link>
+                  <Link to="#" className="active">Inbox</Link>
                 </li>
               </ul>
             </div>
