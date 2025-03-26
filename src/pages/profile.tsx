@@ -79,9 +79,9 @@ const Profile = () => {
             <div className="left">
               <h1>Profile</h1>
               <ul className="breadcrumb">
-                <li><a href="#">Personal Information</a></li>
+                <li><a className="active" href="/Dashboards">Home</a></li>
                 <li><i className="bx bx-chevron-right"></i></li>
-                <li><a className="active" href="/">Home</a></li>
+                <li><a className="active" href={`/profile/${user?.uid}`}>Profile</a></li>
               </ul>
             </div>
           </div>
@@ -93,50 +93,50 @@ const Profile = () => {
               </div>
 
               <div className="container">
-  <div className="mb-2">
-    <label className="form-label">First Name:</label>
-    <input 
-      type="text" 
-      className="form-control form-control-sm w-50"  // Smaller input
-      placeholder="Enter first name" 
-      value={fname} 
-      onChange={(e) => setFirstName(e.target.value)} 
-      disabled={loading}
-    />
-  </div>
+                <div className="mb-2">
+                  <label className="form-label">First Name:</label>
+                  <input 
+                    type="text" 
+                    className="form-control form-control-sm w-50"  // Smaller input
+                    placeholder="Enter first name" 
+                    value={fname} 
+                    onChange={(e) => setFirstName(e.target.value)} 
+                    disabled={loading}
+                  />
+                </div>
 
-  <div className="mb-2">
-    <label className="form-label">Middle Name:</label>
-    <input 
-      type="text" 
-      className="form-control form-control-sm w-50"  // Smaller input
-      placeholder="Enter middle name" 
-      value={mname} 
-      onChange={(e) => setMiddleName(e.target.value)} 
-      disabled={loading}
-    />
-  </div>
+                <div className="mb-2">
+                  <label className="form-label">Middle Name:</label>
+                  <input 
+                    type="text" 
+                    className="form-control form-control-sm w-50"  // Smaller input
+                    placeholder="Enter middle name" 
+                    value={mname} 
+                    onChange={(e) => setMiddleName(e.target.value)} 
+                    disabled={loading}
+                  />
+                </div>
 
-  <div className="mb-2">
-    <label className="form-label">Last Name:</label>
-    <input 
-      type="text" 
-      className="form-control form-control-sm w-50"  // Smaller input
-      placeholder="Enter last name"
-      value={lname} 
-      onChange={(e) => setLastName(e.target.value)} 
-      disabled={loading}
-    />
-  </div>
+                <div className="mb-2">
+                  <label className="form-label">Last Name:</label>
+                  <input 
+                    type="text" 
+                    className="form-control form-control-sm w-50"  // Smaller input
+                    placeholder="Enter last name"
+                    value={lname} 
+                    onChange={(e) => setLastName(e.target.value)} 
+                    disabled={loading}
+                  />
+                </div>
 
-  <button 
-    className="btn btn-primary btn-sm w-50"  // Smaller button
-    onClick={handleSubmit} 
-    disabled={loading}
-  >
-    {loading ? "Saving..." : "Save Profile"}
-  </button>
-</div>
+                <button 
+                  className="btn btn-primary btn-sm w-50"  // Smaller button
+                  onClick={handleSubmit} 
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : "Save Profile"}
+                </button>
+              </div>
 
             </div>
           </div>
