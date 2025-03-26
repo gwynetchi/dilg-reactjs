@@ -98,7 +98,7 @@ const Calendar: React.FC = () => {
     };
 
     const rolePath = rolePaths[userRole] || "viewer" || "evaluator" || "admin" || "lgu"; // Default to "viewer" if role is unknown
-    navigate(`/${rolePath}/communication/${messageId}`);
+    navigate(`/${rolePath}/inbox/${messageId}`);
   };
 
   return (
