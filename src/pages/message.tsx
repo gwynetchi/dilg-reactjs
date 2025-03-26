@@ -137,19 +137,30 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
         {messages.map((msg, index) => (
           <div key={index} className="chat-message">
             <strong>{msg.sender}:</strong>
-            <span dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
+            <p
+              style={{ whiteSpace: "pre-wrap" }}
+              dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
+            />
             <div className="timestamp">{formatTimestamp(msg.timestamp)}</div>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
+
       <div className="chat-input">
-        <input
-          type="text"
+        <textarea
+          className="message-input"
           placeholder="Type a message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            } else if (e.key === "Enter" && e.shiftKey) {
+              setNewMessage((prev) => prev + "\n"); // Append a new line
+            }
+          }}
         />
         <button onClick={sendMessage}>Send</button>
       </div>
