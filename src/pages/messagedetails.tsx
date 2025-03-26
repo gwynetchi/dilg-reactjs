@@ -1,22 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, User } from "firebase/auth";
 import { db } from "../firebase";
 
 const MessageDetails: React.FC = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  
+  const auth = getAuth();
+  const currentUser: User | null = auth.currentUser; // Ensure proper type safety
+  
+  const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState<any>(null);
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
 
   useEffect(() => {
-    const fetchMessage = async () => {
-      if (!id) return;
+    if (!currentUser) return;
 
+    const fetchUserRole = async () => {
+      try {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          setRole(userSnap.data().role);
+        }
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+      }
+    };
+
+    fetchUserRole();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchMessage = async () => {
       setLoading(true);
       try {
         const msgRef = doc(db, "communications", id);
@@ -37,7 +58,6 @@ const MessageDetails: React.FC = () => {
 
           setMessage({ ...msgData, senderName });
 
-          // Fetch submission status
           if (currentUser) {
             const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
             const submissionSnap = await getDoc(submissionRef);
@@ -60,12 +80,11 @@ const MessageDetails: React.FC = () => {
 
   const handleMarkAsSubmitted = async () => {
     if (!message || !id || !currentUser) return;
-  
+
     try {
       const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
-  
-      // Determine Auto-Status based on deadline
-      let autoStatus = "On Time"; // Default to On Time
+
+      let autoStatus = "On Time"; // Default status
       if (message.deadline?.seconds) {
         const deadlineDate = new Date(message.deadline.seconds * 1000);
         const now = new Date();
@@ -73,23 +92,21 @@ const MessageDetails: React.FC = () => {
           autoStatus = "Late"; // Mark as Late if past the deadline
         }
       }
-  
-      // Save submission status in Firestore
+
       await setDoc(submissionRef, {
         messageId: id,
         submittedBy: currentUser.uid,
         status: "Submitted",
         submittedAt: serverTimestamp(),
-        autoStatus, // Auto-generated status
-        evaluatorStatus: "Pending", // Default evaluator status
+        autoStatus,
+        evaluatorStatus: "Pending",
       }, { merge: true });
-  
-      // Fetch the latest submission data from Firestore before updating local state
+
       const updatedSubmissionSnap = await getDoc(submissionRef);
       if (updatedSubmissionSnap.exists()) {
         setSubmissionStatus(updatedSubmissionSnap.data());
       }
-  
+
       alert(`Marked as Submitted! Status: ${autoStatus}`);
     } catch (error) {
       console.error("Error updating submission status:", error);
@@ -100,6 +117,8 @@ const MessageDetails: React.FC = () => {
   if (loading) return <p>Loading message details...</p>;
   if (!message) return <p>Message not found.</p>;
 
+  const inboxPath = role ? `/${role.toLowerCase()}/inbox` : "/";
+
   return (
     <div className="dashboard-container">
       <section id="content">
@@ -108,38 +127,35 @@ const MessageDetails: React.FC = () => {
             <div className="left">
               <h1>Communication</h1>
               <ul className="breadcrumb">
-                <li>
-                  <Link to="#">LGU Field Officers Communication</Link>
-                </li>
-                <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <Link to="#" className="active">Home</Link>
-                </li>
+                <li><Link to="#" className="active">Home</Link></li>
+                <li><i className="bx bx-chevron-right"></i></li>
+                <li><Link to={inboxPath} className="active">Inbox</Link></li>
+                <li><i className="bx bx-chevron-right"></i></li>
+                <li><Link to="#" className="active">Message Details</Link></li>
               </ul>
             </div>
-            <button className="btn-download">
-              <i className="bx bxs-cloud-download bx-fade-down-hover"></i>
-              <span className="text">PDF Export</span>
-            </button>
           </div>
 
           <div className="message-details-container">
-            <button onClick={() => navigate(-1)} className="bx bx-arrow-back btn btn-primary btn-sm w-20"> Go Back to Inbox</button>
-            <br></br><br></br>
+            <button onClick={() => navigate(inboxPath)} className="bx bx-arrow-back btn btn-primary btn-sm w-20">
+              Go Back to Inbox
+            </button>
+
+            <br /><br />
             <h2>{message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
             <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
             <p><strong>Remarks:</strong> {message.remarks || "No remarks available"}</p>
+            
             {message.link && (
               <p>
                 <strong>Link:</strong> <a href={message.link} target="_blank" rel="noopener noreferrer">{message.link}</a>
               </p>
             )}
+            
             <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
-            <br></br>
-            {/* Show submission status */}
+            
+            <br />
             {submissionStatus ? (
               <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
             ) : (

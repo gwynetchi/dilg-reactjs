@@ -256,7 +256,7 @@ ol, ul {
   /* When sidebar is collapsed */
   #content.collapsed {
 	width: calc(100% - 60px);
-	left: 60px;
+	left: 80px;
   }
   
   /* Dashboard container inside content */
