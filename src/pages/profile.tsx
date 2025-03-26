@@ -51,12 +51,12 @@ const Profile = () => {
 
   const handleSubmit = async () => {
     if (!user) {
-      showAlert("You must be logged in to update your profile", "danger"); 
+      showAlert("You must be logged in to update your profile", "danger");
       return;
     }
 
     if (!fname.trim() || !lname.trim()) {
-      showAlert("First and Last names are required", "warning"); 
+      showAlert("First and Last names are required", "warning");
       return;
     }
 
@@ -65,7 +65,7 @@ const Profile = () => {
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, { fname, mname: mname || "", lname }, { merge: true });
 
-      showAlert("Profile Updated Successfully!", "success"); 
+      showAlert("Profile Updated Successfully!", "success");
     } catch (error) {
       console.error("Error Saving Profile Information:", error);
       showAlert(`Error: ${(error as any).message || "Could not save profile. Please try again!"}`, "danger");
@@ -77,7 +77,20 @@ const Profile = () => {
   const showAlert = (message: string, type: string) => {
     setAlert({ message, type });
 
-    setTimeout(() => setAlert(null), 10000); // Hide after 5 seconds
+    setTimeout(() => setAlert(null), 5000); // Hide after 5 seconds
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "success":
+        return "✔️";
+      case "danger":
+        return "❌";
+      case "warning":
+        return "⚠️";
+      default:
+        return "ℹ️";
+    }
   };
 
   return (
@@ -99,91 +112,77 @@ const Profile = () => {
             </div>
           </div>
 
-          
-            {alert && (
-              <div className={`custom-alert alert-${alert.type}`}>
+          {alert && (
+            <div className={`custom-alert alert-${alert.type}`}>
               <span className="alert-icon">{getIcon(alert.type)}</span>
               <span>{alert.message}</span>
-          </div>
+            </div>
           )}
 
-        <div className="relative-container"> 
+          <div className="relative-container">
             <div className="table-data">
-            <div className="order">
-            <div className="head">
-              <h3>Information</h3>
-        </div>
+              <div className="order">
+                <div className="head">
+                  <h3>Information</h3>
+                </div>
 
-              <div className="container">
-                <div className="row">
-                  {/* First Name */}
-                  <div className="col-md-4 mb-2">
-                    <label className="form-label">First Name:</label>
-                    <input 
-                      type="text" 
-                      className="form-control form-control-sm" 
-                      placeholder="Enter first name" 
-                      value={fname} 
-                      onChange={(e) => setFirstName(e.target.value)} 
-                      disabled={loading}
-                    />
-                  </div>
+                <div className="container">
+                  <div className="row">
+                    {/* First Name */}
+                    <div className="col-md-4 mb-2">
+                      <label className="form-label">First Name:</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Enter first name"
+                        value={fname}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
 
-                  {/* Middle Name */}
-                  <div className="col-md-4 mb-2">
-                    <label className="form-label">Middle Name:</label>
-                    <input 
-                      type="text" 
-                      className="form-control form-control-sm" 
-                      placeholder="Enter middle name" 
-                      value={mname} 
-                      onChange={(e) => setMiddleName(e.target.value)} 
-                      disabled={loading}
-                    />
-                  </div>
+                    {/* Middle Name */}
+                    <div className="col-md-4 mb-2">
+                      <label className="form-label">Middle Name:</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Enter middle name"
+                        value={mname}
+                        onChange={(e) => setMiddleName(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
 
-                  {/* Last Name */}
-                  <div className="col-md-4 mb-2">
-                    <label className="form-label">Last Name:</label>
-                    <input 
-                      type="text" 
-                      className="form-control form-control-sm" 
-                      placeholder="Enter last name"
-                      value={lname} 
-                      onChange={(e) => setLastName(e.target.value)} 
-                      disabled={loading}
-                    />
+                    {/* Last Name */}
+                    <div className="col-md-4 mb-2">
+                      <label className="form-label">Last Name:</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Enter last name"
+                        value={lname}
+                        onChange={(e) => setLastName(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button 
-                className="btn btn-primary btn-sm w-50" 
-                onClick={handleSubmit} 
-                disabled={loading}
-              >
-                {loading ? "Saving..." : "Save Profile"}
-              </button>
+                <button
+                  className="btn btn-primary btn-sm w-50"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : "Save Profile"}
+                </button>
+              </div>
             </div>
           </div>
-        </main>    
+        </main>
       </section>
     </div>
   );
-};
-
-// ✅ Function to get an icon based on the alert type
-const getIcon = (type: string) => {
-  switch (type) {
-    case "success":
-      return "✅";
-    case "warning":
-      return "⚠️";
-    case "danger":
-      return "❌";
-    default:
-      return "ℹ️";
-  }
 };
 
 export default Profile;
