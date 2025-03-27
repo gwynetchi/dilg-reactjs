@@ -125,7 +125,8 @@ const MessageDetails: React.FC = () => {
         <main>
           <div className="head-title">
             <div className="left">
-              <h1>Communication</h1>
+              <h1>Message Details</h1>
+              <br></br>
               <ul className="breadcrumb">
                 <li><Link to="#" className="active">Home</Link></li>
                 <li><i className="bx bx-chevron-right"></i></li>
@@ -138,10 +139,8 @@ const MessageDetails: React.FC = () => {
 
           <div className="message-details-container">
             <button onClick={() => navigate(inboxPath)} className="bx bx-arrow-back btn btn-primary btn-sm w-20">
-              Go Back to Inbox
-            </button>
-
-            <br /><br />
+            </button> <br>
+            </br>
             <h2>{message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
             <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
