@@ -18,7 +18,11 @@
 	color: var(--dark);
 	text-align: center;
 }
-
+.mention {
+	color: #007bff;
+	font-weight: bold;
+  }
+  
 .chat-box {
 	max-height: 300px;
 	min-height: 200px;

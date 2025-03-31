@@ -43,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const menuItems: Record<string, { name: string; icon: string; path: string }[]> = {
     Viewer: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile" },
+      { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile"},
       { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
       { name: "Message", icon: "bxs-message", path: "/viewer/message" },

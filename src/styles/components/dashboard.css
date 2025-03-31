@@ -181,20 +181,59 @@ ol, ul {
 }
 
 /* Example styles for the todo input section */
-.todo-list .completed {
+.todo-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.todo-table th, .todo-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+.todo-table th {
+    background-color: #f4f4f4;
+}
+
+.completed {
     text-decoration: line-through;
-    color: grey;
+    background-color: #d3ffd3;
 }
 
-.todo-list .not-completed {
-    color: black;
+.not-completed {
+    background-color: #fff;
 }
 
-.task-time {
-    font-size: 0.8em;
-    color: #888;
-    margin-top: 5px;
+.delete-btn {
+    background-color: red;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
 }
+
+.delete-btn:hover {
+    background-color: darkred;
+}
+.status-message {
+    background-color: #e0ffe0;
+    color: #4CAF50;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.error-message {
+    background-color: #ffe0e0;
+    color: #f44336;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+}
+
 .notification-dropdown {
 	position: absolute;
 	top: 100%;
