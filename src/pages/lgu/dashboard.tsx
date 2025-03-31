@@ -133,7 +133,7 @@ const Dashboard = () => {
                         </a>
                     </div>
 
-                    {/* TODO List */}
+                    {/* TODO List as Table */}
                     <div className="todo">
                         <div className="head">
                             <h3>Todos</h3>
@@ -152,29 +152,40 @@ const Dashboard = () => {
 
                         {error && <div className="error-message">{error}</div>}
 
-                        <ul className="todo-list">
-                            {tasks.length > 0 ? (
-                                tasks.map(({ id, text, completed, createdAt }) => (
-                                    <li key={id} className={completed ? "completed" : "not-completed"}>
-                                        <div>
-                                            {/* Checkbox for toggling completion */}
-                                            <input 
-                                                type="checkbox" 
-                                                checked={completed} 
-                                                onChange={() => toggleTaskCompletion(id, completed)} 
-                                            />
-                                            <p>{text}</p>
-                                            <span className="task-time">
-                                                {`Created: ${formatDate(createdAt)}`}
-                                            </span>
-                                        </div>
-                                        <button onClick={() => removeTask(id)} className="delete-btn">Delete</button> {/* Delete button */}
-                                    </li>
-                                ))
-                            ) : (
-                                <li>No tasks available</li>
-                            )}
-                        </ul>
+                        <table className="todo-table">
+                            <thead>
+                                <tr>
+                                    <th>Completed</th>
+                                    <th>Task</th>
+                                    <th>Created At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tasks.length > 0 ? (
+                                    tasks.map(({ id, text, completed, createdAt }) => (
+                                        <tr key={id} className={completed ? "completed" : "not-completed"}>
+                                            <td>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={completed} 
+                                                    onChange={() => toggleTaskCompletion(id, completed)} 
+                                                />
+                                            </td>
+                                            <td>{text}</td>
+                                            <td>{formatDate(createdAt)}</td>
+                                            <td>
+                                                <button onClick={() => removeTask(id)} className="delete-btn">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4}>No tasks available</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </main>
             </section>

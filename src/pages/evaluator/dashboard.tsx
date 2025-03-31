@@ -10,6 +10,7 @@ const Dashboard = () => {
     const [newTask, setNewTask] = useState("");  // State for new task input
     const [loading, setLoading] = useState(true);  // Loading state while fetching data
     const [error, setError] = useState<string | null>(null); // Error state to handle fetch/add task errors
+    const [statusMessage, setStatusMessage] = useState<string | null>(null);  // State to store status messages
 
     // Firebase Authentication state listener
     useEffect(() => {
@@ -37,6 +38,8 @@ const Dashboard = () => {
                 } catch (error) {
                     console.error('Error fetching tasks from Firestore:', error);
                     setError('Failed to fetch tasks. Please try again later.');
+                    setTimeout(() => setStatusMessage(null), 3000);
+
                 } finally {
                     setLoading(false);
                 }
@@ -59,9 +62,16 @@ const Dashboard = () => {
                 const docRef = await addDoc(collection(db, 'tasks'), newTaskObj);
                 setTasks((prevTasks) => [...prevTasks, { id: docRef.id, ...newTaskObj }]);
                 setNewTask(""); // Clear input field after adding
+                setStatusMessage('Task added successfully!');
+                setTimeout(() => setStatusMessage(null), 3000);
+
             } catch (error) {
                 console.error('Error adding task to Firestore:', error);
                 setError('Failed to add task. Please try again later.');
+                setStatusMessage('An error occurred while adding the task.');
+
+                setTimeout(() => setStatusMessage(null), 3000);
+
             }
         }
     };
@@ -78,9 +88,14 @@ const Dashboard = () => {
                     task.id === id ? { ...task, completed: !completed } : task
                 )
             );
+            setStatusMessage(completed ? 'Task marked as incomplete' : 'Task completed');
         } catch (error) {
             console.error('Error updating task completion in Firestore:', error);
             setError('Failed to update task status. Please try again later.');
+            setStatusMessage('An error occurred while updating the task status.');
+
+            setTimeout(() => setStatusMessage(null), 3000);
+
         }
     };
 
@@ -90,9 +105,15 @@ const Dashboard = () => {
             const taskDoc = doc(db, 'tasks', id);
             await deleteDoc(taskDoc);
             setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id)); // Remove from state
+            setStatusMessage('Task deleted successfully!');
+            setTimeout(() => setStatusMessage(null),3000);
+
         } catch (error) {
             console.error('Error deleting task from Firestore:', error);
             setError('Failed to delete task. Please try again later.');
+            setStatusMessage('An error occurred while deleting the task.');
+            setTimeout(() => setStatusMessage(null), 3000);
+
         }
     };
 
@@ -133,7 +154,7 @@ const Dashboard = () => {
                         </a>
                     </div>
 
-                    {/* TODO List */}
+                    {/* TODO List as Table */}
                     <div className="todo">
                         <div className="head">
                             <h3>Todos</h3>
@@ -150,31 +171,44 @@ const Dashboard = () => {
                             <button onClick={addTask}>Add</button>
                         </div>
 
+                        {/* Display Status Message */}
+                        {statusMessage && <div className="status-message">{statusMessage}</div>}
                         {error && <div className="error-message">{error}</div>}
 
-                        <ul className="todo-list">
-                            {tasks.length > 0 ? (
-                                tasks.map(({ id, text, completed, createdAt }) => (
-                                    <li key={id} className={completed ? "completed" : "not-completed"}>
-                                        <div>
-                                            {/* Checkbox for toggling completion */}
-                                            <input 
-                                                type="checkbox" 
-                                                checked={completed} 
-                                                onChange={() => toggleTaskCompletion(id, completed)} 
-                                            />
-                                            <p>{text}</p>
-                                            <span className="task-time">
-                                                {`Created: ${formatDate(createdAt)}`}
-                                            </span>
-                                        </div>
-                                        <button onClick={() => removeTask(id)} className="delete-btn">Delete</button> {/* Delete button */}
-                                    </li>
-                                ))
-                            ) : (
-                                <li>No tasks available</li>
-                            )}
-                        </ul>
+                        <table className="todo-table">
+                            <thead>
+                                <tr>
+                                    <th>Completed</th>
+                                    <th>Task</th>
+                                    <th>Created At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tasks.length > 0 ? (
+                                    tasks.map(({ id, text, completed, createdAt }) => (
+                                        <tr key={id} className={completed ? "completed" : "not-completed"}>
+                                            <td>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={completed} 
+                                                    onChange={() => toggleTaskCompletion(id, completed)} 
+                                                />
+                                            </td>
+                                            <td>{text}</td>
+                                            <td>{formatDate(createdAt)}</td>
+                                            <td>
+                                                <button onClick={() => removeTask(id)} className="delete-btn">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4}>No tasks available</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </main>
             </section>
