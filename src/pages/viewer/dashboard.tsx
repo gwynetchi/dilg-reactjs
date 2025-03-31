@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../firebase'; // Import Firebase configuration
-import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { db, auth } from '../../firebase'; // Import Firebase configuration
+import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth'; // Firebase authentication state listener
 import "../../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
 const Dashboard = () => {
@@ -8,25 +9,19 @@ const Dashboard = () => {
     const [tasks, setTasks] = useState<any[]>([]);  // State to store tasks
     const [newTask, setNewTask] = useState("");  // State for new task input
     const [loading, setLoading] = useState(true);  // Loading state while fetching data
+    const [error, setError] = useState<string | null>(null); // Error state to handle fetch/add task errors
 
-    // Fetch the current user (you can replace this with actual auth code)
+    // Firebase Authentication state listener
     useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                const response = await fetch('/api/auth/currentUser', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,  // Example token-based auth
-                    },
-                });
-                const user = await response.json();
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
                 setCurrentUser(user);
-            } catch (error) {
-                console.error('Error fetching current user:', error);
+            } else {
+                setCurrentUser(null);
             }
-        };
+        });
 
-        fetchCurrentUser();
+        return () => unsubscribe();
     }, []);
 
     // Fetch tasks from Firestore for the logged-in user
@@ -34,12 +29,14 @@ const Dashboard = () => {
         if (currentUser) {
             const fetchTasks = async () => {
                 try {
-                    const tasksCollection = collection(db, 'tasks');
-                    const tasksSnapshot = await getDocs(tasksCollection);
-                    const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const tasksRef = collection(db, 'tasks');
+                    const q = query(tasksRef, where("userId", "==", currentUser.uid));
+                    const tasksSnapshot = await getDocs(q);
+                    const tasksList = tasksSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
                     setTasks(tasksList);
                 } catch (error) {
                     console.error('Error fetching tasks from Firestore:', error);
+                    setError('Failed to fetch tasks. Please try again later.');
                 } finally {
                     setLoading(false);
                 }
@@ -51,14 +48,19 @@ const Dashboard = () => {
 
     // Function to handle adding a new task to Firestore
     const addTask = async () => {
-        if (newTask.trim()) {
-            const newTaskObj = { text: newTask, completed: false, userId: currentUser.id };
+        if (newTask.trim() && currentUser?.uid) {
+            const newTaskObj = { 
+                text: newTask, 
+                completed: false, 
+                userId: currentUser.uid  // Ensure the userId is set correctly
+            };
             try {
                 const docRef = await addDoc(collection(db, 'tasks'), newTaskObj);
                 setTasks((prevTasks) => [...prevTasks, { id: docRef.id, ...newTaskObj }]);
                 setNewTask(""); // Clear input field after adding
             } catch (error) {
                 console.error('Error adding task to Firestore:', error);
+                setError('Failed to add task. Please try again later.');
             }
         }
     };
@@ -76,6 +78,7 @@ const Dashboard = () => {
             );
         } catch (error) {
             console.error('Error updating task completion in Firestore:', error);
+            setError('Failed to update task status. Please try again later.');
         }
     };
 
@@ -87,6 +90,7 @@ const Dashboard = () => {
             setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
         } catch (error) {
             console.error('Error deleting task from Firestore:', error);
+            setError('Failed to delete task. Please try again later.');
         }
     };
 
@@ -131,6 +135,8 @@ const Dashboard = () => {
                             />
                             <button onClick={addTask}>Add</button>
                         </div>
+
+                        {error && <div className="error-message">{error}</div>}
 
                         <ul className="todo-list">
                             {tasks.length > 0 ? (

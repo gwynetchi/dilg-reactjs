@@ -69,12 +69,26 @@ const Communication: React.FC = () => {
         const communicationsRef = collection(db, "communications");
         const q = query(communicationsRef, where("createdBy", "==", user.uid));
         const querySnapshot = await firestoreGetDocs(q);
-
+  
         if (!querySnapshot.empty) {
-          const sentList = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
+          const sentList = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            const createdAt = data.createdAt ? data.createdAt.toDate() : null; // Convert timestamp
+  
+            return {
+              id: doc.id,
+              ...data,
+              createdAt, // Add converted date
+            };
+          });
+  
+          // Sort by createdAt field (ensure it's a valid date)
+          sentList.sort((a, b) => {
+            const dateA = a.createdAt ? a.createdAt.getTime() : 0; // Ensure it's a timestamp
+            const dateB = b.createdAt ? b.createdAt.getTime() : 0;
+            return dateB - dateA;
+          });
+  
           setSentCommunications(sentList);
         } else {
           console.log("No sent communications found.");
@@ -85,7 +99,7 @@ const Communication: React.FC = () => {
       }
     }
   };
-
+  
   useEffect(() => {
     fetchUsers();
     fetchSentCommunications(); // Fetch sent communications on mount

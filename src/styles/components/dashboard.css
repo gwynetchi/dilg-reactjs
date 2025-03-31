@@ -181,19 +181,20 @@ ol, ul {
 }
 
 /* Example styles for the todo input section */
-.todo-input {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+.todo-list .completed {
+    text-decoration: line-through;
+    color: grey;
 }
 
-.todo-input input {
-    padding: 8px;
-    width: 70%;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.todo-list .not-completed {
+    color: black;
 }
 
+.task-time {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 5px;
+}
 .notification-dropdown {
 	position: absolute;
 	top: 100%;
