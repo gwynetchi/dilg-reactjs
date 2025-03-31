@@ -20,6 +20,11 @@ import LGUMessageDetails from "./pages/messagedetails";
 import ViewerMessageDetails from "./pages/messagedetails";
 import AdminMessageDetails from "./pages/messagedetails";
 
+// Import Sent communications
+import EvaluatorSent from "./pages/sentCommunications";
+import LGUSent from "./pages/sentCommunications";
+import ViewerSent from "./pages/sentCommunications";
+import AdminSent from './pages/sentCommunications';
 // Import Communication Pages
 import EvaluatorCommunication from "./pages/communication";
 import LGUCommunication from "./pages/communication";
@@ -44,6 +49,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/profile", element: <Profile /> },
     { path: "/admin/inbox/:id", element: <AdminMessageDetails /> },
     { path: "/admin/communication", element: <AdminCommunication /> },
+    { path: "/admin/sentCommunications/:id", element: <AdminSent /> }, // Added this line
     { path: "/admin/inbox", element: <Inbox /> },
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
@@ -54,13 +60,12 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/inbox", element: <Inbox /> },
     { path: "/evaluator/inbox/:id", element: <EvaluatorMessageDetails /> },
     { path: "/evaluator/communication", element: <EvaluatorCommunication /> },
+    { path: "/evaluator/sentCommunications/:id", element: <EvaluatorSent /> }, // Added this line
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/evaluator/analytics", element: <Analytics /> },
     { path: "/evaluator/analytics/submission-analytics", element: <SubmissionAnalytics /> },
     { path: "/evaluator/analytics/user-analytics", element: <UserAnalytics /> },
-
-
   ],
   LGU: [
     { path: "/lgu/dashboard", element: <LGUDashboard /> },
@@ -68,6 +73,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/inbox", element: <Inbox /> },
     { path: "/lgu/inbox/:id", element: <LGUMessageDetails /> },
     { path: "/lgu/communication", element: <LGUCommunication /> },
+    { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
   ],
@@ -77,6 +83,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/inbox", element: <Inbox /> },
     { path: "/viewer/inbox/:id", element: <ViewerMessageDetails /> },
     { path: "/viewer/communication", element: <ViewerCommunication /> },
+    { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
   ],
