@@ -52,7 +52,8 @@ const Dashboard = () => {
             const newTaskObj = { 
                 text: newTask, 
                 completed: false, 
-                userId: currentUser.uid  // Ensure the userId is set correctly
+                userId: currentUser.uid,  // Ensure the userId is set correctly
+                createdAt: new Date() // Timestamp for when the task was created
             };
             try {
                 const docRef = await addDoc(collection(db, 'tasks'), newTaskObj);
@@ -66,15 +67,16 @@ const Dashboard = () => {
     };
 
     // Function to toggle the completion status of a task in Firestore
-    const toggleTaskCompletion = async (id: string) => {
-        const taskToUpdate = tasks.find((task) => task.id === id);
-        const updatedTask = { ...taskToUpdate, completed: !taskToUpdate.completed };
+    const toggleTaskCompletion = async (id: string, completed: boolean) => {
+        const updatedTask = { completed: !completed };
 
         try {
             const taskDoc = doc(db, 'tasks', id);
-            await updateDoc(taskDoc, { completed: updatedTask.completed });
+            await updateDoc(taskDoc, updatedTask);
             setTasks((prevTasks) =>
-                prevTasks.map((task) => task.id === id ? { ...task, completed: updatedTask.completed } : task)
+                prevTasks.map((task) =>
+                    task.id === id ? { ...task, completed: !completed } : task
+                )
             );
         } catch (error) {
             console.error('Error updating task completion in Firestore:', error);
@@ -87,13 +89,25 @@ const Dashboard = () => {
         try {
             const taskDoc = doc(db, 'tasks', id);
             await deleteDoc(taskDoc);
-            setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+            setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id)); // Remove from state
         } catch (error) {
             console.error('Error deleting task from Firestore:', error);
             setError('Failed to delete task. Please try again later.');
         }
     };
 
+    // Format the created date to display it
+    const formatDate = (timestamp: any) => {
+        if (!timestamp) {
+            return "No date available"; // If there's no timestamp, return a fallback message.
+        }
+        
+        // Check if it's a Firestore timestamp and convert it to a date
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        
+        return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    };
+    
     if (loading) return <div>Loading...</div>;
 
     if (!currentUser) {
@@ -140,10 +154,21 @@ const Dashboard = () => {
 
                         <ul className="todo-list">
                             {tasks.length > 0 ? (
-                                tasks.map(({ id, text, completed }) => (
+                                tasks.map(({ id, text, completed, createdAt }) => (
                                     <li key={id} className={completed ? "completed" : "not-completed"}>
-                                        <p onClick={() => toggleTaskCompletion(id)}>{text}</p>
-                                        <i className='bx bx-dots-vertical-rounded' onClick={() => removeTask(id)}></i>
+                                        <div>
+                                            {/* Checkbox for toggling completion */}
+                                            <input 
+                                                type="checkbox" 
+                                                checked={completed} 
+                                                onChange={() => toggleTaskCompletion(id, completed)} 
+                                            />
+                                            <p>{text}</p>
+                                            <span className="task-time">
+                                                {`Created: ${formatDate(createdAt)}`}
+                                            </span>
+                                        </div>
+                                        <button onClick={() => removeTask(id)} className="delete-btn">Delete</button> {/* Delete button */}
                                     </li>
                                 ))
                             ) : (
