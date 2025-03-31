@@ -89,6 +89,8 @@ const Dashboard = () => {
                 )
             );
             setStatusMessage(completed ? 'Task marked as incomplete' : 'Task completed');
+            setTimeout(() => setStatusMessage(null), 3000);
+
         } catch (error) {
             console.error('Error updating task completion in Firestore:', error);
             setError('Failed to update task status. Please try again later.');
@@ -148,10 +150,6 @@ const Dashboard = () => {
                                 <li><a className="active" href="#">Home</a></li>
                             </ul>
                         </div>
-                        <a href="#" className="btn-download">
-                            <i className='bx bxs-cloud-download bx-fade-down-hover'></i>
-                            <span className="text">PDF Export</span>
-                        </a>
                     </div>
 
                     {/* TODO List as Table */}
