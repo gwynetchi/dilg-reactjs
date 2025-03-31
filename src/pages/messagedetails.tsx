@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getAuth, User } from "firebase/auth";
 import { db } from "../firebase";
 
 const MessageDetails: React.FC = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   
   const auth = getAuth();
   const currentUser: User | null = auth.currentUser; // Ensure proper type safety
@@ -125,7 +124,8 @@ const MessageDetails: React.FC = () => {
         <main>
           <div className="head-title">
             <div className="left">
-              <h1>Communication</h1>
+              <h1>Message Details</h1>
+              <br></br>
               <ul className="breadcrumb">
                 <li><Link to="#" className="active">Home</Link></li>
                 <li><i className="bx bx-chevron-right"></i></li>
@@ -137,12 +137,7 @@ const MessageDetails: React.FC = () => {
           </div>
 
           <div className="message-details-container">
-            <button onClick={() => navigate(inboxPath)} className="bx bx-arrow-back btn btn-primary btn-sm w-20">
-              Go Back to Inbox
-            </button>
-
-            <br /><br />
-            <h2>{message.subject}</h2>
+            <h2><strong>Subject:</strong> {message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
             <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
             <p><strong>Remarks:</strong> {message.remarks || "No remarks available"}</p>

@@ -1,0 +1,348 @@
+import React, { useState, useEffect } from "react";
+import Select from "react-select";
+import {
+  collection,
+  query,
+  where,
+  doc,
+  updateDoc,
+  getDoc,
+  onSnapshot,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Cell,
+} from "recharts";
+import { Table } from "react-bootstrap";
+import "../styles/components/pages.css";
+
+
+interface Communication {
+  id: string;
+  subject: string;
+  deadline?: { seconds: number };
+}
+
+interface Submission {
+  id: string;
+  submittedBy: string;
+  submittedAt?: { seconds: number };
+  status?: string;
+  autoStatus?: string;
+  evaluatorStatus?: string; // Keep only this field
+}
+
+interface ChartData {
+  status: string;
+  autoCount: number;
+  manualCount: number;
+}
+
+
+// Define all possible statuses
+const allStatuses = ["On Time", "Late", "Incomplete", "No Submission", "For Revision"];
+
+// Define colors for each status
+const statusColors: Record<string, string> = {
+  "On Time": "#28a745",
+  "Late": "#dc3545",
+  "Incomplete": "#ffc107",
+  "No Submission": "#6c757d",
+  "For Revision": "#17a2b8",
+};
+
+const Analytics: React.FC = () => {
+  const [communications, setCommunications] = useState<Communication[]>([]);
+  const [submissions, setSubmissions] = useState<Record<string, Submission[]>>({});
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
+  const [selectedDeadline, setSelectedDeadline] = useState<string | null>(null);
+  const [users, setUsers] = useState<Record<string, string>>({});
+  
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "communications"), (snapshot) => {
+      const fetchedCommunications = snapshot.docs.map((doc) => {
+        const data = doc.data() as Communication;
+        return { ...data, id: doc.id }; // Ensures `id` is not overwritten
+      });
+      
+      setCommunications(fetchedCommunications);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedSubject) {
+      setSubmissions({});
+      setChartData([]);
+      setSelectedDeadline(null);
+      return;
+    }
+
+    setLoading(true);
+
+    const fetchDeadline = async () => {
+      const commRef = doc(db, "communications", selectedSubject);
+      const commSnap = await getDoc(commRef);
+      if (commSnap.exists()) {
+        const deadline = commSnap.data().deadline?.seconds * 1000;
+        setSelectedDeadline(deadline ? new Date(deadline).toLocaleString() : "No Deadline");
+        return deadline;
+      }
+      return null;
+    };
+
+    fetchDeadline().then((deadline) => {
+      const submissionsQuery = query(
+        collection(db, "submittedDetails"),
+        where("messageId", "==", selectedSubject)
+      );
+
+      const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
+        const fetchedSubmissions = snapshot.docs.map((doc) => {
+          const data = doc.data() as Submission;
+          let autoStatus = "No Submission";
+      
+          if (data.submittedAt && deadline) {
+            const submittedAt = data.submittedAt.seconds * 1000;
+            autoStatus = submittedAt <= deadline ? "On Time" : "Late";
+          }
+      
+          return { ...data, id: doc.id, autoStatus }; 
+        });
+      
+        setSubmissions({ [selectedSubject]: fetchedSubmissions });
+        setLoading(false);
+      });
+      
+
+      return () => unsubscribe();
+    });
+  }, [selectedSubject]);
+
+  useEffect(() => {
+    // Fetch user data to map user IDs to full names
+    const unsubscribe = onSnapshot(collection(db, "users"), (querySnapshot) => {
+      const usersList = querySnapshot.docs.reduce((acc, doc) => {
+        const data = doc.data();
+        const fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
+        acc[doc.id] = fullName;
+        return acc;
+      }, {} as Record<string, string>);
+
+      setUsers(usersList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedSubject || !submissions[selectedSubject]) {
+      setChartData(allStatuses.map((status) => ({ status, autoCount: 0, manualCount: 0 })));
+      return;
+    }
+  
+    const statusCount: Record<string, { autoCount: number; manualCount: number }> = {};
+  
+    // Initialize all statuses with 0
+    allStatuses.forEach((status) => {
+      statusCount[status] = { autoCount: 0, manualCount: 0 };
+    });
+  
+    submissions[selectedSubject].forEach((sub) => {
+      const autoStatus = sub.autoStatus || "No Submission";
+      const evaluatorStatus = sub.evaluatorStatus && sub.evaluatorStatus !== "Pending" 
+  ? sub.evaluatorStatus 
+  : ""; // Ensures it doesn't increment the manual count
+
+  
+      statusCount[autoStatus].autoCount += 1;
+  
+      if (evaluatorStatus) {
+        statusCount[evaluatorStatus].manualCount += 1;
+      }
+    });
+  
+    const formattedChartData = allStatuses.map((status) => ({
+      status,
+      autoCount: statusCount[status].autoCount,
+      manualCount: statusCount[status].manualCount,
+    }));
+  
+    setChartData(formattedChartData);
+  }, [submissions, selectedSubject]);
+  
+  
+
+  const handleStatusUpdate = async (submissionId: string | undefined, newStatus: string) => {
+    if (!submissionId) {
+      console.error("Submission ID is undefined");
+      alert("Error: Submission ID is missing.");
+      return;
+    }
+  
+    try {
+      const submissionRef = doc(db, "submittedDetails", submissionId);
+      await updateDoc(submissionRef, { evaluatorStatus: newStatus });
+  
+      setSubmissions((prev) => {
+        if (!selectedSubject || !prev[selectedSubject]) return prev;
+        return {
+          ...prev,
+          [selectedSubject]: prev[selectedSubject].map((sub) =>
+            sub.id === submissionId ? { ...sub, evaluatorStatus: newStatus } : sub
+          ),
+        };
+      });
+  
+      console.log(`Updated evaluator status for submission ${submissionId} to ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating evaluator status:", error);
+      alert("Failed to update evaluator status.");
+    }
+  };
+  
+  
+
+  return (
+    <div className="dashboard-container">
+      <section id="content">
+        <main>
+          <h2>Submission And Compliance Report</h2>
+          <ul className="breadcrumb">
+                <li><a href="evaluator/dashboard">Home</a></li>
+                <li><i className="bx bx-chevron-right"></i></li>
+                <li><a className="inactive" href="/evaluator/analytics">Analytics</a></li>
+                <li><i className="bx bx-chevron-right"></i></li>
+                <li><a className="active" href="/evaluator/analytics/submission-analytics">Submissions and Compliance</a></li>
+              </ul>
+          <Select
+            options={communications.map((comm) => ({
+              value: comm.id,
+              label: comm.subject,
+            }))}
+            onChange={(selectedOption) => setSelectedSubject(selectedOption?.value || "")}
+            placeholder="Search or Select Subject"
+            isClearable
+          />
+
+          {selectedSubject && <p>Deadline: {selectedDeadline || "No Deadline"}</p>}
+
+          {loading ? (
+            <p>Loading data...</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <XAxis dataKey="status" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              
+              {/* Auto Status Bar (Lighter Color) */}
+              <Bar dataKey="autoCount" name="Auto Status" barSize={40} isAnimationActive={true}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`auto-cell-${index}`} fill={statusColors[entry.status] + "80"} /> // Lightened
+                ))}
+              </Bar>
+          
+              {/* Manual Status Bar (Darker Color) */}
+              <Bar dataKey="manualCount" name="Evaluator Status" barSize={40} isAnimationActive={true}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`manual-cell-${index}`} fill={statusColors[entry.status]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          
+          )}
+
+          <h3>Modify Submission Status</h3>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Submitted At</th>
+                <th>Auto Status</th>
+                <th>Evaluator Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedSubject && submissions[selectedSubject]?.length > 0 ? (
+                submissions[selectedSubject].map((sub) => (
+                  <tr key={sub.id}>
+                    <td>{users[sub.submittedBy] || "Unknown User"}</td>
+                    <td>
+                      {sub.submittedAt
+                        ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
+                        : "Not Submitted"}
+                    </td>
+                    <td>{sub.autoStatus || "No Submission"}</td>
+                    <td>
+                    <Select
+                    menuPosition="fixed"
+          menuPlacement="auto"
+  value={allStatuses
+    .map((status) => ({ value: status, label: status, color: statusColors[status] }))
+    .find((option) => option.value === (pendingStatus[sub.id] ?? sub.evaluatorStatus ?? "Pending"))
+  }
+  options={allStatuses.map((status) => ({
+    value: status,
+    label: status,
+    color: statusColors[status],
+  }))}
+
+  onChange={(selectedOption) => {
+    if (!selectedOption) return;
+    setPendingStatus((prev) => ({ ...prev, [sub.id]: selectedOption.value }));
+    handleStatusUpdate(sub.id, selectedOption.value);
+  }}
+  
+
+  styles={{
+    control: (base) => ({
+      ...base,
+      borderColor: "#ccc",
+      boxShadow: "none",
+    }),
+    option: (base, { data }) => ({
+      ...base,
+      backgroundColor: data.color,
+      color: "#fff",
+    }),
+    singleValue: (base, { data }) => ({
+      ...base,
+      color: data.color,
+    }),
+  }}
+/>
+
+
+                    </td>
+                   
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5}>No submissions found.</td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        </main>
+      </section>
+    </div>
+  );
+};
+
+export default Analytics;

@@ -10,55 +10,99 @@ import {
   addDoc,
   getDocs,
   serverTimestamp,
+  query,
+  where,
+  getDocs as firestoreGetDocs,
 } from "firebase/firestore";
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
 const Communication: React.FC = () => {
   const [subject, setSubject] = useState("");
-  const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipients, setRecipients] = useState<string[]>([]); // Store userIds
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
   const [inputLink, setInputLink] = useState("");
   const [previewLink, setPreviewLink] = useState("");
   const [isDriveFolder, setIsDriveFolder] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<{ id: string; fullName: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
+  const [showDetails, setShowDetails] = useState(false);
+  const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
 
   const fetchUsers = async () => {
     try {
       console.log("Fetching users...");
       const usersRef = collection(db, "users");
       const querySnapshot = await getDocs(usersRef);
-  
+
       if (querySnapshot.empty) {
         console.warn("No users found in Firestore.");
       }
-  
+
       const usersList = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         let fullName = "";
-  
+
         if (data.fname && data.lname) {
           fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
         } else {
           fullName = data.email || "Unknown User"; // Default to email if full name is missing
         }
-  
-        return { id: doc.id, fullName };
+
+        return { id: doc.id, fullName, email: data.email };
       });
-  
+
       setUsers(usersList);
       console.log("Final User List:", usersList);
     } catch (error) {
       console.error("Error fetching users:", error instanceof Error ? error.message : error);
     }
   };
-  
 
-  // Ensure users' emails are fetched on component mount
+  const fetchSentCommunications = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const communicationsRef = collection(db, "communications");
+        const q = query(communicationsRef, where("createdBy", "==", user.uid));
+        const querySnapshot = await firestoreGetDocs(q);
+  
+        if (!querySnapshot.empty) {
+          const sentList = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            const createdAt = data.createdAt ? data.createdAt.toDate() : null; // Convert timestamp
+  
+            return {
+              id: doc.id,
+              ...data,
+              createdAt, // Add converted date
+            };
+          });
+  
+          // Sort by createdAt field (ensure it's a valid date)
+          sentList.sort((a, b) => {
+            const dateA = a.createdAt ? a.createdAt.getTime() : 0; // Ensure it's a timestamp
+            const dateB = b.createdAt ? b.createdAt.getTime() : 0;
+            return dateB - dateA;
+          });
+  
+          setSentCommunications(sentList);
+        } else {
+          console.log("No sent communications found.");
+          setSentCommunications([]);
+        }
+      } catch (error) {
+        console.error("Error fetching sent communications:", error);
+      }
+    }
+  };
+  
   useEffect(() => {
     fetchUsers();
+    fetchSentCommunications(); // Fetch sent communications on mount
   }, []);
 
   // Fetch Google Drive Link
@@ -126,10 +170,11 @@ const Communication: React.FC = () => {
     value: user.id,
     label: user.fullName,
   }));
-  
+
   const handleRecipientChange = (
     selectedOptions: MultiValue<{ value: string; label: string }>
   ) => {
+    // Store userIds instead of full names/emails
     setRecipients(selectedOptions.map((option) => option.value));
   };
 
@@ -157,7 +202,7 @@ const Communication: React.FC = () => {
       const communicationRef = collection(db, "communications");
       await addDoc(communicationRef, {
         subject,
-        recipients, // Now storing only an array of strings
+        recipients, // Store the userIds
         deadline: new Date(deadline),
         remarks,
         link: inputLink,
@@ -173,11 +218,25 @@ const Communication: React.FC = () => {
       setInputLink("");
       setPreviewLink("");
       setIsDriveFolder(false);
+
+      fetchSentCommunications(); // Fetch sent communications after sending new one
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Failed to send message. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecipientDetails = async (userId: string) => {
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      setRecipientDetails({
+        id: userDoc.id,
+        fullName: `${userDoc.data().fname} ${userDoc.data().mname || ""} ${userDoc.data().lname}`,
+        email: userDoc.data().email,
+      });
     }
   };
 
@@ -206,107 +265,135 @@ const Communication: React.FC = () => {
             <div className="order">
               <div className="head">
                 <h3> Communication Details </h3>
-              </div>  
-
-              <div className="container">
-                <div className="row">
-                  {/* Row for all input fields */}
-                  <div className="col-md-3 mb-2">
-                    <label>Subject:</label>
-                    <input
-                      type="text"
-                      className="form-label"  
-                      placeholder="Enter subject"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                    />
-                  </div>
-                  <div className="col-md-3 mb-2">
-                    <label className="form-label">Recipients:</label>
-                    <Select
-                      options={options}
-                      isMulti
-                      value={options.filter((option) =>
-                        recipients.includes(option.value)
-                      )}
-                      onChange={handleRecipientChange}
-                      className="basic-multi-select"
-                      classNamePrefix="select"
-                      placeholder="Select recipients..."
-                    />
-                  </div>
-                  <div className="col-md-3 mb-2">
-                    <label className="form-label">Deadline:</label>
-                    <input
-                      type="datetime-local"
-                      className="form-control form-control-sm"
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                    />
-                  </div>
-                  <div className="col-md-3 mb-2">
-                    <label className="form-label">Attachment/Link:</label>
-                    <input
-                      type="text"
-                      placeholder="Paste Google Drive link"
-                      className="form-control form-control-sm"
-                      value={inputLink}
-                      onChange={(e) => setInputLink(e.target.value)} // Allow free typing
-                      onBlur={() => {
-                        if (inputLink && !inputLink.startsWith("https://")) {
-                          alert("Only secure HTTPS links are allowed.");
-                          setInputLink(""); // Clear invalid input
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="col-md-3 mb-2">
-                    <label className="form-label">Remarks/Comments:</label>
-                    <textarea
-                      placeholder="Enter remarks or comments"
-                      value={remarks}
-                      className="form-control form-control-sm"
-                      onChange={(e) => setRemarks(e.target.value)}
-                    ></textarea>
-                  </div>
-                </div>
-                
+                {/* Plus button to toggle visibility */}
                 <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="btn-send btn btn-primary btn-lg w-40"
-                > 
-                  <i className="bx bxs-send bx-tada-hover"></i>
-                  <span className="text">{loading ? "Sending..." : "Send"}</span>
+                  className="btn-toggle"
+                  onClick={() => setShowDetails(!showDetails)}
+                >
+                  {showDetails ? "-" : "+"}
                 </button>
               </div>
+
+              {/* Communication details section */}
+              {showDetails && (
+                <div className="container">
+                  <div className="row">
+                    {/* Row for all input fields */}
+                    <div className="col-md-3 mb-2">
+                      <label>Subject:</label>
+                      <input
+                        type="text"
+                        className="form-label"
+                        placeholder="Enter subject"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-2">
+                      <label className="form-label">Recipients:</label>
+                      <Select
+                        options={options}
+                        isMulti
+                        value={options.filter((option) =>
+                          recipients.includes(option.value)
+                        )}
+                        onChange={handleRecipientChange}
+                        className="basic-multi-select"
+                        classNamePrefix="select"
+                        placeholder="Select recipients..."
+                      />
+                    </div>
+                    <div className="col-md-3 mb-2">
+                      <label className="form-label">Deadline:</label>
+                      <input
+                        type="datetime-local"
+                        className="form-control form-control-sm"
+                        value={deadline}
+                        onChange={(e) => setDeadline(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-2">
+                      <label className="form-label">Attachment/Link:</label>
+                      <input
+                        type="text"
+                        placeholder="Paste Google Drive link"
+                        className="form-control form-control-sm"
+                        value={inputLink}
+                        onChange={(e) => setInputLink(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    <div className="col-md-3 mb-2">
+                      <label className="form-label">Remarks/Comments:</label>
+                      <textarea
+                        placeholder="Enter remarks or comments"
+                        value={remarks}
+                        className="form-control form-control-sm"
+                        onChange={(e) => setRemarks(e.target.value)}
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="btn-send btn btn-primary btn-lg w-40"
+                  >
+                    <i className="bx bxs-send bx-tada-hover"></i>
+                    <span className="text">{loading ? "Sending..." : "Send"}</span>
+                  </button>
+                </div>
+              )}
+
             </div>
 
-            {previewLink && (
-              <div className="google-file-preview">
-                {isDriveFolder ? (
-                  <p>
-                    <strong>Google Drive Folder:</strong>{" "}
-                    <a
-                      href={previewLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open Folder
-                    </a>
-                  </p>
-                ) : (
-                  <iframe
-                    src={previewLink}
-                    width="100%"
-                    height="400px"
-                    style={{ border: "none" }}
-                    title="Google File Preview"
-                  ></iframe>
-                )}
+            {/* Display Sent Communications Table */}
+            <h3>Sent Communications</h3>
+            {sentCommunications.length === 0 ? (
+              <p>No sent communications found.</p>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Recipients</th>
+                    <th>Deadline</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sentCommunications.map((comm) => (
+                    <tr key={comm.id}>
+                      <td>{comm.subject}</td>
+                      <td>
+                        {comm.recipients.map((userId: string, idx: number) => {
+                          const user = users.find((user) => user.id === userId);
+                          return (
+                            <span
+                              key={idx}
+                              onClick={() => fetchRecipientDetails(userId)}
+                            >
+                              {user ? user.fullName : "Unknown User"}
+                              {idx < comm.recipients.length - 1 && ", "}
+                            </span>
+                          );
+                        })}
+                      </td>
+                      <td>{new Date(comm.deadline.seconds * 1000).toLocaleString()}</td>
+                      <td>{comm.remarks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {recipientDetails && (
+              <div className="recipient-details">
+                <h4>Recipient Details</h4>
+                <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+                <p><strong>Email:</strong> {recipientDetails.email}</p>
               </div>
             )}
           </div>
