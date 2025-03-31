@@ -5,9 +5,12 @@ import { useLocation } from "react-router-dom";
 import DOMPurify from "dompurify";
 
 const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<React.SetStateAction<number>> }) => {
-  const [messages, setMessages] = useState<{ sender: string; text: string; timestamp: number }[]>([]);
+  const [messages, setMessages] = useState<{
+    mentions: never[]; sender: string; text: string; timestamp: number
+  }[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [mentionSuggestions, setMentionSuggestions] = useState<{[x: string]: string; username: string, fullName: string }[]>([]); // Store full name or email with username
   const auth = getAuth();
   const db = getFirestore();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +55,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
             sender: data.sender,
             text: data.text,
             timestamp: data.timestamp,
+            mentions: data.mentions || [], // Add mentions with a default empty array
           };
         })
       );
@@ -76,43 +80,74 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
     }
   }, [messages]);
 
+  // Fetch user full name (or email if full name is not set)
   const fetchUserFullName = async (uid: string) => {
     try {
       const userDoc = await getDoc(doc(db, "users", uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
-        return data.fname && data.lname
+        const fullName = data.fname && data.lname
           ? `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`
           : auth.currentUser?.email || "Anonymous";
+        return fullName;
       }
     } catch (error) {
       console.error("Error fetching user full name:", error);
     }
     return auth.currentUser?.email || "Anonymous";
   };
-
   const sendMessage = async () => {
     if (newMessage.trim() === "") return;
+  
     const messageToSend = newMessage;
     setNewMessage("");
-
+  
     try {
       const user = auth.currentUser;
       if (!user) {
         setError("You must be logged in to send a message.");
         return;
       }
-
+  
       const fullName = await fetchUserFullName(user.uid);
-
+  
+      // Detect mentions in the message text (e.g., @username)
+      const mentionRegex = /@([a-zA-Z0-9_]+)/g; // Matches '@username' format
+      const mentions = [];
+      let match;
+      while ((match = mentionRegex.exec(messageToSend)) !== null) {
+        const username = match[1];
+        mentions.push(username); // Store the username (or user ID if needed)
+  
+        // Send a notification to the mentioned user
+        const mentionedUserRef = query(
+          collection(db, "users"),
+          where("username", "==", username)
+        );
+        const mentionedUserSnapshot = await getDocs(mentionedUserRef);
+        mentionedUserSnapshot.forEach(async (docSnap) => {
+          const mentionedUser = docSnap.data();
+          // Create a notification for the mentioned user
+          await addDoc(collection(db, "notifications"), {
+            userId: mentionedUser.uid,
+            messageId: "", // You can store the message ID here if needed
+            message: `${fullName} mentioned you in a message`,
+            timestamp: Date.now(),
+            seen: false, // Set to false initially
+          });
+        });
+      }
+  
+      // Save the message to Firestore along with mentions
       await addDoc(collection(db, "messages"), {
         sender: fullName,
         text: messageToSend,
         timestamp: Date.now(),
+        mentions: mentions, // Store the mentioned usernames here
       });
-
+  
       setError(null);
-
+  
       if (!isMessagingPage) {
         setUnreadMessages((prev) => prev + 1);
       }
@@ -121,17 +156,73 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
       setError("Failed to send message. Please try again.");
     }
   };
-
-  const formatMessage = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const formattedText = text.replace(
-      urlRegex,
-      (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-    );
-
-    return DOMPurify.sanitize(formattedText);
+  
+  // Format message text and highlight mentions
+  const formatMessage = (text: string, mentions: string[]) => {
+    const mentionRegex = /@([a-zA-Z0-9_]+)/g;
+  
+    // Replace mentions with highlighted spans
+    const formattedText = text.replace(mentionRegex, (match, username) => {
+      if (mentions.includes(username)) {
+        return `<span class="mention">@${username}</span>`;
+      }
+      return match;
+    });
+  
+    return DOMPurify.sanitize(formattedText); // Sanitizing to avoid XSS attacks
   };
 
+  const handleMentionInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Detect if the user is typing a mention (i.e., starts with @)
+    const mentionRegex = /@([a-zA-Z0-9_]+)$/; // Look for the last word after '@'
+    const match = value.match(mentionRegex);
+
+    if (match) {
+      const searchQuery = match[1];
+      fetchUsersForMention(searchQuery); // Fetch users whose username matches the query
+    } else {
+      setMentionSuggestions([]);
+    }
+  };
+
+  const fetchUsersForMention = async (queryText: string) => {
+    try {
+      const usersRef = collection(db, "users");
+  
+      // Use a query to search by email or full name
+      const q = query(
+        usersRef,
+        where("email", ">=", queryText),
+        where("email", "<=", queryText + "\uf8ff")
+      );
+  
+      // Fetch documents based on the query
+      const snapshot = await getDocs(q);
+  
+      // Process the snapshot to extract necessary details (email or full name)
+      const suggestions = snapshot.docs.map((doc) => {
+        const userData = doc.data();
+        const fullName = `${userData.fname} ${userData.mname ? userData.mname + " " : ""}${userData.lname}`;
+        return { email: userData.email, fullName: fullName.trim(), username: userData.username || userData.email };
+      });
+  
+      setMentionSuggestions(suggestions);
+    } catch (error) {
+      console.error("Error fetching users for mention:", error);
+    }
+  };
+
+  const handleMentionSelect = (mention: string) => {
+    // Replace the current mention input with the selected mention
+    const mentionRegex = /@([a-zA-Z0-9_]+)$/;
+    const updatedMessage = newMessage.replace(mentionRegex, `@${mention}`);
+    setNewMessage(updatedMessage);
+    setMentionSuggestions([]); // Hide the suggestion list
+  };
+  
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
@@ -142,7 +233,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
             <strong>{msg.sender}:</strong>
             <p
               style={{ whiteSpace: "pre-wrap" }}
-              dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
+              dangerouslySetInnerHTML={{ __html: formatMessage(msg.text, msg.mentions || []) }}
             />
             <div className="timestamp">{formatTimestamp(msg.timestamp)}</div>
           </div>
@@ -156,7 +247,7 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
           className="message-input"
           placeholder="Type a message..."
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={handleMentionInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -167,6 +258,16 @@ const Messaging = ({ setUnreadMessages }: { setUnreadMessages: React.Dispatch<Re
           }}
         />
         <button onClick={sendMessage}>Send</button>
+        {/* Mention Suggestions Dropdown */}
+        {mentionSuggestions.length > 0 && (
+          <ul className="mention-suggestions">
+            {mentionSuggestions.map((suggestion, index) => (
+              <li key={index} onClick={() => handleMentionSelect(suggestion.fullName || suggestion.email)}>
+                @{suggestion.fullName || suggestion.email}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
