@@ -21,7 +21,6 @@ const Dashboard = () => {
                 setCurrentUser(null);
             }
         });
-
         return () => unsubscribe();
     }, []);
 
@@ -69,7 +68,6 @@ const Dashboard = () => {
                 console.error('Error adding task to Firestore:', error);
                 setError('Failed to add task. Please try again later.');
                 setStatusMessage('An error occurred while adding the task.');
-
                 setTimeout(() => setStatusMessage(null), 3000);
 
             }
@@ -95,7 +93,6 @@ const Dashboard = () => {
             console.error('Error updating task completion in Firestore:', error);
             setError('Failed to update task status. Please try again later.');
             setStatusMessage('An error occurred while updating the task status.');
-
             setTimeout(() => setStatusMessage(null), 3000);
 
         }
@@ -145,9 +142,9 @@ const Dashboard = () => {
                         <div className="left">
                             <h1>Admin Dashboard</h1>
                             <ul className="breadcrumb">
-                                <li><a href="#">Administrative Tools</a></li>
-                                <li><i className='bx bx-chevron-right'></i></li>
                                 <li><a className="active" href="#">Home</a></li>
+                                <li><i className='bx bx-chevron-right'></i></li>
+                                <li><a href="#">Dashboard Tools</a></li>
                             </ul>
                         </div>
                     </div>
