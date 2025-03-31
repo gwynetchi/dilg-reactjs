@@ -215,6 +215,7 @@ ol, ul {
 
 .delete-btn:hover {
     background-color: darkred;
+	border-radius: 50px;
 }
 .status-message {
     background-color: #e0ffe0;
