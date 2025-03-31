@@ -190,7 +190,6 @@ const Inbox: React.FC = () => {
           <div className="table-data">
             <div className="order">
               <div className="inbox-container">
-                <h2>Inbox</h2>
                 {loading ? (
                   <p>Loading messages...</p>
                 ) : communications.length === 0 ? (
