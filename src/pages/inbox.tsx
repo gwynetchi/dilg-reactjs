@@ -206,48 +206,47 @@ const Inbox: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-  {communications.map((msg) => (
-    <tr
-      key={msg.id}
-      onClick={() => openMessage(msg.id)}
-      style={{
-        cursor: "pointer",
-        fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold", // Bold if unread
-        backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5", // Highlight unread
-      }}
-    >
-      <td>{senderNames[msg.createdBy] || "Loading..."}</td>
-      <td>{msg.subject}</td>
-      <td>
-        {msg.createdAt && typeof msg.createdAt.seconds === "number" ? (
-          new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: true,
-          })
-        ) : (
-          <span style={{ color: "red" }}>No Timestamp</span>
-        )}
-      </td>
-
-      <td>
-        <button
-          className="delete-btn"
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent row click event
-            deleteMessage(msg.id, msg.recipients); // Pass recipients array to the delete function
-          }}
-        >
-          🗑️ Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
+                      {communications.map((msg) => (
+                        <tr
+                          key={msg.id}
+                          onClick={() => openMessage(msg.id)}
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold", // Bold if unread
+                            backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5", // Highlight unread
+                          }}
+                        >
+                          <td>{senderNames[msg.createdBy] || "Loading..."}</td>
+                          <td>{msg.subject}</td>
+                          <td>
+                            {msg.createdAt && typeof msg.createdAt.seconds === "number" ? (
+                              new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: true,
+                              })
+                            ) : (
+                              <span style={{ color: "red" }}>No Timestamp</span>
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              className="delete-btn"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent row click event
+                                deleteMessage(msg.id, msg.recipients); // Pass recipients array to the delete function
+                              }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 )}
               </div>

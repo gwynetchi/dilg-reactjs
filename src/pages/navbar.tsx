@@ -86,7 +86,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           setUserRole(userSnap.data().role);
-          setUserProfilePic(userSnap.data().profilePic || "https://placehold.co/600x400/png"); // Default profile image if none available
+          setUserProfilePic(userSnap.data().profilePic || "/person.svg"); // Default profile image if none available
         }
       } else {
         setUserId(null);
@@ -284,7 +284,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
           <div className="position-relative" ref={notificationMenuRef}>
             <button className="btn notification" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
-              <i className="bx bxs-bell bx-tada-hover"></i>
+              <i className="bx bx-md bxs-bell bx-tada-hover"></i>
               {unreadCount > 0 && <span className="num">{unreadCount}</span>}
             </button>
 
