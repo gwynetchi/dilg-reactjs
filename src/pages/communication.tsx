@@ -249,13 +249,10 @@ const Communication: React.FC = () => {
               <h1>Communication</h1>
               <ul className="breadcrumb">
                 <li>
-                  <a href="#" className="active"> Home </a>
+                  <a href="/dashboards" className="active"> Home </a>
                 </li>
                 <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <a href="#" className="active"> Home </a>
+                  <i className="bx bx-chevron-right"> Communication Details</i>
                 </li>
               </ul>
             </div>
@@ -264,7 +261,6 @@ const Communication: React.FC = () => {
           <div className="table-data">
             <div className="order">
               <div className="head">
-                <h3> Communication Details </h3>
                 {/* Plus button to toggle visibility */}
                 <button
                   className="btn-toggle"
