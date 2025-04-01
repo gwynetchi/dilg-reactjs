@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { Link } from "react-scroll";
 // Assets
-import LogoImg from "../../assets/svg/Logo";
+import LogoImg from "../../public/images/logo.png";
 
 
 
@@ -18,7 +18,7 @@ export default function Contact() {
         <div className="container">
           <InnerWrapper className="flexSpaceCenter" style={{ padding: "30px 0" }}>
             <Link className="flexCenter animate pointer" to="home" smooth={true} offset={-80}>
-              <LogoImg />
+              <img src={LogoImg} alt="DILG-CAVITE Logo" width="50" height="50" />
               <h1 className="font15 extraBold whiteColor" style={{ marginLeft: "15px" }}>
                 DILG-Cavite
               </h1>

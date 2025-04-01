@@ -1,8 +1,8 @@
 import styled from "styled-components";
 // Assets
-import ContactImg1 from "../../assets/img/contact-1.png";
-import ContactImg2 from "../../assets/img/contact-2.png";
-import ContactImg3 from "../../assets/img/contact-3.png";
+import ContactImg1 from "../../assets/img/contactimg/contactimg1.jpg";
+import ContactImg2 from "../../assets/img/contactimg/contactimg2.jpg";
+import ContactImg3 from "../../assets/img/contactimg/contactimg3.jpg";
 
 
 export default function Contact() {
@@ -85,15 +85,15 @@ const Form = styled.form`
   }
 `;
 const ButtonInput = styled.input`
-  border: 1px solid #7620ff;
-  background-color: #7620ff;
+  border: 1px solid #0B093B;
+  background-color: #0B093B;
   width: 100%;
   padding: 15px;
   outline: none;
   color: #fff;
-  :hover {
-    background-color: #580cd2;
-    border: 1px solid #7620ff;
+  &:hover {
+    background-color:rgb(231, 171, 4);
+    border: 1px solid #F2B300;
     color: #fff;
   }
   @media (max-width: 991px) {
