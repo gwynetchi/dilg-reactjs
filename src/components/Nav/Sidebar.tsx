@@ -53,7 +53,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
             About Us
           </Link>
         </li>
-        <li className="semiBold font15 pointer">
+        {/* <li className="semiBold font15 pointer">
           <Link
             onClick={() => toggleSidebar(!sidebarOpen)}
             activeClass="active"
@@ -94,7 +94,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar }: SidebarProps) {
           >
             Projects
           </Link>
-        </li>
+        </li> */}
         <li className="semiBold font15 pointer">
           <Link
             onClick={() => toggleSidebar(!sidebarOpen)}

@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import { useState } from "react";
-import { Dialog, DialogPanel, DialogTitle, Description} from "@headlessui/react";
 
 // Components
 import BlogBox from "../Elements/BlogBox";
@@ -89,21 +88,13 @@ export default function Blog() {
     
   ];
   
-  //   // State to control visible posts
-  // const [visiblePosts, setVisiblePosts] = useState(0); // Show only 3 initially
+    // State to control visible posts
+  const [visiblePosts, setVisiblePosts] = useState(4); // Show only 3 initially
 
-  // // Function to load more posts
-  // const loadMore = () => {
-  //   setVisiblePosts((prev) => prev + 4); // Show 3 more on each click
-  // };
-
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
-
-  const openModal = (post: BlogPost) => {
-    console.log('Opening modal for:', post);
-    setSelectedPost(post);
+  // Function to load more posts
+  const loadMore = () => {
+    setVisiblePosts((prev) => prev + 4); // Show 3 more on each click
   };
-  const closeModal = () => setSelectedPost(null);
 
   return (
     <Wrapper id="blog">
@@ -118,7 +109,7 @@ export default function Blog() {
             </p>
           </HeaderInfo>
           <div className="row textCenter flexCenter">
-                {/* <div className="col-xs-12 col-sm-4 col-md-4 col-lg-4">
+                <div className="col-xs-12 col-sm-4 col-md-4 col-lg-4">
                 <BlogBox
                     title="Engr. Danilo Nobleza"
                     text=""
@@ -127,22 +118,11 @@ export default function Blog() {
                     action={() => alert("clicked")}
                     
                 />
-                </div> */}
-            {allPosts.map((post, index) => (
-              <div key={index} className="col-xs-12 col-sm-4 col-md-4 col-lg-3">
-                <BlogBox
-                  title={post.title}
-                  text={post.text}
-                  tag={post.tag}
-                  author={post.author}
-                  action={() => openModal(post)}
-                />
-              </div>
-            ))}
+                </div>
 
           </div>
           
-          {/* <div className="row textCenter flexCenter">
+          <div className="row textCenter flexCenter">
             {allPosts.slice(0, visiblePosts).map((post, index) => (
               <div key={index} className="col-xs-12 col-sm-4 col-md-4 col-lg-3">
                 <BlogBox
@@ -161,47 +141,9 @@ export default function Blog() {
                 <FullButton title="Load More" action={loadMore} border={undefined} />
               </div>
             )}
-          </div> */}
+          </div>
         </div>
       </div>
-
-      {selectedPost && (
-        <Dialog open={true} onClose={closeModal} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true"></div>
-    
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="w-full max-w-md bg-white rounded p-6 shadow-lg">
-            <DialogTitle className="font-bold text-xl mb-4">{selectedPost.title}</DialogTitle>
-            <Description className="mb-4">{selectedPost.tag}</Description>
-    
-            <div className="mt-4">
-              {selectedPost.children ? (
-                selectedPost.children.map((child, index) => (
-                  <div key={index} className="mb-2">
-                    <BlogBox
-                      title={child.title}
-                      text={child.text}
-                      tag={child.tag}
-                      author={child.author}
-                      action={() => alert(`Clicked on ${child.title}`)}
-                    />
-                  </div>
-                ))
-              ) : (
-                <p>No children available for this post.</p>
-              )}
-            </div>
-    
-            <button
-              className="mt-4 px-4 py-2 bg-gray-500 text-white rounded"
-              onClick={closeModal}
-            >
-              Close
-            </button>
-          </DialogPanel>
-        </div>
-      </Dialog>
-      )}
 
 
 
