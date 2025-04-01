@@ -180,7 +180,7 @@ ol, ul {
   bottom: 40px; /* İkinci son öğeyi yukarı kaydır */
 }
 
-/* Example styles for the todo input section */
+/* Styles for the todo input section */
 .todo-table {
     width: 100%;
     border-collapse: collapse;
@@ -208,14 +208,18 @@ ol, ul {
 .delete-btn {
     background-color: #d10047;
     color: white;
+    display: block; /* Ensures margin auto works */
     padding: 5px 10px;
     border: none;
     cursor: pointer;
+    border-radius: 10px;
+    margin: 0 auto; /* Centers horizontally */
+    text-align: center;
 }
+
 
 .delete-btn:hover {
     background-color: darkred;
-	border-radius: 50px;
 }
 .status-message {
     background-color: #e0ffe0;
@@ -643,6 +647,7 @@ body.dark #content nav .profile-menu li a {
 	border-radius: 20px;
 	background: var(--light);
 	padding: 24px;
+	justify-content: center;
 	overflow-x: auto;
 }
 #content main .table-data .head {
@@ -672,17 +677,13 @@ body.dark #content nav .profile-menu li a {
 	padding-bottom: 12px;
 	font-size: 13px;
 	text-align: left;
-	border-bottom: 1px solid var(--grey);
+	border: 3px solid var(--grey);
 }
 #content main .table-data .order table td {
 	padding: 16px 0;
+	border: 3px solid var(--grey);
 }
-#content main .table-data .order table tr td:first-child {
-	display: flex;
-	align-items: center;
-	grid-gap: 12px;
-	padding-left: 6px;
-}
+
 #content main .table-data .order table td img {
 	width: 36px;
 	height: 36px;
