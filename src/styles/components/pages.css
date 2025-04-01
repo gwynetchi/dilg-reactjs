@@ -1,12 +1,15 @@
 /* MESSAGING COMPONENT */
 .chat-container {
 	max-width: 90%;
+	max-width: 90%;
 	margin: 20px auto;
 	padding: 20px;
 	background: var(--light);
 	border-radius: 8px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	font-family: var(--lato);
+	display: flex;
+	flex-direction: column;
 	display: flex;
 	flex-direction: column;
 }
@@ -26,11 +29,14 @@
 .chat-box {
 	max-height: 300px;
 	min-height: 200px;
+	min-height: 200px;
 	overflow-y: auto;
 	margin-bottom: 16px;
 	padding: 10px;
 	background: var(--grey);
 	border-radius: 8px;
+	display: flex;
+	flex-direction: column;
 	display: flex;
 	flex-direction: column;
 }
@@ -41,6 +47,7 @@
 	background: var(--light);
 	border-radius: 6px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	word-wrap: break-word;
 	word-wrap: break-word;
 }
 
@@ -53,14 +60,30 @@
 	gap: 8px;
 	align-items: center;
 	width: 100%;
+	align-items: center;
+	width: 100%;
 }
 
+.chat-input textarea {
 .chat-input textarea {
 	flex: 1;
 	padding: 10px;
 	border: 1px solid var(--grey);
 	border-radius: 4px;
 	font-size: 14px;
+	font-family: var(--lato);
+	resize: none;
+	min-height: 40px;
+	max-height: fit-content;
+	overflow: hidden; /* Prevent scrollbars */
+	transition: height 0.2s ease-in-out;
+}
+
+
+.chat-input textarea:focus, .chat-input textarea:active {
+	height: auto;
+	min-height: 40px;
+	max-height: 300px;
 	font-family: var(--lato);
 	resize: none;
 	min-height: 40px;
@@ -116,13 +139,48 @@
 		width: 100%;
 	}
 }
+	color: cadetblue;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.chat-input textarea {
+		font-size: 12px;
+		padding: 8px;
+	}
+	.chat-input button {
+		padding: 8px 12px;
+		font-size: 12px;
+	}
+}
+
+@media (max-width: 480px) {
+	.chat-input {
+		flex-direction: column;
+		gap: 5px;
+	}
+	.chat-input textarea {
+		width: 100%;
+	}
+	.chat-input button {
+		width: 100%;
+	}
+}
 
 .content-layout {
 	transition: margin-left 0.3s ease;
 }
 
 .content-layout.expanded {
+}
+
+.content-layout.expanded {
 	margin-left: 220px; /* Adjust width based on sidebar size */
+}
+
+.content-layout.collapsed {
+	margin-left: 80px;
+}
 }
 
 .content-layout.collapsed {
