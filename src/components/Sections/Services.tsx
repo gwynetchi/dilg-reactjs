@@ -33,7 +33,7 @@ export default function Services() {
       <div className="whiteBg" style={{ padding: "60px 0" }}>
         <div className="container">
           <HeaderInfo>
-            <h1 className="font40 extraBold">DILG-Cavite's Divisions:</h1>
+            <h1 className="font40 extraBold">DILG-Cavite's Sections:</h1>
             <p className="font13">
             The Department of the Interior and Local Government (DILG) is composed of three key divisions.
               <br />
@@ -45,21 +45,21 @@ export default function Services() {
             <ServiceBoxWrapper>
               <ServiceBox
                 icon="MEDlogo"
-                title="Monitoring and Evaluation Division (MED)"
+                title="Monitoring and Evaluation Section (MES)"
                 subtitle="Oversees the performance of local government units (LGUs) by implementing monitoring, evaluation, and assessment programs to ensure effective governance and service delivery."
               />
             </ServiceBoxWrapper>
             <ServiceBoxWrapper>
               <ServiceBox
                 icon="CDDlogo"
-                title="Capability Development Division (CDD)"
+                title="Capability Development Section (CDS)"
                 subtitle="Enhances the skills and competencies of local government officials and employees through training programs, technical assistance, and capacity-building initiatives to strengthen local governance."
               />
             </ServiceBoxWrapper>
             <ServiceBoxWrapper>
               <ServiceBox
                 icon="FADlogo"
-                title="Financial and Administrative Division (FAD)"
+                title="Financial and Administrative Section (FAS)"
                 subtitle="Nangangasiwa sa pinansyal, human resource, at administratibong operasyon upang matiyak ang maayos at transparent na paggamit ng mga pondo at mapagkukunan ng ahensya."
               />
             </ServiceBoxWrapper>

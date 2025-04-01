@@ -9,6 +9,7 @@ import Contact from "../components/Sections/Contact";
 import Footer from "../components/Sections/Footer"
 
 
+
 import "../style/flexboxgrid.min.css";
 import '../style/index.css';
 import "slick-carousel/slick/slick.css";
@@ -20,7 +21,7 @@ export default function Landing() {
       <TopNavbar />
       <Header />
       <Services />
-      <Projects />
+      {/* <Projects /> */}
       <Blog />
       <Pricing />
       <Contact />
