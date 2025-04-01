@@ -240,7 +240,7 @@ const Inbox: React.FC = () => {
                                 deleteMessage(msg.id, msg.recipients); // Pass recipients array to the delete function
                               }}
                             >
-                              🗑️ Delete
+                              Delete
                             </button>
                           </td>
                         </tr>

@@ -252,7 +252,10 @@ const Communication: React.FC = () => {
                   <a href="/dashboards" className="active"> Home </a>
                 </li>
                 <li>
-                  <i className="bx bx-chevron-right"> Communication Details</i>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
+                <li>
+                  <a > Communication Details </a>
                 </li>
               </ul>
             </div>

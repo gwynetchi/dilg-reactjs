@@ -10,7 +10,9 @@ const Profile = () => {
   const [mname, setMiddleName] = useState<string>("");
   const [lname, setLastName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
+  const [alert, setAlert] = useState<{ message: string; type: string } | null>(
+    null
+  );
   const [isEditing, setIsEditing] = useState<boolean>(false); // Track if the user is editing
 
   useEffect(() => {
@@ -59,13 +61,22 @@ const Profile = () => {
     setLoading(true);
     try {
       const userDocRef = doc(db, "users", user.uid);
-      await setDoc(userDocRef, { fname, mname: mname || "", lname }, { merge: true });
+      await setDoc(
+        userDocRef,
+        { fname, mname: mname || "", lname },
+        { merge: true }
+      );
 
       showAlert("Profile Updated Successfully!", "success");
       setIsEditing(false); // Exit edit mode after successful save
     } catch (error) {
       console.error("Error Saving Profile Information:", error);
-      showAlert(`Error: ${(error as any).message || "Could not save profile. Please try again!"}`, "danger");
+      showAlert(
+        `Error: ${
+          (error as any).message || "Could not save profile. Please try again!"
+        }`,
+        "danger"
+      );
     } finally {
       setLoading(false);
     }
@@ -99,9 +110,13 @@ const Profile = () => {
               <h1>Profile</h1>
               <ul className="breadcrumb">
                 <li>
-                  <a className="active" href="/Dashboards">Home</a>
+                  <a className="active" href="/Dashboards">
+                    Home
+                  </a>
                 </li>
-                <li><i className="bx bx-chevron-right"></i></li>
+                <li>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
                 <li>
                   <a href={`/profile/${user?.uid}`}>Profile</a>
                 </li>
@@ -121,6 +136,33 @@ const Profile = () => {
               <div className="order">
                 <div className="head">
                   <h3>Information</h3>
+                  <div className="d-flex justify-content-between">
+                    {isEditing ? (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                      >
+                        {loading ? "Saving..." : "Save Profile"}
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setIsEditing(true)} // Enable editing
+                      >
+                        Edit
+                      </button>
+                    )}
+
+                    {isEditing && (
+                      <button
+                        className="btn btn-light btn-sm"
+                        onClick={() => setIsEditing(false)} // Cancel editing
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="container">
@@ -164,34 +206,6 @@ const Profile = () => {
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="d-flex justify-content-between">
-                  {isEditing ? (
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={handleSubmit}
-                      disabled={loading}
-                    >
-                      {loading ? "Saving..." : "Save Profile"}
-                    </button>
-                  ) : (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setIsEditing(true)} // Enable editing
-                    >
-                      Edit
-                    </button>
-                  )}
-
-                  {isEditing && (
-                    <button
-                      className="btn btn-light btn-sm"
-                      onClick={() => setIsEditing(false)} // Cancel editing
-                    >
-                      Cancel
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
