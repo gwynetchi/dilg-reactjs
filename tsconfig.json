@@ -6,6 +6,11 @@
   ],
   "compilerOptions": {
     "jsx": "react-jsx",
-    "lib": ["dom", "esnext"]
+    "lib": ["dom", "esnext"],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    
   }
+}
 }

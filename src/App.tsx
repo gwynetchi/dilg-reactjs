@@ -121,13 +121,29 @@ const App: React.FC = () => {
   };
 
   const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole: string }) => {
-    if (loading) return <div>Loading...</div>;
+    if (loading)
+      return (
+        <div className="d-flex justify-content-center align-items-center vh-100">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      );
+    
     if (!user) return <Navigate to="/" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
+    
     return children;
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading)
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );  
 
   return (
     <Router>

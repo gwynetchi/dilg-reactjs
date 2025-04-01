@@ -181,7 +181,7 @@ const Inbox: React.FC = () => {
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <Link to="#" className="active">Inbox</Link>
+                  <Link to="#" >Inbox</Link>
                 </li>
               </ul>
             </div>
@@ -211,8 +211,8 @@ const Inbox: React.FC = () => {
                           onClick={() => openMessage(msg.id)}
                           style={{
                             cursor: "pointer",
-                            fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold", // Bold if unread
-                            backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5", // Highlight unread
+                            fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold",
+                            backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5",
                           }}
                         >
                           <td>{senderNames[msg.createdBy] || "Loading..."}</td>
@@ -240,7 +240,7 @@ const Inbox: React.FC = () => {
                                 deleteMessage(msg.id, msg.recipients); // Pass recipients array to the delete function
                               }}
                             >
-                              🗑️ Delete
+                              Delete
                             </button>
                           </td>
                         </tr>
