@@ -4,8 +4,6 @@ import Select, { MultiValue } from "react-select";
 import {
   doc,
   getDoc,
-  setDoc,
-  deleteDoc,
   collection,
   addDoc,
   getDocs,
@@ -23,8 +21,6 @@ const Communication: React.FC = () => {
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
   const [inputLink, setInputLink] = useState("");
-  const [previewLink, setPreviewLink] = useState("");
-  const [isDriveFolder, setIsDriveFolder] = useState(false);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
@@ -105,67 +101,6 @@ const Communication: React.FC = () => {
     fetchSentCommunications(); // Fetch sent communications on mount
   }, []);
 
-  // Fetch Google Drive Link
-  useEffect(() => {
-    const fetchLink = async () => {
-      const docRef = doc(db, "settings", "googleFile");
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const savedLink = docSnap.data().link;
-        setInputLink(savedLink);
-        processLink(savedLink);
-      }
-    };
-    fetchLink();
-  }, []);
-
-  // Save Link with Debounce Effect
-  useEffect(() => {
-    const saveLink = async () => {
-      if (!inputLink.trim()) {
-        await deleteDoc(doc(db, "settings", "googleFile"));
-        setPreviewLink("");
-        setIsDriveFolder(false);
-        return;
-      }
-
-      processLink(inputLink);
-      await setDoc(doc(db, "settings", "googleFile"), { link: inputLink });
-    };
-
-    const timeoutId = setTimeout(saveLink, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [inputLink]);
-
-  // Process Google Drive Link
-  const processLink = (url: string) => {
-    if (!url.trim()) {
-      setPreviewLink("");
-      setIsDriveFolder(false);
-      return;
-    }
-
-    let modifiedLink = "";
-
-    if (url.includes("docs.google.com/spreadsheets")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/document")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/forms")) {
-      modifiedLink = url;
-    } else if (url.includes("drive.google.com/file")) {
-      modifiedLink = url.replace("/view", "/preview");
-    } else if (url.includes("drive.google.com/drive/folders")) {
-      modifiedLink = url;
-      setIsDriveFolder(true);
-    } else {
-      modifiedLink = "";
-      setIsDriveFolder(false);
-    }
-
-    setPreviewLink(modifiedLink);
-  };
-
   const options: { value: string; label: string }[] = users.map((user) => ({
     value: user.id,
     label: user.fullName,
@@ -216,8 +151,6 @@ const Communication: React.FC = () => {
       setDeadline("");
       setRemarks("");
       setInputLink("");
-      setPreviewLink("");
-      setIsDriveFolder(false);
 
       fetchSentCommunications(); // Fetch sent communications after sending new one
     } catch (error) {
