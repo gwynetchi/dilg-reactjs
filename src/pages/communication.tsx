@@ -4,8 +4,6 @@ import Select, { MultiValue } from "react-select";
 import {
   doc,
   getDoc,
-  setDoc,
-  deleteDoc,
   collection,
   addDoc,
   getDocs,
@@ -23,10 +21,9 @@ const Communication: React.FC = () => {
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
   const [inputLink, setInputLink] = useState("");
-  const [previewLink, setPreviewLink] = useState("");
-  const [isDriveFolder, setIsDriveFolder] = useState(false);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
@@ -105,67 +102,6 @@ const Communication: React.FC = () => {
     fetchSentCommunications(); // Fetch sent communications on mount
   }, []);
 
-  // Fetch Google Drive Link
-  useEffect(() => {
-    const fetchLink = async () => {
-      const docRef = doc(db, "settings", "googleFile");
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const savedLink = docSnap.data().link;
-        setInputLink(savedLink);
-        processLink(savedLink);
-      }
-    };
-    fetchLink();
-  }, []);
-
-  // Save Link with Debounce Effect
-  useEffect(() => {
-    const saveLink = async () => {
-      if (!inputLink.trim()) {
-        await deleteDoc(doc(db, "settings", "googleFile"));
-        setPreviewLink("");
-        setIsDriveFolder(false);
-        return;
-      }
-
-      processLink(inputLink);
-      await setDoc(doc(db, "settings", "googleFile"), { link: inputLink });
-    };
-
-    const timeoutId = setTimeout(saveLink, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [inputLink]);
-
-  // Process Google Drive Link
-  const processLink = (url: string) => {
-    if (!url.trim()) {
-      setPreviewLink("");
-      setIsDriveFolder(false);
-      return;
-    }
-
-    let modifiedLink = "";
-
-    if (url.includes("docs.google.com/spreadsheets")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/document")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/forms")) {
-      modifiedLink = url;
-    } else if (url.includes("drive.google.com/file")) {
-      modifiedLink = url.replace("/view", "/preview");
-    } else if (url.includes("drive.google.com/drive/folders")) {
-      modifiedLink = url;
-      setIsDriveFolder(true);
-    } else {
-      modifiedLink = "";
-      setIsDriveFolder(false);
-    }
-
-    setPreviewLink(modifiedLink);
-  };
-
   const options: { value: string; label: string }[] = users.map((user) => ({
     value: user.id,
     label: user.fullName,
@@ -178,14 +114,20 @@ const Communication: React.FC = () => {
     setRecipients(selectedOptions.map((option) => option.value));
   };
 
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
+    setAlert({ message, type });
+  
+    setTimeout(() => setAlert(null), 8000); // Hide after 5 seconds
+  };  
+
   const handleSubmit = async () => {
     if (!subject || recipients.length === 0 || !deadline || !remarks) {
-      alert("Please fill in all fields before sending.");
+      showAlert("Please fill in all fields before sending");
       return;
     }
 
     if (inputLink && !inputLink.startsWith("https://")) {
-      alert("Only HTTPS links are allowed.");
+      showAlert("Only HTTPS links are allowed!");
       return;
     }
     setLoading(true);
@@ -194,7 +136,7 @@ const Communication: React.FC = () => {
       const user = auth.currentUser;
 
       if (!user) {
-        alert("You must be logged in to send a communication.");
+        showAlert("You must be logged in to send a communication");
         setLoading(false);
         return;
       }
@@ -210,23 +152,37 @@ const Communication: React.FC = () => {
         createdAt: serverTimestamp(),
       });
 
-      alert("Message sent successfully!");
+      showAlert("Message Sent Successfully!", "success");
+
       setSubject("");
       setRecipients([]); // Reset selection
       setDeadline("");
       setRemarks("");
       setInputLink("");
-      setPreviewLink("");
-      setIsDriveFolder(false);
 
       fetchSentCommunications(); // Fetch sent communications after sending new one
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("Failed to send message. Please try again.");
+      showAlert("Failed to send message. Please try again!");
     } finally {
       setLoading(false);
     }
   };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "success":
+        return "✔️"; // Checkmark or a success icon
+      case "error":
+        return "❌"; // Cross or an error icon
+      case "warning":
+        return "⚠️"; // Warning sign
+      case "info":
+        return "ℹ️"; // Info symbol
+      default:
+        return "ℹ️"; // Default info icon
+    }
+  };  
 
   const fetchRecipientDetails = async (userId: string) => {
     const userRef = doc(db, "users", userId);
@@ -249,22 +205,27 @@ const Communication: React.FC = () => {
               <h1>Communication</h1>
               <ul className="breadcrumb">
                 <li>
-                  <a href="#" className="active"> Home </a>
+                  <a href="/dashboards" className="active"> Home </a>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <a href="#" className="active"> Home </a>
+                  <a > Communication Details </a>
                 </li>
               </ul>
             </div>
           </div>
 
+          {alert && (
+            <div className={`custom-alert alert-${alert.type}`}>
+            <span className="alert-icon">{getIcon(alert.type)}</span>
+            <span>{alert.message}</span>
+        </div>
+)}
           <div className="table-data">
             <div className="order">
               <div className="head">
-                <h3> Communication Details </h3>
                 {/* Plus button to toggle visibility */}
                 <button
                   className="btn-toggle"

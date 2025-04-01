@@ -11,47 +11,54 @@ export default function Pricing() {
       <div className="whiteBg">
         <div className="container">
           <HeaderInfo>
-            <h1 className="font40 extraBold">The DILG's Quality Policies, Objectives and Goals</h1>
+            <h1 className="font40 extraBold">Quality Policy, Objectives and Goals</h1>
             <p className="font13">
-              Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut
+              The DILG upholds transparency, accountability, and efficiency in local governance. Committed to policy development and capacity-building,
               <br />
-              labore et dolore magna aliquyam erat, sed diam voluptua.
+              it ensures resilient, inclusive, and progressive communities through continuous improvement and excellence.
             </p>
           </HeaderInfo>
           <TablesWrapper className="flexSpaceNull">
             <TableBox>
               <PricingTable
                 icon=""
-                price="DILG Quality Policies"
+                price="Quality Policy"
                 title=""
                 text="We, the DILG, imbued with the core values of Integrity, Commitment, Teamwork and Responsiveness, commit to formulate sound policies on strengthening local government capacities, performing oversight function over LGUs, and providing rewards and incentives. We pledge to provide effective technical and administrative services to uphold excellence in local governance and enhance the service delivery of our Regional and Field Offices for the LGUs to become transparent, resilient, socially-protective and competitive, where people in the community live happily. We commit to continually improve the effectiveness of our Quality Management System compliant with applicable statutory and regulatory requirements and international standards gearing towards organizational efficiency in pursuing our mandate and achieving our client’s satisfaction. We commit to consistently demonstrate a “Matino, Mahusay at Maasahang Kagawaran Para sa Mapagkalinga at Maunlad na Pamahalaang Lokal”."
 
-                action={() => alert("clicked")} offers={[]}              />
+                action={() => alert("clicked")} offers={[]}              
+              />
             </TableBox>
             <TableBox>
               <PricingTable
                 icon="monitor"
-                price="$49,99/mo"
-                title="Basic"
-                text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor."
+                price="Objectives"
+                title=""
+                text=""
                 offers={[
-                  { name: "Product Offer", cheked: true },
-                  { name: "Offer", cheked: true },
-                  { name: "Product Offer #2", cheked: true },
-                  { name: "Product", cheked: true },
-                  { name: "Product Offer", cheked: false },
+                  { name: "Reduce crime incidents and improve crime solution efficiency", cheked: true },
+                  { name: "Improve jail management and penology services", cheked: true },
+                  { name: "Improve fire protection services", cheked: true },
+                  { name: "Enhance LGU capacities to improve their performance and enable them to effectively and efficiently deliver services to their constituents", cheked: true },
+                  { name: "Continue to initiate policy reforms in support of local autonomy", cheked: true },
                 ]}
                 action={() => alert("clicked")}
               />
             </TableBox>
             <TableBox>
               <PricingTable
-                icon="browser"
-                price="$59,99/mo"
-                title="Golden"
-                text="Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor."
+                icon="roller"
+                price="Goals"
+                title=""
+                text=""
+                offers={[
+                  { name: "Peaceful, safe, self-reliant and development-dominated communities;", cheked: true },
+                  { name: "Improve performance of local governments in governance, administration, social and economic development and environmental management;", cheked: true },
+                  { name: "Sustain peace and order condition and ensure public safety.", cheked: true },                  
+                ]}
 
-                action={() => alert("clicked")} offers={[]}              />
+                action={() => alert("clicked")}             
+                />
             </TableBox>
           </TablesWrapper>
         </div>
@@ -65,7 +72,7 @@ const Wrapper = styled.section`
   padding: 50px 0;
 `;
 const HeaderInfo = styled.div`
-  margin-bottom: 50px;
+  margin-bottom: 30px;
   @media (max-width: 860px) {
     text-align: center;
   }
@@ -83,6 +90,7 @@ const TableBox = styled.div`
     margin: 0 auto
   }
 `;
+
 
 
 
