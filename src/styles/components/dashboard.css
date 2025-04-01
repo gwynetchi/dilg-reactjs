@@ -887,26 +887,23 @@ body.dark #content nav .profile-menu li a {
   }
   
   .alert-success {
-	background-color: #d4edda;
-	color:rgb(0, 0, 0);
-	border: 1px solid #c3e6cb;
+	background-color: #4bf572; /* Light green */
+	color: #000000;
+  }
+  
+  .alert-error {
+	background-color:#f1838e; /* Light red */
+	color: #000000;
   }
   
   .alert-warning {
-	background-color: #fff3cd;
-	color:rgb(0, 0, 0);
-	border: 1px solid #ffeeba;
+	background-color: #ffe189; /* Light yellow */
+	color: #000000;
   }
   
-  .alert-danger {
-	background-color: #f8d7da;
-	color:rgb(0, 0, 0);
-	border: 1px solid #f5c6cb;
-  }
-  
-  .alert-icon {
-	margin-right: 10px;
-	font-size: 20px;
+  .alert-info {
+	background-color: #72ecff; /* Light blue */
+	color: #000000;
   }
   
   /* ✅ Auto-hide animation */

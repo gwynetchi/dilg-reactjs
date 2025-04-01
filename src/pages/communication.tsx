@@ -23,6 +23,7 @@ const Communication: React.FC = () => {
   const [inputLink, setInputLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
@@ -113,14 +114,20 @@ const Communication: React.FC = () => {
     setRecipients(selectedOptions.map((option) => option.value));
   };
 
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
+    setAlert({ message, type });
+  
+    setTimeout(() => setAlert(null), 8000); // Hide after 5 seconds
+  };  
+
   const handleSubmit = async () => {
     if (!subject || recipients.length === 0 || !deadline || !remarks) {
-      alert("Please fill in all fields before sending.");
+      showAlert("Please fill in all fields before sending");
       return;
     }
 
     if (inputLink && !inputLink.startsWith("https://")) {
-      alert("Only HTTPS links are allowed.");
+      showAlert("Only HTTPS links are allowed!");
       return;
     }
     setLoading(true);
@@ -129,7 +136,7 @@ const Communication: React.FC = () => {
       const user = auth.currentUser;
 
       if (!user) {
-        alert("You must be logged in to send a communication.");
+        showAlert("You must be logged in to send a communication");
         setLoading(false);
         return;
       }
@@ -145,7 +152,8 @@ const Communication: React.FC = () => {
         createdAt: serverTimestamp(),
       });
 
-      alert("Message sent successfully!");
+      showAlert("Message Sent Successfully!", "success");
+
       setSubject("");
       setRecipients([]); // Reset selection
       setDeadline("");
@@ -155,11 +163,26 @@ const Communication: React.FC = () => {
       fetchSentCommunications(); // Fetch sent communications after sending new one
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("Failed to send message. Please try again.");
+      showAlert("Failed to send message. Please try again!");
     } finally {
       setLoading(false);
     }
   };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "success":
+        return "✔️"; // Checkmark or a success icon
+      case "error":
+        return "❌"; // Cross or an error icon
+      case "warning":
+        return "⚠️"; // Warning sign
+      case "info":
+        return "ℹ️"; // Info symbol
+      default:
+        return "ℹ️"; // Default info icon
+    }
+  };  
 
   const fetchRecipientDetails = async (userId: string) => {
     const userRef = doc(db, "users", userId);
@@ -194,6 +217,12 @@ const Communication: React.FC = () => {
             </div>
           </div>
 
+          {alert && (
+            <div className={`custom-alert alert-${alert.type}`}>
+            <span className="alert-icon">{getIcon(alert.type)}</span>
+            <span>{alert.message}</span>
+        </div>
+)}
           <div className="table-data">
             <div className="order">
               <div className="head">

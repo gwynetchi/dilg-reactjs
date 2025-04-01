@@ -54,7 +54,7 @@ const Profile = () => {
     }
 
     if (!fname.trim() || !lname.trim()) {
-      showAlert("First and Last names are required", "warning");
+      showAlert("First name and last name are required!", "warning");
       return;
     }
 
