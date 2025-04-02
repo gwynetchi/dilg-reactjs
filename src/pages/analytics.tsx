@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaFileAlt, FaUsers, FaChartBar } from "react-icons/fa";
 import "../styles/components/dashboard.css";
 
@@ -7,15 +7,21 @@ const Analytics = () => {
 
   return (
     <div className="dashboard-container">
-
+      <section id="content">
         <main>
-          <div className="head-title">
+        <div className="head-title">
             <div className="left">
-              <h1>Analytics</h1>
+              <h2>Analytics</h2>
               <ul className="breadcrumb">
-                <li><a href="evaluator/dashboard">Home</a></li>
-                <li><i className="bx bx-chevron-right"></i></li>
-                <li><a >Analytics</a></li>
+                <li>
+                  <Link to="/dashboards" className="active">Home</Link>
+                </li>
+                <li>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
+                <li>
+                  <Link to="#" >Analytics</Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -39,7 +45,7 @@ const Analytics = () => {
           </div>
           </section>
         </main>    
-
+      </section>
     </div>
   );
 };
