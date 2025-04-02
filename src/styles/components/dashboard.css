@@ -1081,8 +1081,7 @@ body.dark #contentnav nav .profile-menu li a {
   
   h2 {
 	font-size: 22px;
-	font-weight: bold;
-	color: #222;
+	color: #000000;
 	margin-bottom: 10px;
 	border-bottom: 2px solid #007bff;
 	padding-bottom: 5px;
@@ -1101,7 +1100,6 @@ body.dark #contentnav nav .profile-menu li a {
   a {
 	color: #007bff;
 	text-decoration: none;
-	font-weight: bold;
   }
   
   a:hover {
@@ -1113,7 +1111,6 @@ body.dark #contentnav nav .profile-menu li a {
 	margin-top: 10px;
 	padding: 10px 15px;
 	font-size: 14px;
-	font-weight: bold;
 	color: #fff;
 	background: #007bff;
 	border: none;
@@ -1165,7 +1162,6 @@ body.dark #contentnav nav .profile-menu li a {
 	color: white;
 	border: none;
 	font-size: 16px;
-	font-weight: bold;
 	padding: 5px 10px;
 	cursor: pointer;
 	border-radius: 50%;
