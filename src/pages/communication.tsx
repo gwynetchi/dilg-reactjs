@@ -198,6 +198,111 @@ const Communication: React.FC = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Sticky Button - Always Visible */}
+      <button
+        className="btn-toggle btn btn-primary btn-md w-40 sticky-btn"
+        onClick={() => setShowDetails(!showDetails)}
+      >
+        <i className={`bx ${showDetails ? "bxs-minus-circle" : "bxs-plus-circle"} bx-tada-hover`}></i>
+        <span className="text">{showDetails ? "Hide" : "Create New Communication"}</span>
+      </button>
+  
+      {/* Modal - Centered on the Screen */}
+      {showDetails && (
+        <div className="overlay">
+          <div className="modal-container">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-3 mb-2">
+                  <label>Subject:</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Enter subject"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
+                  <label className="form-label">Recipients:</label>
+                  <Select
+                    options={options}
+                    isMulti
+                    value={options.filter((option) =>
+                      recipients.includes(option.value)
+                    )}
+                    onChange={handleRecipientChange}
+                    className="basic-multi-select "
+                    classNamePrefix="select"
+                    placeholder="Select recipients..."
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
+                  <label className="form-label">Deadline:</label>
+                  <input
+                    type="datetime-local"
+                    className="form-control form-control-sm"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
+                  <label className="form-label">Attachment/Link:</label>
+                  <input
+                    type="text"
+                    placeholder="Paste Google Drive link"
+                    className="form-control form-control-sm"
+                    value={inputLink}
+                    onChange={(e) => setInputLink(e.target.value)}
+                  />
+                </div>
+              </div>
+  
+              <div className="row">
+                <div className="col-md-3 mb-2">
+                  <label className="form-label">Remarks/Comments:</label>
+                  <textarea
+                    placeholder="Enter remarks or comments"
+                    value={remarks}
+                    className="form-control form-control-sm"
+                    onChange={(e) => setRemarks(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+  
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="btn-send btn btn-primary btn-lg w-40"
+              >
+                <i className="bx bxs-send bx-tada-hover"></i>
+                <span className="text">{loading ? "Sending..." : "Send"}</span>
+              </button>
+  
+              {/* Close Button for Modal */}
+              <button className="close-btn" onClick={() => setShowDetails(false)}>
+                ✖
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+  
+      {/* Table Data Section */}
+      <div className="table-data">
+        <div className="order">
+          <div className="head"></div>
+        </div>
+  
+        {recipientDetails && (
+          <div className="recipient-details">
+            <h4>Recipient Details</h4>
+            <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+            <p><strong>Email:</strong> {recipientDetails.email}</p>
+          </div>
+        )}
+      </div>
+  
       <section id="content">
         <main>
           <div className="head-title">
@@ -211,157 +316,62 @@ const Communication: React.FC = () => {
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <a > Communication Details </a>
+                  <a> Communication Details </a>
                 </li>
               </ul>
             </div>
           </div>
-
+  
           {alert && (
             <div className={`custom-alert alert-${alert.type}`}>
-            <span className="alert-icon">{getIcon(alert.type)}</span>
-            <span>{alert.message}</span>
-        </div>
-)}
-          <div className="table-data">
-            <div className="order">
-              <div className="head">
-                {/* Plus button to toggle visibility */}
-                <button
-                  className="btn-toggle"
-                  onClick={() => setShowDetails(!showDetails)}
-                >
-                  {showDetails ? "-" : "+"}
-                </button>
-              </div>
-
-              {/* Communication details section */}
-              {showDetails && (
-                <div className="container">
-                  <div className="row">
-                    {/* Row for all input fields */}
-                    <div className="col-md-3 mb-2">
-                      <label>Subject:</label>
-                      <input
-                        type="text"
-                        className="form-label"
-                        placeholder="Enter subject"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-3 mb-2">
-                      <label className="form-label">Recipients:</label>
-                      <Select
-                        options={options}
-                        isMulti
-                        value={options.filter((option) =>
-                          recipients.includes(option.value)
-                        )}
-                        onChange={handleRecipientChange}
-                        className="basic-multi-select"
-                        classNamePrefix="select"
-                        placeholder="Select recipients..."
-                      />
-                    </div>
-                    <div className="col-md-3 mb-2">
-                      <label className="form-label">Deadline:</label>
-                      <input
-                        type="datetime-local"
-                        className="form-control form-control-sm"
-                        value={deadline}
-                        onChange={(e) => setDeadline(e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-3 mb-2">
-                      <label className="form-label">Attachment/Link:</label>
-                      <input
-                        type="text"
-                        placeholder="Paste Google Drive link"
-                        className="form-control form-control-sm"
-                        value={inputLink}
-                        onChange={(e) => setInputLink(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-3 mb-2">
-                      <label className="form-label">Remarks/Comments:</label>
-                      <textarea
-                        placeholder="Enter remarks or comments"
-                        value={remarks}
-                        className="form-control form-control-sm"
-                        onChange={(e) => setRemarks(e.target.value)}
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="btn-send btn btn-primary btn-lg w-40"
-                  >
-                    <i className="bx bxs-send bx-tada-hover"></i>
-                    <span className="text">{loading ? "Sending..." : "Send"}</span>
-                  </button>
-                </div>
-              )}
-
+              <span className="alert-icon">{getIcon(alert.type)}</span>
+              <span>{alert.message}</span>
             </div>
-
-            {/* Display Sent Communications Table */}
-            <h3>Sent Communications</h3>
-            {sentCommunications.length === 0 ? (
-              <p>No sent communications found.</p>
-            ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Subject</th>
-                    <th>Recipients</th>
-                    <th>Deadline</th>
-                    <th>Remarks</th>
+          )}
+  
+          <h3>Sent Communications</h3>
+          {sentCommunications.length === 0 ? (
+            <p>No sent communications found.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Recipients</th>
+                  <th>Deadline</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sentCommunications.map((comm) => (
+                  <tr key={comm.id}>
+                    <td>{comm.subject}</td>
+                    <td>
+                      {comm.recipients.map((userId: string, idx: number) => {
+                        const user = users.find((user) => user.id === userId);
+                        return (
+                          <span
+                            key={idx}
+                            onClick={() => fetchRecipientDetails(userId)}
+                          >
+                            {user ? user.fullName : "Unknown User"}
+                            {idx < comm.recipients.length - 1 && ", "}
+                          </span>
+                        );
+                      })}
+                    </td>
+                    <td>{new Date(comm.deadline.seconds * 1000).toLocaleString()}</td>
+                    <td>{comm.remarks}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {sentCommunications.map((comm) => (
-                    <tr key={comm.id}>
-                      <td>{comm.subject}</td>
-                      <td>
-                        {comm.recipients.map((userId: string, idx: number) => {
-                          const user = users.find((user) => user.id === userId);
-                          return (
-                            <span
-                              key={idx}
-                              onClick={() => fetchRecipientDetails(userId)}
-                            >
-                              {user ? user.fullName : "Unknown User"}
-                              {idx < comm.recipients.length - 1 && ", "}
-                            </span>
-                          );
-                        })}
-                      </td>
-                      <td>{new Date(comm.deadline.seconds * 1000).toLocaleString()}</td>
-                      <td>{comm.remarks}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            {recipientDetails && (
-              <div className="recipient-details">
-                <h4>Recipient Details</h4>
-                <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-                <p><strong>Email:</strong> {recipientDetails.email}</p>
-              </div>
-            )}
-          </div>
+                ))}
+              </tbody>
+            </table>
+          )}
         </main>
       </section>
     </div>
   );
+  
 };
 
 export default Communication;

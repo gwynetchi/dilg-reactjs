@@ -44,6 +44,7 @@ body.dark {
 body {
 	background: var(--grey);
 	overflow-x: hidden;
+	overflow-y: hidden;
 }
 
 
@@ -60,10 +61,11 @@ ol, ul {
     width: 220px;
     height: 100%;
     background: var(--light);
-    z-index: 2000;
+    z-index: 1001;
     font-family: var(--lato);
     transition: width 0.3s ease-in-out, left 0.3s ease-in-out;
     overflow-x: hidden;
+	overflow-y: hidden;
 }
 
 #sidebar::--webkit-scrollbar {
@@ -286,26 +288,28 @@ ol, ul {
 
 
 /* CONTENT */
-#content {
-	position: relative;
+#contentnav {
+	position: fixed;
+	z-index: 1000;
 	transition: width 0.3s ease, left 0.3s ease;
 	
   }
   
   /* When sidebar is open */
-  #content.expanded {
+  #contentnav.expanded {
 	width: calc(100% - 220px);
 	left: 220px;
   }
   
   /* When sidebar is collapsed */
-  #content.collapsed {
+  #contentnav.collapsed {
 	width: calc(100% - 60px);
 	left: 80px;
   }
   
   /* Dashboard container inside content */
   .dashboard-container {
+	margin-top: 400px;
 	max-height: auto;
 	max-width: auto;
 	margin: 20px 20px;
@@ -315,7 +319,7 @@ ol, ul {
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	font-family: var(--lato)
   }
-#sidebar.hide ~ #content {
+#sidebar.hide ~ #contentnav {
     width: calc(100% - 80px);
     left: 80px;
 }
@@ -331,7 +335,7 @@ ol, ul {
 
 
 /* NAVBAR */
-#content nav {
+#contentnav nav {
 	height: 56px;
 	background: var(--light);
 	padding: 0 24px;
@@ -344,7 +348,7 @@ ol, ul {
 	left: 0;
 	z-index: 1000;
 }
-#content nav::before {
+#contentnav nav::before {
 	content: '';
 	position: absolute;
 	width: 40px;
@@ -354,31 +358,31 @@ ol, ul {
 	border-radius: 50%;
 	box-shadow: -20px -20px 0 var(--light);
 }
-#content nav a {
+#contentnav nav a {
 	color: var(--dark);
 }
-#content nav .bx.bx-menu {
+#contentnav nav .bx.bx-menu {
 	cursor: pointer;
 	color: var(--dark);
 }
-#content nav .nav-link {
+#contentnav nav .nav-link {
 	font-size: 16px;
 	transition: .3s ease;
 }
-#content nav .nav-link:hover {
+#contentnav nav .nav-link:hover {
 	color: var(--blue);
 }
-#content nav form {
+#contentnav nav form {
 	max-width: 400px;
 	width: 100%;
 	margin-right: auto;
 }
-#content nav form .form-input {
+#contentnav nav form .form-input {
 	display: flex;
 	align-items: center;
 	height: 36px;
 }
-#content nav form .form-input input {
+#contentnav nav form .form-input input {
 	flex-grow: 1;
 	padding: 0 16px;
 	height: 100%;
@@ -389,7 +393,7 @@ ol, ul {
 	width: 100%;
 	color: var(--dark);
 }
-#content nav form .form-input button {
+#contentnav nav form .form-input button {
 	width: 36px;
 	height: 100%;
 	display: flex;
@@ -403,11 +407,11 @@ ol, ul {
 	border-radius: 0 36px 36px 0;
 	cursor: pointer;
 }
-#content nav .notification {
+#contentnav nav .notification {
 	font-size: 20px;
 	position: relative;
 }
-#content nav .notification .num {
+#contentnav nav .notification .num {
     position: absolute;
     top: -6px;
     right: -6px;
@@ -424,7 +428,7 @@ ol, ul {
     align-items: center;
 }
 /* Notification Dropdown */
-#content nav .notification-menu {
+#contentnav nav .notification-menu {
     display: none;
     position: relative;
     top: 56px;
@@ -439,41 +443,41 @@ ol, ul {
     font-family: var(--lato);
 }
 
-#content nav .notification-menu ul {
+#contentnav nav .notification-menu ul {
     list-style: none;
     padding: 10px;
     margin: 0;
 }
 
-#content nav .notification-menu li {
+#contentnav nav .notification-menu li {
     padding: 10px;
     border-bottom: 1px solid var(--grey);
 	color: var(--dark);
 }
 
-#content nav .notification-menu li:hover {
+#contentnav nav .notification-menu li:hover {
     background-color: var(--light-blue);
 	color: var(--dark);
 }
-#content nav .notification-menu li:hover a{
+#contentnav nav .notification-menu li:hover a{
     background-color: var(--dark-grey);
 	color: var(--light);
 }
-body.dark #content nav .notification-menu li:hover {
+body.dark #contentnav nav .notification-menu li:hover {
     background-color: var(--light-blue);
 	color: var(--light);
 }
-body.dark #content nav .notification-menu li a{
+body.dark #contentnav nav .notification-menu li a{
     background-color: var(--dark-grey);
 	color: var(--light);
 }
-#content nav .profile img {
+#contentnav nav .profile img {
 	width: 36px;
 	height: 36px;
 	object-fit: cover;
 	border-radius: 50%;
 }
-#content nav .profile-menu {
+#contentnav nav .profile-menu {
     display: none;
     position: absolute;
     top: 56px;
@@ -486,61 +490,62 @@ body.dark #content nav .notification-menu li a{
     font-family: var(--lato);
 }
 
-#content nav .profile-menu ul {
+#contentnav nav .profile-menu ul {
     list-style: none;
     padding: 10px;
     margin: 0;
 }
 
-#content nav .profile-menu li {
+#contentnav nav .profile-menu li {
     padding: 10px;
     border-bottom: 1px solid var(--grey);
 }
 
-#content nav .profile-menu li:hover {
+#contentnav nav .profile-menu li:hover {
     background-color: var(--light-blue);
 	color: var(--dark);
 }
-#content nav .profile-menu li a {
+#contentnav nav .profile-menu li a {
     color: var(--dark);
     font-size: 16px;
 }
-body.dark #content nav .profile-menu li:hover a {
+body.dark #contentnav nav .profile-menu li:hover a {
     color: var(--light);
 }
-body.dark #content nav .profile-menu li a {
+body.dark #contentnav nav .profile-menu li a {
     color: var(--dark);
 }
-#content nav .profile-menu li:hover a {
+#contentnav nav .profile-menu li:hover a {
     color: var(--dark);
 }
 /* Active State for Menus */
-#content nav .notification-menu.show,
-#content nav .profile-menu.show {
+#contentnav nav .notification-menu.show,
+#contentnav nav .profile-menu.show {
     display: block;
 }
-#content nav .swith-lm .ball {
+#contentnav nav .swith-lm .ball {
 	background-color: var(--blue);
 	border-radius: 50%;
 	position: absolute;
 	top: 2px;
 	left: 2px;
 	height: 20px;
-	width: 20px;
+	width: 20px;margin-top: 120px;
 	transform: translateX(0px);
 	transition: transform 0.2s linear;
 }
 
-#content nav .checkbox:checked + .swith-lm .ball {
+#contentnav nav .checkbox:checked + .swith-lm .ball {
 	transform: translateX(22px);
 }
 /* MAIN */
 #content main {
+	 /* Adjust based on navbar height */
 	width: 100%;
 	/* padding: 24px 24px; */
 	font-family: var(--poppins);
 	max-height: calc(100vh - 56px);
-	overflow-y: auto;
+	
 }
 #content main .head-title {
 	display: flex;
@@ -742,7 +747,7 @@ body.dark #content nav .profile-menu li a {
 }
 /* MAIN */
 /* CONTENT */
-#content main .menu, #content nav .menu {
+#content main .menu, #contentnav nav .menu {
 
     display: none;
       list-style-type: none;
@@ -755,18 +760,18 @@ body.dark #content nav .profile-menu li a {
       width: 200px;
  }
 
- #content main .menu a , #content nav .menu a {
+ #content main .menu a , #contentnav nav .menu a {
     color: white;
     text-decoration: none;
     display: block;
     padding: 8px 16px;
 }
 
-#content main .menu a:hover , #content nav .menu a:hover {
+#content main .menu a:hover , #contentnav nav .menu a:hover {
     background-color: #444;
 }
         
-#content main .menu-link , #content nav .menu-link {
+#content main .menu-link , #contentnav nav .menu-link {
     margin: 5px;
     padding: 10px 20px;
     font-size: 16px;
@@ -775,7 +780,7 @@ body.dark #content nav .profile-menu li a {
     color: #007bff;
 }
 
-#content main .menu-link:hover, #content nav .menu-link:hover {
+#content main .menu-link:hover, #contentnav nav .menu-link:hover {
     text-decoration: underline;
 }
 
@@ -794,12 +799,12 @@ body.dark #content nav .profile-menu li a {
         left: 0; /* Show sidebar when toggled */
     }
 
-    #content {
+    #contentnav {
         width: 100%;
         margin-left: 0;
     }
 
-    #sidebar.open ~ #content {
+    #sidebar.open ~ #contentnav {
         width: calc(100% - 200px);
         margin-left: 200px;
     }
@@ -810,15 +815,15 @@ body.dark #content nav .profile-menu li a {
 
 
 @media screen and (max-width: 576px) {
-    #content nav .notification-menu,
-    #content nav .profile-menu {
+    #contentnav nav .notification-menu,
+    #contentnav nav .profile-menu {
         width: 150px;
     }
-	#content nav form .form-input input {
+	#contentnav nav form .form-input input {
 		display: none;
 	}
 
-	#content nav form .form-input button {
+	#contentnav nav form .form-input button {
 		width: auto;
 		height: auto;
 		background: transparent;
@@ -826,11 +831,11 @@ body.dark #content nav .profile-menu li a {
 		color: var(--dark);
 	}
 
-	#content nav form.show .form-input input {
+	#contentnav nav form.show .form-input input {
 		display: block;
 		width: 100%;
 	}
-	#content nav form.show .form-input button {
+	#contentnav nav form.show .form-input button {
 		width: 36px;
 		height: 100%;
 		border-radius: 0 36px 36px 0;
@@ -838,8 +843,8 @@ body.dark #content nav .profile-menu li a {
 		background: var(--red);
 	}
 
-	#content nav form.show ~ .notification,
-	#content nav form.show ~ .profile {
+	#contentnav nav form.show ~ .notification,
+	#contentnav nav form.show ~ .profile {
 		display: none;
 	}
 
@@ -883,7 +888,7 @@ body.dark #content nav .profile-menu li a {
 	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 	opacity: 1;
 	animation: fadeOut 4s ease-in-out forwards;
-	z-index: 1000; /* ✅ Ensure it's above everything */
+	z-index: 1100; /* ✅ Ensure it's above everything */
   }
   
   .alert-success {
@@ -944,3 +949,64 @@ body.dark #content nav .profile-menu li a {
 	color: #007bff;
   }
   
+  .sticky-btn {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: 1000;
+	border-radius: 50px; /* Optional: Makes it rounded */
+	padding: 10px 20px;
+	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Optional: Adds shadow */
+  }
+  
+  /* Full-screen overlay */
+.overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 1050; /* Higher than most UI elements */
+  }
+  
+  /* Centered modal container */
+  .modal-container {
+	background: white;
+
+	border-radius: 10px;
+	max-width: 80%;
+	max-height: 90%;
+	
+	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+	position: relative;
+	margin: 20px 20px;
+	padding: 15px;
+
+
+
+  }
+  
+  /* Close button */
+  .close-btn {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	background: transparent;
+	border: none;
+	font-size: 20px;
+	cursor: pointer;
+	color: #333;
+  }
+  .close-btn:hover {
+	color: red;
+  }
+  
+  .content-layout.expanded {
+	margin-top: 100px;
+    margin-left: 250px; /* Adjust as needed */
+    transition: margin 0.3s ease-in-out;
+}

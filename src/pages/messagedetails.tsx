@@ -14,6 +14,10 @@ const MessageDetails: React.FC = () => {
   const [message, setMessage] = useState<any>(null);
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -113,6 +117,45 @@ const MessageDetails: React.FC = () => {
     }
   };
 
+  const processLink = (url: string) => {
+    if (!url.trim()) {
+      setIframeSrc(null);
+      return;
+    }
+
+    let modifiedLink = "";
+
+    if (url.includes("docs.google.com/spreadsheets")) {
+      modifiedLink = url.replace("/edit", "/preview");
+    } else if (url.includes("docs.google.com/document")) {
+      modifiedLink = url.replace("/edit", "/preview");
+    } else if (url.includes("docs.google.com/forms")) {
+      modifiedLink = url;
+    } else if (url.includes("drive.google.com/file")) {
+      modifiedLink = url.replace("/view", "/preview");
+    } else if (url.includes("drive.google.com/drive/folders")) {
+      modifiedLink = url;
+    } else {
+      modifiedLink = "";
+    }
+
+    setIframeSrc(modifiedLink);
+  };
+
+  // Show modal with the iframe
+  const openPreviewModal = (link: string) => {
+    processLink(link);
+    if (iframeSrc) {
+      setShowModal(true);
+    }
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false);
+    setIframeSrc(null); // Clear iframe source when modal closes
+  };
+
   if (loading) return <p>Loading message details...</p>;
   if (!message) return <p>Message not found.</p>;
 
@@ -125,7 +168,7 @@ const MessageDetails: React.FC = () => {
           <div className="head-title">
             <div className="left">
               <h1>Message Details</h1>
-              <br></br>
+              <br />
               <ul className="breadcrumb">
                 <li><Link to="#" className="active">Home</Link></li>
                 <li><i className="bx bx-chevron-right"></i></li>
@@ -143,9 +186,13 @@ const MessageDetails: React.FC = () => {
             <p><strong>Remarks:</strong> {message.remarks || "No remarks available"}</p>
             
             {message.link && (
-              <p>
+              <div>
                 <strong>Link:</strong> <a href={message.link} target="_blank" rel="noopener noreferrer">{message.link}</a>
-              </p>
+                <br></br>
+                <button onClick={() => openPreviewModal(message.link)} className="btn-preview">
+                  Preview
+                </button>
+              </div>
             )}
             
             <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
@@ -163,6 +210,26 @@ const MessageDetails: React.FC = () => {
           </div>
         </main>
       </section>
+
+      {/* Modal for Google Docs/Sheets Preview */}
+      {showModal && (
+        <div className="overlay">
+          <div className="modal-container">
+            <button onClick={closeModal} className="close-modal-btn">X</button>
+            <div className="container">
+              {iframeSrc && (
+                <iframe
+                  width="1000px"
+                  height="700px"
+                  src={iframeSrc}
+                  frameBorder="0"
+                  title="Google Docs Preview"
+                ></iframe>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -15,7 +15,7 @@ const Analytics = () => {
               <ul className="breadcrumb">
                 <li><a href="evaluator/dashboard">Home</a></li>
                 <li><i className="bx bx-chevron-right"></i></li>
-                <li><a className="active" href="/evaluator/analytics">Analytics</a></li>
+                <li><a >Analytics</a></li>
               </ul>
             </div>
           </div>
@@ -32,7 +32,7 @@ const Analytics = () => {
               <span>User Analytics</span>
             </div>
 
-            <div className="analytics-card" onClick={() => navigate("/monthly-analytics")}>
+            <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/monthly-analytics")}>
               <FaChartBar className="analytics-icon" />
               <span>Monthly Report</span>
             </div>
