@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import { Table } from "react-bootstrap";
 import "../styles/components/pages.css";
+import { Link } from "react-router-dom";
 
 
 interface Communication {
@@ -219,14 +220,28 @@ const Analytics: React.FC = () => {
     <div className="dashboard-container">
       <section id="content">
         <main>
-          <h2>Submission And Compliance Report</h2>
-          <ul className="breadcrumb">
-                <li><a href="evaluator/dashboard">Home</a></li>
-                <li><i className="bx bx-chevron-right"></i></li>
-                <li><a className="inactive" href="/evaluator/analytics">Analytics</a></li>
-                <li><i className="bx bx-chevron-right"></i></li>
-                <li><a className="active" href="/evaluator/analytics/submission-analytics">Submissions and Compliance</a></li>
-              </ul>
+          <div className="head-title">
+              <div className="left">
+              <h2>Submission And Compliance Report</h2>
+              <ul className="breadcrumb">
+                  <li>
+                    <Link to="/dashboards" className="active">Home</Link>
+                  </li>
+                  <li>
+                    <i className="bx bx-chevron-right"></i>
+                  </li>
+                  <li>
+                    <Link to="/evaluator/analytics" className="active" >Analytics</Link>
+                  </li>
+                  <li>
+                    <i className="bx bx-chevron-right"></i>
+                  </li>
+                  <li>
+                    <Link to="/evaluator/analytics/submission-analytics" >Submissions and Compliance</Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
           <Select
             options={communications.map((comm) => ({
               value: comm.id,
