@@ -260,7 +260,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         </ul>
       </section>
 
-      <section id="content" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
+      <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
 {/*           <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}></button> */}
