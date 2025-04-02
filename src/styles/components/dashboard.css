@@ -1007,6 +1007,117 @@ body.dark #contentnav nav .profile-menu li a {
   
   .content-layout.expanded {
 	margin-top: 100px;
-    margin-left: 250px; /* Adjust as needed */
+    margin-left: 220px; /* Adjust as needed */
     transition: margin 0.3s ease-in-out;
+}
+.content-layout.collapsed {
+	margin-top: 100px;
+    margin-left: 80px; /* Adjust as needed */
+    transition: margin 0.3s ease-in-out;
+}
+.fc-scroller {
+    overflow: hidden !important;
+}
+.brand {
+	position: relative;
+	display: inline-block;
+}
+
+.brand-logo {
+	height: 80px;
+	margin-top: 50px;
+	margin-left: 3px;
+	border-radius: 48px 0 0 48px;
+	position: relative;
+	z-index: 2; /* Keep the logo on top */
+}
+
+.jumpscare-img {
+	position: absolute;
+	top: 42px;
+	left: -100px; /* Start off-screen to the left */
+	width: 50px; /* Adjust as needed */
+	height: auto; /* Maintain aspect ratio */
+	opacity: 0; /* Start invisible */
+	transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out; /* Slide and fade in/out */
+	z-index: 1; /* Behind the logo */
+}
+
+@-webkit-keyframes slide {
+	0% {
+		left: -100px; /* Start off-screen to the left */
+		opacity: 0; /* Start invisible */
+	}
+	100% {
+		left: 65px; /* Final position */
+		opacity: 1; /* Fully visible */
+	}
+}
+
+@keyframes slide {
+	0% {
+		left: 20px; /* Start off-screen to the left */
+		opacity: 0; /* Start invisible */
+	}
+	100% {
+		left: 65px; /* Final position */
+		opacity: 1; /* Fully visible */
+	}
+}
+
+@-webkit-keyframes shake {
+	0% {
+		transform: translateX(0);
+	}
+	25% {
+		transform: translateX(-10px); /* Shake left */
+	}
+	50% {
+		transform: translateX(10px); /* Shake right */
+	}
+	75% {
+		transform: translateX(-10px); /* Shake left */
+	}
+	100% {
+		transform: translateX(0); /* Back to original position */
+	}
+}
+
+@keyframes shake {
+	0% {
+		transform: translateX(0);
+	}
+	25% {
+		transform: translateX(-10px); /* Shake left */
+	}
+	50% {
+		transform: translateX(10px); /* Shake right */
+	}
+	75% {
+		transform: translateX(-10px); /* Shake left */
+	}
+	100% {
+		transform: translateX(0); /* Back to original position */
+	}
+}
+
+.brand:hover .jumpscare-img {
+	animation: slide 0.5s forwards, shake 0.5s ease-in-out infinite; /* Apply slide and shake animations */
+	opacity: 1; /* Make visible */
+}
+
+.brand:not(:hover) .jumpscare-img {
+	animation: slide-out 0.5s forwards; /* Add slide-out animation */
+	opacity: 0; /* Make invisible */
+}
+
+@keyframes slide-out {
+	0% {
+		left: 65px; /* Final position */
+		opacity: 1; /* Fully visible */
+	}
+	100% {
+		left: 20px; /* Slide out to the left */
+		opacity: 0; /* Make invisible */
+	}
 }

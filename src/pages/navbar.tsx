@@ -224,10 +224,12 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   return (
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
-        <Link to="/dashboards" className="brand">
-          <img src="/images/logo.png" alt="Logo" className="brand-logo" />
-          <span className="text"></span>
-        </Link>
+      <Link to="/dashboards" className="brand">
+  <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
+  <img src="/pd.png" alt="Jumpscare" className="jumpscare-img" />
+</Link>
+
+
         <ul className="side-menu top">
           {menuItems[userRole].map(({ name, icon, path }) => (
             <li key={name} className={activeMenu === name ? "active" : ""}>
