@@ -167,14 +167,14 @@ const MessageDetails: React.FC = () => {
         <main>
           <div className="head-title">
             <div className="left">
-              <h1>Message Details</h1>
+              <h2>Message Details</h2>
               <br />
               <ul className="breadcrumb">
                 <li><Link to="#" className="active">Home</Link></li>
                 <li><i className="bx bx-chevron-right"></i></li>
                 <li><Link to={inboxPath} className="active">Inbox</Link></li>
                 <li><i className="bx bx-chevron-right"></i></li>
-                <li><Link to="#" className="active">Message Details</Link></li>
+                <li><Link to="#">Message Details</Link></li>
               </ul>
             </div>
           </div>

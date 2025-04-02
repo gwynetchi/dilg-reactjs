@@ -5,6 +5,7 @@ import { db } from "../firebase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
 import { Table } from "react-bootstrap";
 import "../styles/components/pages.css";
+import { Link } from "react-router-dom";
 
 interface Submission {
   id: string;
@@ -107,8 +108,30 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="dashboard-container">
+      <section id="content">
       <main>
-        <h2>Submission And Compliance Report</h2>
+        <div className="head-title">
+            <div className="left">
+            <h2>User Analytics Report</h2>
+            <ul className="breadcrumb">
+                <li>
+                  <Link to="/dashboards" className="active">Home</Link>
+                </li>
+                <li>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
+                <li>
+                  <Link to="/evaluator/analytics" className="active" >Analytics</Link>
+                </li>
+                <li>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
+                <li>
+                  <Link to="" >User Analytics Report</Link>
+                </li>
+              </ul>
+            </div>
+          </div>
         <div className="dropdown-container">
           <Select
             options={Object.entries(users).map(([id, name]) => ({ value: id, label: name }))}
@@ -174,6 +197,8 @@ const Analytics: React.FC = () => {
           </tbody>
         </Table>
       </main>
+      </section>
+    
     </div>
   );
 };
