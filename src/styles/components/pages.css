@@ -64,7 +64,7 @@
 	width: 100%;
 }
 
-.chat-input textarea {
+
 .chat-input textarea {
 	flex: 1;
 	padding: 10px;
@@ -139,8 +139,7 @@
 		width: 100%;
 	}
 }
-	color: cadetblue;
-}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -171,8 +170,7 @@
 	transition: margin-left 0.3s ease;
 }
 
-.content-layout.expanded {
-}
+
 
 .content-layout.expanded {
 	margin-left: 220px; /* Adjust width based on sidebar size */
@@ -181,13 +179,11 @@
 .content-layout.collapsed {
 	margin-left: 80px;
 }
-<<<<<<< HEAD
-}
+
 
 .content-layout.collapsed {
 	margin-left: 80px;
 }
-=======
 .jumpscare-overlay {
 	position: fixed;
 	top: 0;
@@ -238,4 +234,3 @@
 	}
   }
     
->>>>>>> ee09b85 (commmunication)

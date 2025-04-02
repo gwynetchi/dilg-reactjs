@@ -42,6 +42,8 @@ import AuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 import SubmissionAnalytics from "./pages/submission-analytics";
 import UserAnalytics from "./pages/user-analytics";
+import MonthlyAnalytics from "./pages/monthly-analytics";
+import Sentbox from "./pages/sentbox";
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
@@ -59,6 +61,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/profile", element: <Profile /> },
     { path: "/evaluator/inbox", element: <Inbox /> },
     { path: "/evaluator/inbox/:id", element: <EvaluatorMessageDetails /> },
+    { path: "/evaluator/sentbox", element: <Sentbox /> },
     { path: "/evaluator/communication", element: <EvaluatorCommunication /> },
     { path: "/evaluator/sentCommunications/:id", element: <EvaluatorSent /> }, // Added this line
     { path: "/evaluator/calendar", element: <Calendar /> },
@@ -66,6 +69,9 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics", element: <Analytics /> },
     { path: "/evaluator/analytics/submission-analytics", element: <SubmissionAnalytics /> },
     { path: "/evaluator/analytics/user-analytics", element: <UserAnalytics /> },
+    { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
+
+
   ],
   LGU: [
     { path: "/lgu/dashboard", element: <LGUDashboard /> },
