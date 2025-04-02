@@ -30,12 +30,18 @@ const Wrapper = styled.div`
   text-align: left;
   padding: 20px 30px;
   margin-top: 30px;
+  
+  transition: background-image 0.3s ease; /* Smooth transition */
+  &:hover {
+    background-size: cover; /* Ensures image covers the wrapper */
+    // background-image: url('/public/pd.png');
+  }
 `;
 const WrapperBtn = styled.button`
   border: 0px;
   outline: none;
   background-color: transparent;
-  :hover {
+  &:hover {
     opacity: 0.5;
   }
 `;
