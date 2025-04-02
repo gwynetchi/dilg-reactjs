@@ -24,6 +24,8 @@ const Inbox: React.FC = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<{ id: string; recipients: string[] } | null>(null);
 
   // Track authenticated user and fetch role
   useEffect(() => {
@@ -82,37 +84,30 @@ const Inbox: React.FC = () => {
   }, [userId]);
 
   // Function to delete a message
-  const deleteMessage = async (id: string, recipients: string[]) => {
-    if (!window.confirm("Are you sure you want to delete this message?")) return;
-  
-    // Check if the current user is in the recipients list
-    if (userId && !recipients.includes(userId)) {
-      alert("You can't delete a message that wasn't sent to you.");
-      return;
-    }
+  const deleteMessage = async () => {
+    if (!selectedMessage) return;
+    const { id, recipients } = selectedMessage;
   
     try {
-      // Remove the current user from the recipients array
       const updatedRecipients = recipients.filter((recipient) => recipient !== userId);
   
       if (updatedRecipients.length === 0) {
-        // If no recipients are left, delete the entire message
         await deleteDoc(doc(db, "communications", id));
         console.log("Message deleted successfully!");
       } else {
-        // Otherwise, just update the recipients list
         await updateDoc(doc(db, "communications", id), {
           recipients: updatedRecipients,
         });
         console.log("Message removed for this user.");
       }
   
-      // Update the local state
       setCommunications((prev) => prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0));
     } catch (error) {
       console.error("Error deleting message:", error);
     }
-  };
+  
+    setShowModal(false);
+  };  
   
   // Listen for sender name updates in real-time
   const listenToSenderProfile = (senderId: string) => {
@@ -165,6 +160,12 @@ const Inbox: React.FC = () => {
 
     navigate(`/${rolePaths[userRole] || "viewer"}/inbox/${id}`);
   };
+
+  const handleDeleteRequest = (id: string, recipients: string[]) => {
+    setSelectedMessage({ id, recipients });
+    setShowModal(true);
+  };
+  
 
   return (
     <div className="dashboard-container">
@@ -233,15 +234,16 @@ const Inbox: React.FC = () => {
                             )}
                           </td>
                           <td>
-                            <button
-                              className="delete-btn"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent row click event
-                                deleteMessage(msg.id, msg.recipients); // Pass recipients array to the delete function
-                              }}
-                            >
-                              Delete
-                            </button>
+                          <button
+  className="delete-btn"
+  onClick={(e) => {
+    e.stopPropagation(); // Prevent row click event
+    handleDeleteRequest(msg.id, msg.recipients);
+  }}
+>
+  Delete
+</button>
+
                           </td>
                         </tr>
                       ))}
@@ -253,6 +255,18 @@ const Inbox: React.FC = () => {
           </div>
         </main>
       </section>
+      {showModal && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <p>Are you sure you want to delete this message?</p>
+      <div className="modal-buttons">
+        <button onClick={() => setShowModal(false)} className="cancel-btn">Cancel</button>
+        <button onClick={deleteMessage} className="confirm-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
