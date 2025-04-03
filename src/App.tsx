@@ -136,7 +136,7 @@ const App: React.FC = () => {
         </div>
       );
     
-    if (!user) return <Navigate to="/" replace />;
+    if (!user) return <Navigate to="/dashboard" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
     
     return children;
@@ -159,7 +159,7 @@ const App: React.FC = () => {
         <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Landing />} />
+            <Route path="/dashboard" element={<Landing />} />
             <Route path="/login" element={<AuthForm />} />
             <Route path="/register-success" element={<Navigate to="/login" replace />} />
 
@@ -170,8 +170,9 @@ const App: React.FC = () => {
               ))}
 
             {/* Catch-All Route */}
-            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/"} replace />} />
+            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
           </Routes>
+          
         </div>
       </div>
     </Router>
