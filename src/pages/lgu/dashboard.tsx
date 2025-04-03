@@ -149,7 +149,7 @@ const Dashboard = () => {
                 <main>
                     <div className="head-title">
                         <div className="left">
-                            <h1>Admin Dashboard</h1>
+                            <h1>LGU Dashboard</h1>
                             <ul className="breadcrumb">
                                 <li><a className="active" href="#">Home</a></li>
                                 <li><i className='bx bx-chevron-right'></i></li>
