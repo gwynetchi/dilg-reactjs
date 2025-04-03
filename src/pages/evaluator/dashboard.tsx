@@ -162,8 +162,6 @@ const Dashboard = () => {
                     <div className="todo">
                         <div className="head">
                             <h3>Todos</h3>
-                            <i className='bx bx-plus icon' onClick={addTask}></i>
-                            <i className='bx bx-filter'></i>
                         </div>
                         <div className="todo-input">
                             <textarea
