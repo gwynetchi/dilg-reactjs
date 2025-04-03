@@ -287,38 +287,236 @@ ol, ul {
 
 
 
-/* CONTENT */
-#contentnav {
-	position: fixed;
-	z-index: 1000;
-	transition: width 0.3s ease, left 0.3s ease;
-	
+
+
+  
+/* General container styles */
+.dashboard-container {
+    margin-top: 100px;
+    padding: 15px;
+    background: var(--light);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: var(--lato);
+    overflow: hidden; /* Ensures that no content overflows the container */
+}
+
+/* Ensure text within elements doesn't overflow */
+#content main .table-data .todo {
+    flex-grow: 1;
+    flex-basis: 300px;
+    overflow-wrap: break-word; /* Break words to avoid overflow */
+    word-wrap: break-word; /* For older browsers */
+}
+
+#content main .table-data .todo .todo-list li {
+    width: 100%;
+    margin-bottom: 16px;
+    background: var(--grey);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    word-wrap: break-word; /* Ensures long text breaks to fit */
+    overflow-wrap: break-word;
+}
+
+/* Ensure headings and text scale properly across devices */
+h1, h3 {
+    font-size: 2rem; /* Default font size */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.todo-input input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Ensures padding doesn't break the layout */
+    word-wrap: break-word;
+}
+
+.todo-input button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    word-wrap: break-word;
+}
+/* Responsive for screens up to 768px (e.g., tablets and large phones) */
+@media screen and (max-width: 768px) {
+	/* Adjust #contentnav on smaller screens */
+	#contentnav {
+	  width: 100%;
+	  left: 0; /* Make the contentnav span the full width and remove left offset */
+	}
+  
+	/* Adjust expanded and collapsed states for mobile */
+	#contentnav.expanded,
+	#contentnav.collapsed {
+	  width: 100%;
+	  left: 0; /* Ensure both expanded and collapsed navbars are full-width */
+	}
+  
+	/* Sidebar adjustments for smaller screens */
+	#sidebar {
+	  width: 200px;
+	  left: -200px; /* Hide sidebar by default */
+	}
+  
+	#sidebar.open {
+	  left: 0; /* Show sidebar when toggled */
+	}
+  
+	/* Adjust contentnav layout when sidebar is open */
+	#sidebar.open ~ #contentnav {
+	  width: calc(100% - 200px);
+	  margin-left: 200px;
+	}
   }
   
-  /* When sidebar is open */
-  #contentnav.expanded {
-	width: calc(100% - 220px);
-	left: 220px;
+  /* For screens up to 576px (e.g., smaller phones) */
+  @media screen and (max-width: 576px) {
+	/* Adjust navbar menu width */
+	#contentnav nav .notification-menu,
+	#contentnav nav .profile-menu {
+	  width: 150px;
+	}
+  
+	/* Hide input fields and adjust button in navbar */
+	#contentnav nav form .form-input input {
+	  display: none;
+	}
+  
+	#contentnav nav form .form-input button {
+	  width: auto;
+	  height: auto;
+	  background: transparent;
+	  border-radius: none;
+	  color: var(--dark);
+	}
+  
+	/* When the form is shown, display the input field and adjust button */
+	#contentnav nav form.show .form-input input {
+	  display: block;
+	  width: 100%;
+	}
+  
+	#contentnav nav form.show .form-input button {
+	  width: 36px;
+	  height: 100%;
+	  border-radius: 0 36px 36px 0;
+	  color: var(--light);
+	  background: var(--red);
+	}
+  
+	/* Hide the notification and profile menus when form is shown */
+	#contentnav nav form.show ~ .notification,
+	#contentnav nav form.show ~ .profile {
+	  display: none;
+	}
+  
+	/* Adjust grid layout for box-info on smaller screens */
+	#content main .box-info {
+	  grid-template-columns: 1fr; /* Stack items vertically */
+	}
+  
+	/* Ensure tables and todo lists have a minimum width to prevent overflow */
+	#content main .table-data .head,
+	#content main .table-data .order table,
+	#content main .table-data .todo .todo-list {
+	  min-width: 320px; /* Adjust min-width for better mobile responsiveness */
+	}
   }
   
-  /* When sidebar is collapsed */
-  #contentnav.collapsed {
-	width: calc(100% - 60px);
-	left: 80px;
-  }
-  
-  /* Dashboard container inside content */
-  .dashboard-container {
-	margin-top: 400px;
-	max-height: auto;
-	max-width: auto;
-	margin: 20px 20px;
-	padding: 15px;
-	background: var(--light);
-	border-radius: 8px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	font-family: var(--lato)
-  }
+/* Media queries for responsiveness */
+@media (max-width: 1200px) {
+    #content main .table-data .todo {
+        flex-basis: 250px;
+    }
+    
+    .dashboard-container {
+        margin-top: 30px;
+        margin: 10px;
+		padding: 10px;
+    }
+    
+    .todo-input input, .todo-input button {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    #content main .table-data .todo {
+        flex-basis: 100%;
+    }
+
+    .todo-table {
+        display: block;
+    }
+
+    .todo-table thead {
+        display: none;
+    }
+
+    .todo-table tbody tr {
+        display: block;
+        margin-bottom: 15px;
+        background: var(--grey);
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+    .todo-table td {
+        display: block;
+        width: 100%;
+        padding: 5px;
+        text-align: left;
+        word-wrap: break-word;
+    }
+
+    /* Text scaling and preventing overflow in inputs and buttons */
+    .todo-input input,
+    .todo-input button {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Adjust font size for small screens */
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    h3 {
+        font-size: 1.6rem;
+    }
+
+    .todo-table td {
+        font-size: 14px;
+    }
+
+    .todo-input input,
+    .todo-input button {
+        font-size: 1rem;
+    }
+
+    .todo-item-mobile {
+        padding: 12px;
+        font-size: 0.9rem;
+        word-wrap: break-word;
+    }
+
+    .dashboard-container {
+        margin-top: 20px;
+        padding: 8px;
+    }
+}
+
+
 #sidebar.hide ~ #contentnav {
     width: calc(100% - 80px);
     left: 80px;
@@ -347,8 +545,10 @@ ol, ul {
 	top: 0;
 	left: 0;
 	z-index: 1000;
-}
-#contentnav nav::before {
+  }
+  
+  /* Circular element below the navbar */
+  #contentnav nav::before {
 	content: '';
 	position: absolute;
 	width: 40px;
@@ -357,7 +557,8 @@ ol, ul {
 	left: 0;
 	border-radius: 50%;
 	box-shadow: -20px -20px 0 var(--light);
-}
+  }
+  
 #contentnav nav a {
 	color: var(--dark);
 }
@@ -384,27 +585,29 @@ ol, ul {
 }
 #contentnav nav form .form-input input {
 	flex-grow: 1;
-	padding: 0 16px;
+	padding: 5px;
 	height: 100%;
 	border: none;
 	background: var(--grey);
 	border-radius: 36px 0 0 36px;
 	outline: none;
-	width: 100%;
+	width: 100px;
+	min-width: 80px;
 	color: var(--dark);
+	display: block;
 }
 #contentnav nav form .form-input button {
-	width: 36px;
-	height: 100%;
+	width: auto;
+	height: auto;
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background: var(--blue);
+	background: transparent;
 	color: var(--light);
 	font-size: 18px;
 	border: none;
 	outline: none;
-	border-radius: 0 36px 36px 0;
+	border-radius: none;
 	cursor: pointer;
 }
 #contentnav nav .notification {
@@ -589,9 +792,6 @@ body.dark #contentnav nav .profile-menu li a {
 	font-weight: 500;
 }
 
-
-
-
 #content main .box-info {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -715,36 +915,6 @@ body.dark #contentnav nav .profile-menu li a {
 	background: var(--orange);
 }
 
-
-#content main .table-data .todo {
-	flex-grow: 1;
-	flex-basis: 300px;
-}
-#content main .table-data .todo .todo-list {
-	width: 100%;
-}
-#content main .table-data .todo .todo-list li {
-	width: 100%;
-	margin-bottom: 16px;
-	background: var(--grey);
-	border-radius: 10px;
-	padding: 14px 20px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-#content main .table-data .todo .todo-list li .bx {
-	cursor: pointer;
-}
-#content main .table-data .todo .todo-list li.completed {
-	border-left: 10px solid var(--blue);
-}
-#content main .table-data .todo .todo-list li.not-completed {
-	border-left: 10px solid var(--orange);
-}
-#content main .table-data .todo .todo-list li:last-child {
-	margin-bottom: 0;
-}
 /* MAIN */
 /* CONTENT */
 #content main .menu, #contentnav nav .menu {
@@ -784,84 +954,6 @@ body.dark #contentnav nav .profile-menu li a {
     text-decoration: underline;
 }
 
-
-
-
-
-/* MOBILE RESPONSIVENESS */
-@media screen and (max-width: 768px) {
-    #sidebar {
-        width: 200px;
-        left: -200px; /* Hide sidebar by default */
-    }
-
-    #sidebar.open {
-        left: 0; /* Show sidebar when toggled */
-    }
-
-    #contentnav {
-        width: 100%;
-        margin-left: 0;
-    }
-
-    #sidebar.open ~ #contentnav {
-        width: calc(100% - 200px);
-        margin-left: 200px;
-    }
-}
-
-
-
-
-
-@media screen and (max-width: 576px) {
-    #contentnav nav .notification-menu,
-    #contentnav nav .profile-menu {
-        width: 150px;
-    }
-	#contentnav nav form .form-input input {
-		display: none;
-	}
-
-	#contentnav nav form .form-input button {
-		width: auto;
-		height: auto;
-		background: transparent;
-		border-radius: none;
-		color: var(--dark);
-	}
-
-	#contentnav nav form.show .form-input input {
-		display: block;
-		width: 100%;
-	}
-	#contentnav nav form.show .form-input button {
-		width: 36px;
-		height: 100%;
-		border-radius: 0 36px 36px 0;
-		color: var(--light);
-		background: var(--red);
-	}
-
-	#contentnav nav form.show ~ .notification,
-	#contentnav nav form.show ~ .profile {
-		display: none;
-	}
-
-	#content main .box-info {
-		grid-template-columns: 1fr;
-	}
-
-	#content main .table-data .head {
-		min-width: 420px;
-	}
-	#content main .table-data .order table {
-		min-width: 420px;
-	}
-	#content main .table-data .todo .todo-list {
-		min-width: 420px;
-	}
-}
 .input-box select.form-select {
 	width: 100%;
 	height: auto;
