@@ -35,12 +35,6 @@ html {
 	overflow-x: hidden;
 }
 
-body.dark {
-	--light: #0C0C1E;
-	--grey: #060714;
-	--dark: #FBFBFB;
-}
-
 body {
 	background: var(--grey);
 	overflow-x: hidden;
@@ -182,30 +176,6 @@ ol, ul {
   bottom: 40px; /* İkinci son öğeyi yukarı kaydır */
 }
 
-/* Styles for the todo input section */
-.todo-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.todo-table th, .todo-table td {
-    padding: 12px;
-    text-align: left;
-    border: 1px solid #ddd;
-}
-
-.todo-table th {
-    background-color: #f4f4f4;
-}
-
-.completed {
-    text-decoration: line-through;
-    background-color: #d3ffd3;
-}
-
-.not-completed {
-    background-color: #fff;
-}
 
 .delete-btn {
     background-color: #d10047;
@@ -270,110 +240,25 @@ ol, ul {
   .notification-dropdown li:last-child {
 	border-bottom: none;
   }
+
+/* CONTENT */
+#contentnav {
+	position: fixed;
+	z-index: 1000;
+	transition: width 0.3s ease, left 0.3s ease;
+	
+  }
   
+  /* When sidebar is open */
+  #contentnav.expanded {
+	width: calc(100% - 220px);
+	left: 220px;
+  }
   
-.todo-input button {
-    padding: 8px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.todo-input button:hover {
-    background-color: #45a049;
-}
-
-
-
-
-
-  
-/* General container styles */
-.dashboard-container {
-    margin-top: 100px;
-    padding: 15px;
-    background: var(--light);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-family: var(--lato);
-    overflow: hidden; /* Ensures that no content overflows the container */
-}
-
-/* Ensure text within elements doesn't overflow */
-#content main .table-data .todo {
-    flex-grow: 1;
-    flex-basis: 300px;
-    overflow-wrap: break-word; /* Break words to avoid overflow */
-    word-wrap: break-word; /* For older browsers */
-}
-
-#content main .table-data .todo .todo-list li {
-    width: 100%;
-    margin-bottom: 16px;
-    background: var(--grey);
-    border-radius: 10px;
-    padding: 14px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    word-wrap: break-word; /* Ensures long text breaks to fit */
-    overflow-wrap: break-word;
-}
-
-/* Ensure headings and text scale properly across devices */
-h1, h3 {
-    font-size: 2rem; /* Default font size */
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-.todo-input input {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    box-sizing: border-box; /* Ensures padding doesn't break the layout */
-    word-wrap: break-word;
-}
-
-.todo-input button {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    word-wrap: break-word;
-}
-/* Responsive for screens up to 768px (e.g., tablets and large phones) */
-@media screen and (max-width: 768px) {
-	/* Adjust #contentnav on smaller screens */
-	#contentnav {
-	  width: 100%;
-	  left: 0; /* Make the contentnav span the full width and remove left offset */
-	}
-  
-	/* Adjust expanded and collapsed states for mobile */
-	#contentnav.expanded,
-	#contentnav.collapsed {
-	  width: 100%;
-	  left: 0; /* Ensure both expanded and collapsed navbars are full-width */
-	}
-  
-	/* Sidebar adjustments for smaller screens */
-	#sidebar {
-	  width: 200px;
-	  left: -200px; /* Hide sidebar by default */
-	}
-  
-	#sidebar.open {
-	  left: 0; /* Show sidebar when toggled */
-	}
-  
-	/* Adjust contentnav layout when sidebar is open */
-	#sidebar.open ~ #contentnav {
-	  width: calc(100% - 200px);
-	  margin-left: 200px;
-	}
+  /* When sidebar is collapsed */
+  #contentnav.collapsed {
+	width: calc(100% - 60px);
+	left: 80px;
   }
   
   /* For screens up to 576px (e.g., smaller phones) */
@@ -517,6 +402,20 @@ h1, h3 {
 }
 
 
+/* Dashboard container inside content */
+.dashboard-container {
+    margin-top: 20px;  /* Adjusted margin to create space at the top */
+    margin: 20px;      /* General margin on all sides */
+    padding: 20px;     /* Padding inside the container for spacing */
+    background: var(--light);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: var(--lato); /* Ensure the font family is applied */
+    max-width: auto;    /* Set max-width to 100% to make it responsive */
+    width: auto;        /* Ensure the container takes up the full width */
+    box-sizing: border-box; /* Include padding and border in the width calculation */
+    overflow-x: hidden;  /* Prevent horizontal scrolling if content overflows */
+}
 #sidebar.hide ~ #contentnav {
     width: calc(100% - 80px);
     left: 80px;
@@ -666,14 +565,6 @@ h1, h3 {
     background-color: var(--dark-grey);
 	color: var(--light);
 }
-body.dark #contentnav nav .notification-menu li:hover {
-    background-color: var(--light-blue);
-	color: var(--light);
-}
-body.dark #contentnav nav .notification-menu li a{
-    background-color: var(--dark-grey);
-	color: var(--light);
-}
 #contentnav nav .profile img {
 	width: 36px;
 	height: 36px;
@@ -711,12 +602,6 @@ body.dark #contentnav nav .notification-menu li a{
 #contentnav nav .profile-menu li a {
     color: var(--dark);
     font-size: 16px;
-}
-body.dark #contentnav nav .profile-menu li:hover a {
-    color: var(--light);
-}
-body.dark #contentnav nav .profile-menu li a {
-    color: var(--dark);
 }
 #contentnav nav .profile-menu li:hover a {
     color: var(--dark);
@@ -914,7 +799,6 @@ body.dark #contentnav nav .profile-menu li a {
 #content main .table-data .order table tr td .status.pending {
 	background: var(--orange);
 }
-
 /* MAIN */
 /* CONTENT */
 #content main .menu, #contentnav nav .menu {
@@ -953,7 +837,80 @@ body.dark #contentnav nav .profile-menu li a {
 #content main .menu-link:hover, #contentnav nav .menu-link:hover {
     text-decoration: underline;
 }
+/* MOBILE RESPONSIVENESS */
+@media screen and (max-width: 768px) {
+    #sidebar {
+        width: 200px;
+        left: -200px; /* Hide sidebar by default */
+    }
 
+    #sidebar.open {
+        left: 0; /* Show sidebar when toggled */
+    }
+
+    #contentnav {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    #sidebar.open ~ #contentnav {
+        width: calc(100% - 200px);
+        margin-left: 200px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    #contentnav nav .notification-menu,
+    #contentnav nav .profile-menu {
+        width: 150px;
+    }
+	#contentnav nav form .form-input input {
+		display: none;
+	}
+
+	#contentnav nav form .form-input button {
+		width: auto;
+		height: auto;
+		background: transparent;
+		border-radius: none;
+		color: var(--dark);
+	}
+
+	#contentnav nav form.show .form-input input {
+		display: block;
+		width: 100%;
+	}
+	#contentnav nav form.show .form-input button {
+		width: 36px;
+		height: 100%;
+		border-radius: 0 36px 36px 0;
+		color: var(--light);
+		background: var(--red);
+	}
+
+	#contentnav nav form.show ~ .notification,
+	#contentnav nav form.show ~ .profile {
+		display: none;
+	}
+
+	#content main .box-info {
+		grid-template-columns: 1fr;
+	}
+
+	#content main .table-data .head {
+		min-width: 420px;
+	}
+	#content main .table-data .order table {
+		min-width: 420px;
+	}
+	#content main .table-data .todo .todo-list {
+		min-width: 420px;
+	}
+	.dashboard-container {
+        margin: 10px;  /* Less margin on small screens */
+        padding: 15px; /* Adjust padding for small screens */
+    }
+}
 .input-box select.form-select {
 	width: 100%;
 	height: auto;
