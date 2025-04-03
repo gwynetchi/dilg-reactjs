@@ -106,6 +106,7 @@
 		max-height: 80vh; /* You can adjust this value based on your needs */
 		overflow: auto; /* Allow scrolling if content exceeds max-height */
 		padding: 20px;
+		color: --yellow;
 		box-sizing: border-box;
 	}
   
