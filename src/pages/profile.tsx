@@ -102,117 +102,117 @@ const Profile = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <section id="content">
-        <main>
-          <div className="head-title">
-            <div className="left">
-              <h1>Profile</h1>
-              <ul className="breadcrumb">
-                <li>
-                  <a className="active" href="/Dashboards">
-                    Home
-                  </a>
-                </li>
-                <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <a href={`/profile/${user?.uid}`}>Profile</a>
-                </li>
-              </ul>
+<div className="dashboard-container">
+  <section id="content">
+    <main>
+      <div className="head-title">
+        <div className="left">
+          <h1>Profile</h1>
+          <ul className="breadcrumb">
+            <li>
+              <a className="active" href="/Dashboards">
+                Home
+              </a>
+            </li>
+            <li>
+              <i className="bx bx-chevron-right"></i>
+            </li>
+            <li>
+              <a href={`/profile/${user?.uid}`}>Profile</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {alert && (
+        <div className={`custom-alert alert-${alert.type}`}>
+          <span className="alert-icon">{getIcon(alert.type)}</span>
+          <span>{alert.message}</span>
+        </div>
+      )}
+
+      <div className="relative-container">
+        <div className="table-data">
+          <div className="order">
+            <div className="head">
+              <h3>Information</h3>
+              <div className="d-flex justify-content-between">
+                {isEditing ? (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                  >
+                    {loading ? "Saving..." : "Save Profile"}
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setIsEditing(true)} // Enable editing
+                  >
+                    Edit
+                  </button>
+                )}
+
+                {isEditing && (
+                  <button
+                    className="btn btn-light btn-sm"
+                    onClick={() => setIsEditing(false)} // Cancel editing
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
 
-          {alert && (
-            <div className={`custom-alert alert-${alert.type}`}>
-              <span className="alert-icon">{getIcon(alert.type)}</span>
-              <span>{alert.message}</span>
-            </div>
-          )}
-
-          <div className="relative-container">
-            <div className="table-data">
-              <div className="order">
-                <div className="head">
-                  <h3>Information</h3>
-                  <div className="d-flex justify-content-between">
-                    {isEditing ? (
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={handleSubmit}
-                        disabled={loading}
-                      >
-                        {loading ? "Saving..." : "Save Profile"}
-                      </button>
-                    ) : (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => setIsEditing(true)} // Enable editing
-                      >
-                        Edit
-                      </button>
-                    )}
-
-                    {isEditing && (
-                      <button
-                        className="btn btn-light btn-sm"
-                        onClick={() => setIsEditing(false)} // Cancel editing
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
+            <div className="container">
+              <div className="row">
+                {/* First Name */}
+                <div className="col-md-4 mb-2">
+                  <label className="form-label">First Name:</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Enter first name"
+                    value={fname}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={!isEditing || loading} // Disable if not editing
+                  />
                 </div>
 
-                <div className="container">
-                  <div className="row">
-                    {/* First Name */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">First Name:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Enter first name"
-                        value={fname}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        disabled={!isEditing || loading} // Disable if not editing
-                      />
-                    </div>
+                {/* Middle Name */}
+                <div className="col-md-4 mb-2">
+                  <label className="form-label">Middle Name:</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Enter middle name"
+                    value={mname}
+                    onChange={(e) => setMiddleName(e.target.value)}
+                    disabled={!isEditing || loading} // Disable if not editing
+                  />
+                </div>
 
-                    {/* Middle Name */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">Middle Name:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Enter middle name"
-                        value={mname}
-                        onChange={(e) => setMiddleName(e.target.value)}
-                        disabled={!isEditing || loading} // Disable if not editing
-                      />
-                    </div>
-
-                    {/* Last Name */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">Last Name:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Enter last name"
-                        value={lname}
-                        onChange={(e) => setLastName(e.target.value)}
-                        disabled={!isEditing || loading} // Disable if not editing
-                      />
-                    </div>
-                  </div>
+                {/* Last Name */}
+                <div className="col-md-4 mb-2">
+                  <label className="form-label">Last Name:</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Enter last name"
+                    value={lname}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={!isEditing || loading} // Disable if not editing
+                  />
                 </div>
               </div>
             </div>
           </div>
-        </main>
-      </section>
-    </div>
+        </div>
+      </div>
+    </main>
+  </section>
+</div>
   );
 };
 

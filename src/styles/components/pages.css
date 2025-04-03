@@ -93,6 +93,98 @@
 }
 
 
+#content main .table-data .todo {
+	flex-grow: 1;
+	flex-basis: 300px;
+}
+#content main .table-data .todo .todo-list {
+	width: 100%;
+}
+#content main .table-data .todo .todo-list li {
+	width: 100%;
+	margin-bottom: 16px;
+	background: var(--grey);
+	border-radius: 10px;
+	padding: 14px 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+#content main .table-data .todo .todo-list li .bx {
+	cursor: pointer;
+}
+#content main .table-data .todo .todo-list li.completed {
+	border-left: 10px solid var(--blue);
+}
+#content main .table-data .todo .todo-list li.not-completed {
+	border-left: 10px solid var(--orange);
+}
+#content main .table-data .todo .todo-list li:last-child {
+	margin-bottom: 0;
+}
+/* Table Styles */
+.todo-table {
+	width: auto;
+	border-collapse: collapse;
+	overflow-x: auto; /* Allow horizontal scrolling on smaller screens */
+	display: block; /* Make table scrollable */
+	-webkit-overflow-scrolling: touch;
+  }
+  
+  .todo-table th, .todo-table td {
+	padding: 12px;
+	text-align: left;
+	border: 1px solid #ddd;
+	word-wrap: break-word; /* Ensure long words break appropriately */
+  }
+  
+  .todo-table th {
+	background-color: #f4f4f4;
+  }
+  
+  .todo-input {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 16px;
+  }
+  
+  .todo-input input {
+	flex: 1;
+	padding: 8px;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+  }
+  
+  .todo-input button {
+	padding: 8px 16px;
+	background-color: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+  }
+  
+  .todo-input button:hover {
+	background-color: #45a049;
+  }
+  
+  .status-message, .error-message {
+	margin-top: 10px;
+	padding: 10px;
+	background: #f4f4f4;
+	border-radius: 4px;
+  }
+  
+.completed {
+    text-decoration: line-through;
+    background-color: #d3ffd3;
+}
+
+.not-completed {
+    background-color: #fff;
+}
+
 .chat-input textarea:focus, .chat-input textarea:active {
 	height: auto;
 	min-height: 40px;
@@ -116,6 +208,31 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+	/* Make the dashboard content more vertical for tablets */
+	.dashboard-container {
+	  padding: 15px;
+	}
+  
+	.todo-table {
+	  font-size: 14px; /* Slightly smaller font size on tablets */
+	}
+  
+	.todo-input {
+	  flex-direction: column; /* Stack input fields and buttons */
+	}
+  
+	.todo-input input,
+	.todo-input button {
+	  width: 100%; /* Make input fields and buttons full width */
+	  margin-bottom: 10px;
+	}
+  
+	.todo-input button {
+	  margin-top: 10px;
+	}
+  }
+  
 @media (max-width: 768px) {
 	.chat-input textarea {
 		font-size: 12px;
@@ -124,6 +241,27 @@
 	.chat-input button {
 		padding: 8px 12px;
 		font-size: 12px;
+	}  /* Make dashboard mobile-friendly */
+	.todo-table {
+	  font-size: 12px; /* Reduce font size */
+	}
+  
+	.todo-input input {
+	  padding: 8px;
+	}
+  
+	.todo-input button {
+	  font-size: 12px;
+	  padding: 8px 14px;
+	}
+  
+	.todo-table th, .todo-table td {
+	  padding: 10px; /* Adjust padding for smaller screens */
+	}
+  
+	.todo-table {
+	  display: block; /* Keep it scrollable on small screens */
+	  overflow-x: auto;
 	}
 }
 
@@ -137,53 +275,29 @@
 	}
 	.chat-input button {
 		width: 100%;
-	}
-}
-
-
-/* Responsive Design */
-@media (max-width: 768px) {
-	.chat-input textarea {
-		font-size: 12px;
-		padding: 8px;
-	}
-	.chat-input button {
-		padding: 8px 12px;
-		font-size: 12px;
-	}
-}
-
-@media (max-width: 480px) {
-	.chat-input {
+	}  .todo-table {
+		font-size: 10px; /* Reduce font size even more for smaller devices */
+	  }
+	
+	  .todo-table th, .todo-table td {
+		padding: 8px; /* Adjust padding */
+	  }
+	
+	  .todo-input input, .todo-input button {
+		width: 100%; /* Ensure full-width input fields and buttons */
+		margin-bottom: 10px;
+	  }
+	
+	  .todo-input button {
+		font-size: 14px;
+	  }
+	
+	  /* For very small devices, make buttons stack vertically */
+	  .todo-input {
 		flex-direction: column;
-		gap: 5px;
-	}
-	.chat-input textarea {
-		width: 100%;
-	}
-	.chat-input button {
-		width: 100%;
-	}
+	  }
 }
 
-.content-layout {
-	transition: margin-left 0.3s ease;
-}
-
-
-
-.content-layout.expanded {
-	margin-left: 220px; /* Adjust width based on sidebar size */
-}
-
-.content-layout.collapsed {
-	margin-left: 80px;
-}
-
-
-.content-layout.collapsed {
-	margin-left: 80px;
-}
 .jumpscare-overlay {
 	position: fixed;
 	top: 0;
