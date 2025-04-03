@@ -213,7 +213,7 @@ const Communication: React.FC = () => {
           <div className="modal-container">
             <div className="container">
               <div className="row">
-                <div className="col-md-3 mb-2">
+                <div className="col-md-12 mb-3">
                   <label>Subject:</label>
                   <input
                     type="text"
@@ -223,7 +223,7 @@ const Communication: React.FC = () => {
                     onChange={(e) => setSubject(e.target.value)}
                   />
                 </div>
-                <div className="col-md-3 mb-2">
+                <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
                   <Select
                     options={options}
@@ -237,7 +237,7 @@ const Communication: React.FC = () => {
                     placeholder="Select recipients..."
                   />
                 </div>
-                <div className="col-md-3 mb-2">
+                <div className="col-md-6 mb-3">
                   <label className="form-label">Deadline:</label>
                   <input
                     type="datetime-local"
@@ -246,7 +246,7 @@ const Communication: React.FC = () => {
                     onChange={(e) => setDeadline(e.target.value)}
                   />
                 </div>
-                <div className="col-md-3 mb-2">
+                <div className="col-md-6 mb-3">
                   <label className="form-label">Attachment/Link:</label>
                   <input
                     type="text"
@@ -259,7 +259,7 @@ const Communication: React.FC = () => {
               </div>
   
               <div className="row">
-                <div className="col-md-3 mb-2">
+                <div className="col-md-12 mb-3">
                   <label className="form-label">Remarks/Comments:</label>
                   <textarea
                     placeholder="Enter remarks or comments"
@@ -270,16 +270,20 @@ const Communication: React.FC = () => {
                 </div>
               </div>
   
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="btn-send btn btn-primary btn-lg w-40"
+              <div className="row">
+                <div className="col-md-12 text-center">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="btn btn-primary btn-lg"
               >
-                <i className="bx bxs-send bx-tada-hover"></i>
-                <span className="text">{loading ? "Sending..." : "Send"}</span>
-              </button>
-  
-              {/* Close Button for Modal */}
+              <i className="bx bxs-send bx-tada-hover"></i>
+              <span className="text">{loading ? "Sending..." : "Send"}</span>
+                  </button>
+                </div>
+              </div>
+
+            {/* Close Button (Keep it the same) */}
               <button className="close-btn" onClick={() => setShowDetails(false)}>
                 ✖
               </button>
@@ -295,13 +299,20 @@ const Communication: React.FC = () => {
         </div>
   
         {recipientDetails && (
-          <div className="recipient-details">
-            <h4>Recipient Details</h4>
-            <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-            <p><strong>Email:</strong> {recipientDetails.email}</p>
+          <div className="overlay">
+            <div className="modal-container">
+              <div className="modal-header">
+                <h4>Recipient Details</h4>
+                  <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
           </div>
-        )}
+          <div className="modal-body">
+          <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+          <p><strong>Email:</strong> {recipientDetails.email}</p>
+         </div>
       </div>
+    </div>
+    )}
+    </div>
   
       <section id="content">
         <main>
