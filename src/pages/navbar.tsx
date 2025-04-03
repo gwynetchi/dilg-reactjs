@@ -225,10 +225,9 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
       <Link to="/dashboards" className="brand">
-  <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
-  <img src="/pd.png" alt="Jumpscare" className="jumpscare-img" />
-</Link>
-
+        <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
+        <img src="/pd.png" alt="Jumpscare" className="jumpscare-img" />
+      </Link>
 
         <ul className="side-menu top">
           {menuItems[userRole].map(({ name, icon, path }) => (
@@ -265,7 +264,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
-{/*           <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}></button> */}
+          <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}></button>
           <form className={`d-flex ${isSearchOpen ? "show" : ""}`}>
             <input
               type="search"
@@ -329,7 +328,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
               <div className="profile-menu">
                 <ul>
                   <li><Link to="/profile">My Profile</Link></li>
-                  <li><Link to="/settings">Settings</Link></li>
                   <li><button className="btn btn-link" onClick={handleLogout}>Log Out</button></li>
                 </ul>
               </div>
