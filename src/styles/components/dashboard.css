@@ -371,7 +371,7 @@ ol, ul {
 	display: block; /* Ensure it appears below the message */
 	margin-top: 2px;
   }
-  
+
 
 
 
@@ -382,14 +382,14 @@ ol, ul {
 	padding: 0 24px;
 	display: flex;
 	align-items: center;
-	grid-gap: 24px;
+	grid-gap: 16px;
 	font-family: var(--lato);
 	position: sticky;
 	top: 0;
 	left: 0;
 	z-index: 1000;
   }
-  
+
   /* Circular element below the navbar */
   #contentnav nav::before {
 	content: '';
@@ -664,9 +664,6 @@ ol, ul {
 #content main .box-info li .text p {
 	color: var(--dark);	
 }
-
-
-
 
 
 #content main .table-data {
@@ -975,9 +972,6 @@ ol, ul {
 	position: relative;
 	margin: 20px 20px;
 	padding: 15px;
-
-
-
   }
   
   /* Close button */
@@ -1000,20 +994,20 @@ ol, ul {
     margin-left: 220px; /* Adjust as needed */
     transition: margin 0.3s ease-in-out;
 }
-.content-layout.collapsed {
+  .content-layout.collapsed {
 	margin-top: 100px;
     margin-left: 80px; /* Adjust as needed */
     transition: margin 0.3s ease-in-out;
 }
-.fc-scroller {
+  .fc-scroller {
     overflow: hidden !important;
 }
-.brand {
+  .brand {
 	position: relative;
 	display: inline-block;
 }
 
-.brand-logo {
+  .brand-logo {
 	height: 80px;
 	margin-top: 50px;
 	margin-left: 3px;
@@ -1022,7 +1016,7 @@ ol, ul {
 	z-index: 2; /* Keep the logo on top */
 }
 
-.jumpscare-img {
+  .jumpscare-img {
 	position: absolute;
 	top: 42px;
 	left: -100px; /* Start off-screen to the left */
@@ -1246,14 +1240,54 @@ ol, ul {
   
   .modal-container {
 	width: 90%;
-	max-width: 1000px;
-	background: white;
-	border-radius: 10px;
-	padding: 20px;
-	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+	max-width: 600px;
+	background: #fff;
+	border-radius: 12px;
+	padding: 24px;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	align-items: center;
+}
+
+.modal-container form {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	gap: 12px;
+}
+
+/* Label and Input Layout */
+.form-group {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+/* Side by Side Layout for Attachment & Deadline */
+.form-group-inline {
+	display: flex;
+	gap: 12px;
+	width: 100%;
+}
+
+.form-group-inline .form-group {
+	flex: 1;
+}
+
+/* Button Styling */
+.modal-container .send-button {
+	background: #007bff;
+	color: white;
+	padding: 10px 16px;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 16px;
+	width: 100%;
 	text-align: center;
-	position: relative;
-  }
+}
   
   .close-modal-btn {
 	position: absolute;
@@ -1290,4 +1324,5 @@ ol, ul {
 	  padding: 8px 12px;
 	}
   }
-  
+
+/*Calendar*/
