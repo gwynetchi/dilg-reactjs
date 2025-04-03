@@ -309,15 +309,15 @@ ol, ul {
   
 	/* Ensure tables and todo lists have a minimum width to prevent overflow */
 	#content main .table-data .head,
-	#content main .table-data .order table,
-	#content main .table-data .todo .todo-list {
+	#content main .table-data .order table
+	{
 	  min-width: 320px; /* Adjust min-width for better mobile responsiveness */
 	}
   }
   
 /* Media queries for responsiveness */
 @media (max-width: 1200px) {
-    #content main .table-data .todo {
+    #content main .table-data{
         flex-basis: 250px;
     }
     
@@ -325,48 +325,6 @@ ol, ul {
         margin-top: 30px;
         margin: 10px;
 		padding: 10px;
-    }
-    
-    .todo-input input, .todo-input button {
-        font-size: 1.2rem;
-    }
-}
-
-@media (max-width: 768px) {
-    #content main .table-data .todo {
-        flex-basis: 100%;
-    }
-
-    .todo-table {
-        display: block;
-    }
-
-    .todo-table thead {
-        display: none;
-    }
-
-    .todo-table tbody tr {
-        display: block;
-        margin-bottom: 15px;
-        background: var(--grey);
-        border-radius: 10px;
-        padding: 10px;
-    }
-
-    .todo-table td {
-        display: block;
-        width: 100%;
-        padding: 5px;
-        text-align: left;
-        word-wrap: break-word;
-    }
-
-    /* Text scaling and preventing overflow in inputs and buttons */
-    .todo-input input,
-    .todo-input button {
-        width: 100%;
-        padding: 12px;
-        font-size: 1.1rem;
     }
 }
 
@@ -378,21 +336,6 @@ ol, ul {
 
     h3 {
         font-size: 1.6rem;
-    }
-
-    .todo-table td {
-        font-size: 14px;
-    }
-
-    .todo-input input,
-    .todo-input button {
-        font-size: 1rem;
-    }
-
-    .todo-item-mobile {
-        padding: 12px;
-        font-size: 0.9rem;
-        word-wrap: break-word;
     }
 
     .dashboard-container {
@@ -901,9 +844,6 @@ ol, ul {
 		min-width: 420px;
 	}
 	#content main .table-data .order table {
-		min-width: 420px;
-	}
-	#content main .table-data .todo .todo-list {
 		min-width: 420px;
 	}
 	.dashboard-container {
