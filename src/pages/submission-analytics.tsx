@@ -8,6 +8,7 @@ import {
   updateDoc,
   getDoc,
   onSnapshot,
+  documentId,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -28,7 +29,9 @@ import { Link } from "react-router-dom";
 interface Communication {
   id: string;
   subject: string;
+  recipients: [];
   deadline?: { seconds: number };
+  submitID:[];
 }
 
 interface Submission {
@@ -85,53 +88,43 @@ const Analytics: React.FC = () => {
 
   useEffect(() => {
     if (!selectedSubject) {
-      setSubmissions({});
-      setChartData([]);
-      setSelectedDeadline(null);
+      setChartData(allStatuses.map((status) => ({ status, autoCount: 0, manualCount: 0 })));
       return;
     }
-
-    setLoading(true);
-
-    const fetchDeadline = async () => {
-      const commRef = doc(db, "communications", selectedSubject);
-      const commSnap = await getDoc(commRef);
-      if (commSnap.exists()) {
-        const deadline = commSnap.data().deadline?.seconds * 1000;
-        setSelectedDeadline(deadline ? new Date(deadline).toLocaleString() : "No Deadline");
-        return deadline;
-      }
-      return null;
-    };
-
-    fetchDeadline().then((deadline) => {
-      const submissionsQuery = query(
-        collection(db, "submittedDetails"),
-        where("messageId", "==", selectedSubject)
-      );
-
-      const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
-        const fetchedSubmissions = snapshot.docs.map((doc) => {
-          const data = doc.data() as Submission;
-          let autoStatus = "No Submission";
-      
-          if (data.submittedAt && deadline) {
-            const submittedAt = data.submittedAt.seconds * 1000;
-            autoStatus = submittedAt <= deadline ? "On Time" : "Late";
-          }
-      
-          return { ...data, id: doc.id, autoStatus }; 
-        });
-      
-        setSubmissions({ [selectedSubject]: fetchedSubmissions });
-        setLoading(false);
-      });
-      
-
-      return () => unsubscribe();
+  
+    const statusCount: Record<string, { autoCount: number; manualCount: number }> = {};
+  
+    // Initialize all statuses with 0
+    allStatuses.forEach((status) => {
+      statusCount[status] = { autoCount: 0, manualCount: 0 };
     });
-  }, [selectedSubject]);
-
+  
+    // If there are no submissions for this communication, mark all as "No Submission"
+    if (!submissions[selectedSubject] || submissions[selectedSubject].length === 0) {
+      statusCount["No Submission"].autoCount = 1;
+    } else {
+      submissions[selectedSubject].forEach((sub) => {
+        const autoStatus = sub.autoStatus || "No Submission";
+        const evaluatorStatus =
+          sub.evaluatorStatus && sub.evaluatorStatus !== "Pending" ? sub.evaluatorStatus : "";
+  
+        statusCount[autoStatus].autoCount += 1;
+  
+        if (evaluatorStatus) {
+          statusCount[evaluatorStatus].manualCount += 1;
+        }
+      });
+    }
+  
+    const formattedChartData = allStatuses.map((status) => ({
+      status,
+      autoCount: statusCount[status].autoCount,
+      manualCount: statusCount[status].manualCount,
+    }));
+  
+    setChartData(formattedChartData);
+  }, [submissions, selectedSubject]);
+  
   useEffect(() => {
     // Fetch user data to map user IDs to full names
     const unsubscribe = onSnapshot(collection(db, "users"), (querySnapshot) => {
@@ -148,43 +141,91 @@ const Analytics: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!selectedSubject || !submissions[selectedSubject]) {
-      setChartData(allStatuses.map((status) => ({ status, autoCount: 0, manualCount: 0 })));
+useEffect(() => {
+  if (!selectedSubject) {
+    setSubmissions({});
+    setChartData([]);
+    setSelectedDeadline(null);
+    return;
+  }
+
+  setLoading(true);
+
+  const fetchCommunicationData = async () => {
+    const commRef = doc(db, "communications", selectedSubject);
+    const commSnap = await getDoc(commRef);
+    
+    if (commSnap.exists()) {
+      const data = commSnap.data() as Communication;
+      const deadline = data.deadline?.seconds ? data.deadline.seconds * 1000 : null;
+      setSelectedDeadline(deadline ? new Date(deadline).toLocaleString() : "No Deadline");
+
+      return { deadline, submitIDs: data.submitID || [], recipients: data.recipients || [] };
+    }
+
+    return { deadline: null, submitIDs: [], recipients: [] };
+  };
+
+  fetchCommunicationData().then(({ deadline, submitIDs, recipients }) => {
+    if (!recipients.length) {
+      // No recipients assigned, clear submissions
+      setSubmissions({ [selectedSubject]: [] });
+      setLoading(false);
       return;
     }
-  
-    const statusCount: Record<string, { autoCount: number; manualCount: number }> = {};
-  
-    // Initialize all statuses with 0
-    allStatuses.forEach((status) => {
-      statusCount[status] = { autoCount: 0, manualCount: 0 };
-    });
-  
-    submissions[selectedSubject].forEach((sub) => {
-      const autoStatus = sub.autoStatus || "No Submission";
-      const evaluatorStatus = sub.evaluatorStatus && sub.evaluatorStatus !== "Pending" 
-  ? sub.evaluatorStatus 
-  : ""; // Ensures it doesn't increment the manual count
 
-  
-      statusCount[autoStatus].autoCount += 1;
-  
-      if (evaluatorStatus) {
-        statusCount[evaluatorStatus].manualCount += 1;
-      }
+    if (!submitIDs.length) {
+      // No submissions at all, all recipients get "No Submission"
+      setSubmissions({
+        [selectedSubject]: recipients.map((userId) => ({
+          id: userId,
+          submittedBy: userId,
+          autoStatus: "No Submission",
+        })),
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Fetch submitted details for given submitIDs
+    const submissionsQuery = query(
+      collection(db, "submittedDetails"),
+      where(documentId(), "in", submitIDs)
+    );
+
+    const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
+      const fetchedSubmissions = snapshot.docs.map((doc) => {
+        const data = doc.data() as Submission;
+        let autoStatus = "No Submission";
+
+        if (data.submittedAt && deadline) {
+          const submittedAt = data.submittedAt.seconds * 1000;
+          autoStatus = submittedAt <= deadline ? "On Time" : "Late";
+        }
+
+        return { ...data, id: doc.id, autoStatus, submittedBy: data.submittedBy };
+      });
+
+      // Extract users who have submitted
+      const submittedUserIDs = fetchedSubmissions.map((sub) => sub.submittedBy);
+
+      // Find recipients who have NOT submitted
+      const missingRecipients = recipients
+        .filter((userId) => !submittedUserIDs.includes(userId))
+        .map((userId) => ({
+          id: userId,
+          submittedBy: userId,
+          autoStatus: "No Submission",
+        }));
+
+      setSubmissions({ [selectedSubject]: [...fetchedSubmissions, ...missingRecipients] });
+      setLoading(false);
     });
-  
-    const formattedChartData = allStatuses.map((status) => ({
-      status,
-      autoCount: statusCount[status].autoCount,
-      manualCount: statusCount[status].manualCount,
-    }));
-  
-    setChartData(formattedChartData);
-  }, [submissions, selectedSubject]);
-  
-  
+
+    return () => unsubscribe();
+  });
+}, [selectedSubject]);
+
 
   const handleStatusUpdate = async (submissionId: string | undefined, newStatus: string) => {
     if (!submissionId) {
@@ -218,46 +259,47 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      <section id="content">
-        <main>
-          <div className="head-title">
-              <div className="left">
-              <h2>Submission And Compliance Report</h2>
-              <ul className="breadcrumb">
-                  <li>
-                    <Link to="/dashboards" className="active">Home</Link>
-                  </li>
-                  <li>
-                    <i className="bx bx-chevron-right"></i>
-                  </li>
-                  <li>
-                    <Link to="/evaluator/analytics" className="active" >Analytics</Link>
-                  </li>
-                  <li>
-                    <i className="bx bx-chevron-right"></i>
-                  </li>
-                  <li>
-                    <Link to="/evaluator/analytics/submission-analytics" >Submissions and Compliance</Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          <Select
-            options={communications.map((comm) => ({
-              value: comm.id,
-              label: comm.subject,
-            }))}
-            onChange={(selectedOption) => setSelectedSubject(selectedOption?.value || "")}
-            placeholder="Search or Select Subject"
-            isClearable
-          />
-
-          {selectedSubject && <p>Deadline: {selectedDeadline || "No Deadline"}</p>}
-
-          {loading ? (
-            <p>Loading data...</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
+    <section id="content">
+      <main>
+        <div className="head-title">
+          <div className="left">
+            <h2>Submission And Compliance Report</h2>
+            <ul className="breadcrumb">
+              <li>
+                <Link to="/dashboards" className="active">Home</Link>
+              </li>
+              <li>
+                <i className="bx bx-chevron-right"></i>
+              </li>
+              <li>
+                <Link to="/evaluator/analytics" className="active">Analytics</Link>
+              </li>
+              <li>
+                <i className="bx bx-chevron-right"></i>
+              </li>
+              <li>
+                <Link to="/evaluator/analytics/submission-analytics">Submissions and Compliance</Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <Select
+          options={communications.map((comm) => ({
+            value: comm.id,
+            label: comm.subject,
+          }))}
+          onChange={(selectedOption) => setSelectedSubject(selectedOption?.value || "")}
+          placeholder="Search or Select Subject"
+          isClearable
+        />
+  
+        {selectedSubject && <p>Deadline: {selectedDeadline || "No Deadline"}</p>}
+  
+        {loading ? (
+          <p>Loading data...</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <XAxis dataKey="status" />
               <YAxis allowDecimals={false} />
@@ -279,84 +321,80 @@ const Analytics: React.FC = () => {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          
-          )}
-
-          <h3>Modify Submission Status</h3>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Submitted At</th>
-                <th>Auto Status</th>
-                <th>Evaluator Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedSubject && submissions[selectedSubject]?.length > 0 ? (
-                submissions[selectedSubject].map((sub) => (
-                  <tr key={sub.id}>
-                    <td>{users[sub.submittedBy] || "Unknown User"}</td>
-                    <td>
-                      {sub.submittedAt
-                        ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
-                        : "Not Submitted"}
-                    </td>
-                    <td>{sub.autoStatus || "No Submission"}</td>
-                    <td>
-                    <Select
-                    menuPosition="fixed"
-          menuPlacement="auto"
-  value={allStatuses
-    .map((status) => ({ value: status, label: status, color: statusColors[status] }))
-    .find((option) => option.value === (pendingStatus[sub.id] ?? sub.evaluatorStatus ?? "Pending"))
-  }
-  options={allStatuses.map((status) => ({
-    value: status,
-    label: status,
-    color: statusColors[status],
-  }))}
-
-  onChange={(selectedOption) => {
-    if (!selectedOption) return;
-    setPendingStatus((prev) => ({ ...prev, [sub.id]: selectedOption.value }));
-    handleStatusUpdate(sub.id, selectedOption.value);
-  }}
+        )}
   
-
-  styles={{
-    control: (base) => ({
-      ...base,
-      borderColor: "#ccc",
-      boxShadow: "none",
-    }),
-    option: (base, { data }) => ({
-      ...base,
-      backgroundColor: data.color,
-      color: "#fff",
-    }),
-    singleValue: (base, { data }) => ({
-      ...base,
-      color: data.color,
-    }),
-  }}
-/>
-
-
-                    </td>
-                   
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5}>No submissions found.</td>
+        <h3>Modify Submission Status</h3>
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Submitted At</th>
+              <th>Auto Status</th>
+              <th>Evaluator Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedSubject && submissions[selectedSubject]?.length > 0 ? (
+              submissions[selectedSubject].map((sub) => (
+                <tr key={sub.id}>
+                  <td>{users[sub.submittedBy] || "Unknown User"}</td>
+                  <td>
+                    {sub.submittedAt
+                      ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
+                      : "Not Submitted"}
+                  </td>
+                  <td>{sub.autoStatus || "No Submission"}</td>
+                  <td>
+                    <Select
+                      menuPosition="fixed"
+                      menuPlacement="auto"
+                      value={allStatuses
+                        .map((status) => ({ value: status, label: status, color: statusColors[status] }))
+                        .find((option) => option.value === (pendingStatus[sub.id] ?? sub.evaluatorStatus ?? "Pending"))
+                      }
+                      options={allStatuses.map((status) => ({
+                        value: status,
+                        label: status,
+                        color: statusColors[status],
+                      }))}
+                      onChange={(selectedOption) => {
+                        if (!selectedOption) return;
+                        setPendingStatus((prev) => ({ ...prev, [sub.id]: selectedOption.value }));
+                        handleStatusUpdate(sub.id, selectedOption.value);
+                      }}
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          borderColor: "#ccc",
+                          boxShadow: "none",
+                        }),
+                        option: (base, { data }) => ({
+                          ...base,
+                          backgroundColor: data.color,
+                          color: "#fff",
+                        }),
+                        singleValue: (base, { data }) => ({
+                          ...base,
+                          color: data.color,
+                        }),
+                      }}
+                    />
+                  </td>
                 </tr>
-              )}
-            </tbody>
-          </Table>
-        </main>
-      </section>
-    </div>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", color: "red" }}>
+                  {selectedSubject ? "No submissions found for this subject." : "Select a subject to view submissions."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+      </main>
+    </section>
+  </div>
+  
   );
 };
 
