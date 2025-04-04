@@ -54,7 +54,7 @@ const Wrapper = styled.div<{ backgroundImage?: string}>`
   &:hover p,
   &:hover h3 {
     opacity: 0;
-    transition: opacity 0.9s ease;
+    transition: opacity 0.6s ease;
   }
 `;
 const WrapperBtn = styled.button`
