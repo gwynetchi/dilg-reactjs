@@ -57,7 +57,7 @@ ol, ul {
     background: var(--light);
     z-index: 1001;
     font-family: var(--lato);
-    transition: width 0.3s ease-in-out, left 0.3s ease-in-out;
+    transition: width .1s ease-in-out, left .1s ease-in-out;
     overflow-x: hidden;
 	overflow-y: hidden;
 }
@@ -149,7 +149,7 @@ ol, ul {
 }
 #sidebar.hide .side-menu li a {
 	width: calc(48px - (4px * 2));
-	transition: width .3s ease;
+	transition: width .1s ease;
 }
 #sidebar .side-menu li a.logout {
 	color: var(--red);
@@ -245,7 +245,7 @@ ol, ul {
 #contentnav {
 	position: fixed;
 	z-index: 1000;
-	transition: width 0.3s ease, left 0.3s ease;
+	transition: width .1s ease, left .1s ease;
 	
   }
   
@@ -388,18 +388,6 @@ ol, ul {
 	top: 0;
 	left: 0;
 	z-index: 1000;
-  }
-
-  /* Circular element below the navbar */
-  #contentnav nav::before {
-	content: '';
-	position: absolute;
-	width: 40px;
-	height: 40px;
-	bottom: -40px;
-	left: 0;
-	border-radius: 50%;
-	box-shadow: -20px -20px 0 var(--light);
   }
   
 #contentnav nav a {
@@ -992,12 +980,12 @@ ol, ul {
   .content-layout.expanded {
 	margin-top: 100px;
     margin-left: 220px; /* Adjust as needed */
-    transition: margin 0.3s ease-in-out;
+    transition: margin .3s ease-in-out;
 }
   .content-layout.collapsed {
 	margin-top: 100px;
     margin-left: 80px; /* Adjust as needed */
-    transition: margin 0.3s ease-in-out;
+    transition: margin .3s ease-in-out;
 }
   .fc-scroller {
     overflow: hidden !important;
