@@ -19,7 +19,7 @@ interface BlogPost {
 export default function Blog() {
   const allPosts: BlogPost[] = [
     {
-      title: "PROVINCIAL OFFICE",
+      title: "DILG-Cavite PROVINCIAL OFFICE",
       text: "",
       tag: "See more",
       author: "",
@@ -311,7 +311,7 @@ export default function Blog() {
                     ))}
                   </div>
                 ) : (
-                  <p>No children available for this post.</p>
+                  <p>No more available for this post.</p>
                 )}
               </ModalContent>
             </ModalWrapper>
@@ -381,13 +381,16 @@ const CloseButton = styled.button`
   border: none;
   font-size: 20px;
   cursor: pointer;
+  &:hover {
+    color: red;
+  }
 `;
 
 const BackButton = styled.button`
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: #007bff; /* Bootstrap Primary Blue */
+  top: 20px;
+  left: 20px;
+  background-color: #1E4E92; /* Bootstrap Primary Blue */
   color: white;
   border: none;
   padding: 8px 16px;
@@ -397,6 +400,6 @@ const BackButton = styled.button`
   transition: background-color 0.3s;
 
   &:hover {
-    background-color: #0056b3; /* Darker Blue */
+    background-color: #ffce1b; /* Darker Blue */
   }
 `;
