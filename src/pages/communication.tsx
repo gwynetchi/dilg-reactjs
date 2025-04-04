@@ -159,6 +159,7 @@ const Communication: React.FC = () => {
         link: inputLink,
         createdBy: user.uid,
         createdAt: serverTimestamp(),
+        submitID: [],
       });
 
       showAlert("Message Sent Successfully!", "success");
