@@ -126,6 +126,15 @@ const Communication: React.FC = () => {
       return;
     }
 
+    const currentDate = new Date();
+    const deadlineDate = new Date(deadline);
+
+    // Check if the deadline is in the past
+    if (deadlineDate < currentDate) {
+      showAlert("Invalid Date: The deadline cannot be in the past");
+      return;
+    }
+
     if (inputLink && !inputLink.startsWith("https://")) {
       showAlert("Only HTTPS links are allowed!");
       return;
