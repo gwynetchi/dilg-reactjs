@@ -365,6 +365,13 @@ ol, ul {
     left: 80px;
 }
 
+@media screen and (max-width: 650px) {
+	#sidebar.hide ~ #contentnav {
+		width: 100%;
+		left: 0px;
+	}
+}
+
 .timestamp {
 	font-size: 12px;
 	color: gray;
@@ -783,8 +790,9 @@ ol, ul {
     }
 
     #sidebar.open ~ #contentnav {
-        width: calc(100% - 200px);
+        width: 100%;
         margin-left: 200px;
+		left: 0;
     }
 }
 
@@ -1000,6 +1008,12 @@ ol, ul {
 	margin-top: 100px;
     margin-left: 80px; /* Adjust as needed */
     transition: margin .3s ease-in-out;
+}
+
+@media screen and (max-width: 650px) {
+	.content-layout.collapsed {
+		margin-left: 0px;
+	}
 }
   .fc-scroller {
     overflow: hidden !important;
