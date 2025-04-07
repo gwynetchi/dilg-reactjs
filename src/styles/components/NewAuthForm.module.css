@@ -300,7 +300,7 @@ form{ width: 100%; }
     }
 
 @media screen and (max-width: 650px){
-    .container{ height: calc(100vh - 40px); }
+    .container{ height: calc(100vh - 30vh); }
 
     .form-box{
         bottom: 0;
