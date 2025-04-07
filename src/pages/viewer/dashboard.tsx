@@ -3,6 +3,7 @@ import { db, auth } from '../../firebase';
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth'; 
 import "../../styles/components/dashboard.css";
+import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
 
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -218,6 +219,12 @@ const Dashboard = () => {
                             <p>{activeUsers}</p>
                         </div>
                     </div>
+                              {/* Display the Pie Chart */}
+          <ReportMetricsChart 
+            totalReports={totalReports} 
+            pendingReports={pendingReports} 
+            lateReports={lateReports} 
+          />
 
                     {/* Button to open To-Do List Modal */}
                     <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
