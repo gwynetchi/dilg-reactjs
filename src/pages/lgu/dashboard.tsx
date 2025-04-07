@@ -11,6 +11,11 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);  // Modal visibility state
+    const [activeUsers, setActiveUsers] = useState<number>(0); // Registered users count
+    const [totalReports, setTotalReports] = useState(0);
+    const [lateReports, setLateReports] = useState(0);
+    const [pendingReports, setPendingReports] = useState(0);
 
     // Firebase Authentication state listener
     useEffect(() => {
@@ -57,6 +62,45 @@ const Dashboard = () => {
         }
     }, [currentUser]);
 
+    // Fetch total registered users
+    const fetchRegisteredUsers = async () => {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        setActiveUsers(usersSnapshot.size); // Set total registered users count
+    };
+
+    useEffect(() => {
+        fetchRegisteredUsers();
+    }, []);  // Only run once when component mounts
+
+    // Fetch reports metrics
+    const fetchReportsMetrics = async () => {
+        try {
+            const reportsRef = collection(db, 'communications');
+            const submitRef = collection(db, 'submittedDetails');
+            
+            // Total reports
+            const reportsSnapshot = await getDocs(reportsRef);
+            setTotalReports(reportsSnapshot.size);  // Total reports count
+
+            // Pending reports
+            const pendingQuery = query(submitRef, where("evaluatorStatus", "==", "Pending"));
+            const pendingSnapshot = await getDocs(pendingQuery);
+            setPendingReports(pendingSnapshot.size);  // Pending reports count
+
+            // Late reports
+            const lateQuery = query(submitRef, where("evaluatorStatus", "==", "Late"));
+            const lateSnapshot = await getDocs(lateQuery);
+            setLateReports(lateSnapshot.size);  // Late reports count
+        } catch (error) {
+            console.error('Error fetching reports metrics:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchReportsMetrics();
+    }, []);  // Only run once when component mounts
+
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
             const newTaskObj = { 
@@ -102,13 +146,8 @@ const Dashboard = () => {
     };
 
     const removeTask = async (id: string, completed: boolean) => {
-        console.log("Task ID:", id);
-        console.log("Task completed status:", completed); // Debugging check
-    
         if (!completed) {
-            // If the task is not completed, show an error message
             setError("Task hasn't been resolved yet");
-            console.log("Delete Button Clicked");
             setTimeout(() => setError(null), 3000); // Hide the error after 3 seconds
             return;
         }
@@ -126,7 +165,6 @@ const Dashboard = () => {
             setTimeout(() => setStatusMessage(null), 3000);
         }
     };
-    
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) {
@@ -136,6 +174,9 @@ const Dashboard = () => {
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
     };
+
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
 
     if (loading) return <div>Loading...</div>;
 
@@ -158,68 +199,97 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* TODO List as Table */}
-                    <div className="todo">
-                        <div className="head">
-                            <h3>Todos</h3>
+                    {/* Display Metrics */}
+                    <div className="metrics-container">
+                        <div className="metric">
+                            <h3>Total Reports Submitted</h3>
+                            <p>{totalReports}</p>
                         </div>
-                        <div className="todo-input">
-                            <textarea
-                                value={newTask}
-                                onChange={(e) => setNewTask(e.target.value)}
-                                placeholder="New task..."
-                                rows={3}  // Initial height (can adjust to your design needs)
-                            />
-                            <button onClick={addTask}>Add</button>
+                        <div className="metric">
+                            <h3>Pending Reports</h3>
+                            <p>{pendingReports} ({((pendingReports / totalReports) * 100).toFixed(2)}%)</p>
                         </div>
-
-                        {/* Display Status Message */}
-                        {statusMessage && <div className="status-message">{statusMessage}</div>}
-                        {error && <div className="error-message">{error}</div>}
-
-                        {/* Wrapper for the table */}
-                        <div className="todo-table-wrapper">
-                            <table className="todo-table">
-                                <thead>
-                                    <tr>
-                                        <th>Completed</th>
-                                        <th>Task</th>
-                                        <th>Created At</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {tasks.length > 0 ? (
-                                        tasks.map(({ id, text, completed, createdAt }) => (
-                                            <tr key={id} className={completed ? "completed" : "not-completed"}>
-                                                <td>
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={completed} 
-                                                        onChange={() => toggleTaskCompletion(id, completed)} 
-                                                    />
-                                                </td>
-                                                <td>{text}</td>
-                                                <td>{formatDate(createdAt)}</td>
-                                                <td>
-                                                    <button 
-                                                        onClick={() => removeTask(id, completed)} 
-                                                        className="delete-btn"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={4}>No tasks available</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                        <div className="metric">
+                            <h3>Late Reports</h3>
+                            <p>{lateReports} ({((lateReports / totalReports) * 100).toFixed(2)}%)</p>
+                        </div>
+                        <div className="metric">
+                            <h3>Total Registered Users</h3>
+                            <p>{activeUsers}</p>
                         </div>
                     </div>
+
+                    {/* Button to open To-Do List Modal */}
+                    <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
+
+                    {/* Modal for To-Do List */}
+                    {isModalOpen && (
+                        <div className="modal-overlay">
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h3>To-Do List</h3>
+                                    <button className="close-modal-btn" onClick={closeModal}>X</button>
+                                </div>
+
+                                <div className="todo-input">
+                                    <textarea
+                                        value={newTask}
+                                        onChange={(e) => setNewTask(e.target.value)}
+                                        placeholder="New task..."
+                                        rows={3}
+                                    />
+                                    <button onClick={addTask}>Add</button>
+                                </div>
+
+                                {/* Display Status Message */}
+                                {statusMessage && <div className="status-message">{statusMessage}</div>}
+                                {error && <div className="error-message">{error}</div>}
+
+                                {/* To-Do List Table */}
+                                <div className="todo-table-wrapper">
+                                    <table className="todo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Completed</th>
+                                                <th>Task</th>
+                                                <th>Created At</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {tasks.length > 0 ? (
+                                                tasks.map(({ id, text, completed, createdAt }) => (
+                                                    <tr key={id} className={completed ? "completed" : "not-completed"}>
+                                                        <td>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={completed} 
+                                                                onChange={() => toggleTaskCompletion(id, completed)} 
+                                                            />
+                                                        </td>
+                                                        <td>{text}</td>
+                                                        <td>{formatDate(createdAt)}</td>
+                                                        <td>
+                                                            <button 
+                                                                onClick={() => removeTask(id, completed)} 
+                                                                className="delete-btn"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4}>No tasks available</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </main>
             </section>
         </div>
