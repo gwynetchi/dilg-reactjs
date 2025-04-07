@@ -16,6 +16,8 @@ const Scoreboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);    
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [editingScore, setEditingScore] = useState<string | null>(null); // Manage which user's score is being edited
+  const [newScore, setNewScore] = useState<number | null>(null); // Track the updated score
 
   // Function to fetch recipient details (full name)
   const fetchRecipientDetails = async (uid: string): Promise<string> => {
@@ -108,18 +110,35 @@ const Scoreboard = () => {
   }, []);
   
 
-  const handleScoreChange = async (uid: string, newScore: number) => {
+  const handleScoreChange = (_uid: string, newScore: number) => {
+    setNewScore(newScore); // Temporarily update the score
+  };
+
+  const handleSaveScore = async (uid: string) => {
     try {
-      const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, { score: newScore });
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === uid ? { ...user, score: newScore } : user
-        )
-      );
+      if (newScore !== null) {
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { score: newScore });
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user.id === uid ? { ...user, score: newScore } : user
+          )
+        );
+        setEditingScore(null); // Stop editing after saving
+        setNewScore(null); // Clear the updated score
+      }
     } catch (error) {
       console.error('Error updating score in Firestore:', error);
       alert('Failed to update score!');  // Optional alert to inform the user
+    }
+  };
+
+  const toggleEditMode = (uid: string, score: number) => {
+    if (editingScore === uid) {
+      setEditingScore(null); // Disable editing if the same user is clicked
+    } else {
+      setEditingScore(uid); // Enable editing for the clicked user
+      setNewScore(score); // Pre-fill the input field with the current score
     }
   };
 
@@ -142,7 +161,7 @@ const Scoreboard = () => {
             <th>Late Reports</th>
             <th>Pending Reports</th>
             <th>Score</th>
-            {isEvaluator && <th>Adjust Score</th>} {/* Only show this column for Evaluators */}
+            {isEvaluator && <th>Actions</th>} {/* Change to "Actions" */}
           </tr>
         </thead>
         <tbody>
@@ -157,14 +176,24 @@ const Scoreboard = () => {
                 <td>{user.score}</td>
                 {isEvaluator && (
                   <td>
-                    <input
-                      type="number"
-                      value={user.score}
-                      onChange={(e) => handleScoreChange(user.id, parseInt(e.target.value))}
-                      onBlur={(e) => handleScoreChange(user.id, parseInt(e.target.value))}
-                      min="0"
-                      style={{ width: '60px' }}
-                    />
+                    <button
+                      onClick={() => toggleEditMode(user.id, user.score)}
+                      style={{ marginRight: '10px' }}
+                    >
+                      {editingScore === user.id ? 'Cancel Edit' : 'Edit'}
+                    </button>
+                    {editingScore === user.id && (
+                      <>
+                        <input
+                          type="number"
+                          value={newScore || ''}
+                          onChange={(e) => handleScoreChange(user.id, parseInt(e.target.value))}
+                          min="0"
+                          style={{ width: '60px' }}
+                        />
+                        <button onClick={() => handleSaveScore(user.id)}>Save</button>
+                      </>
+                    )}
                   </td>
                 )}
               </tr>
