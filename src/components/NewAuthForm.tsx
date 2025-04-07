@@ -43,7 +43,7 @@ const AuthForm = () => {
   const resetForm = () => {
     setEmail("");
     setPassword("");
-    setRole("Admin"); // Default to "Admin" instead of empty
+    setRole("Select Role"); // Default to "Admin" instead of empty
     setError("");
     setLoading(false);
     setSuccessMessage("");
@@ -54,6 +54,11 @@ const AuthForm = () => {
     setLoading(true);
     setError("");
     setSuccessMessage("");
+    if (role === "Select Role" || role === "") {
+      setError("❌ Please select a valid role.");
+      setLoading(false);
+      return;
+    }
   
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -187,6 +192,7 @@ const AuthForm = () => {
                 </div>
                 <div className={styles.inputBox}>
                   <select value={role} onChange={(e) => setRole(e.target.value)} required>
+                    <option value="Select Role" disabled>Select Role</option>
                     <option value="Admin">Admin</option>
                     <option value="LGU">LGU</option>
                     <option value="Viewer">Viewer</option>

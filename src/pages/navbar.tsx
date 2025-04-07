@@ -130,7 +130,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         });
 
         setUnreadCount(unread); // Set the unread message count
-        setUnreadMessages(newUnseenMessages); // Store the message details in state
+        setUnreadMessages(newUnseenMessages); 
       });
 
       return () => unsubscribe();
@@ -156,12 +156,13 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   
     const rolePath = rolePaths[userRole] || "viewer"; // Default to "viewer" if role is unknown
     navigate(`/${rolePath}/inbox/${messageId}`);
-  
+
+
     // Mark the notification as read by adding the current user's ID to the "seenBy" array in Firestore
     try {
       const messageRef = doc(db, "communications", messageId);
       const messageDoc = await getDoc(messageRef);
-  
+      
       if (messageDoc.exists()) {
         const data = messageDoc.data();
         const seenBy = data?.seenBy || [];
@@ -178,7 +179,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       console.error("Error marking message as read:", error);
     }
   };
-  
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
