@@ -44,6 +44,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
       { name: "Message", icon: "bxs-message", path: "/viewer/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
     ],
     Evaluator: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
@@ -53,6 +54,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
       { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/evaluator/scoreBoard" },
+
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
@@ -61,6 +64,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
       { name: "Message", icon: "bxs-message", path: "/lgu/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
+
     ],
     Admin: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
@@ -69,6 +74,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
       { name: "Message", icon: "bxs-message", path: "/admin/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
+
     ],
   };
 
