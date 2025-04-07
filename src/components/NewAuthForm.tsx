@@ -6,6 +6,9 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "fire
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
+import TopNavbar from "../components/Nav/TopNavbar";
+
+
 const AuthForm = () => {
   const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
