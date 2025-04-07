@@ -235,15 +235,14 @@ const Inbox: React.FC = () => {
                           </td>
                           <td>
                           <button
-  className="delete-btn"
-  onClick={(e) => {
-    e.stopPropagation(); // Prevent row click event
-    handleDeleteRequest(msg.id, msg.recipients);
-  }}
->
-  Delete
-</button>
-
+                            className="delete-btn"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent row click event
+                              handleDeleteRequest(msg.id, msg.recipients);
+                            }}
+                          >
+                            Delete
+                          </button>
                           </td>
                         </tr>
                       ))}
@@ -256,16 +255,16 @@ const Inbox: React.FC = () => {
         </main>
       </section>
       {showModal && (
-  <div className="modal-overlay">
-    <div className="modal-content">
-      <p>Are you sure you want to delete this message?</p>
-      <div className="modal-buttons">
-        <button onClick={() => setShowModal(false)} className="cancel-btn">Cancel</button>
-        <button onClick={deleteMessage} className="confirm-btn">Confirm</button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <p>Are you sure you want to delete this message?</p>
+            <div className="modal-buttons">
+              <button onClick={() => setShowModal(false)} className="cancel-btn">Cancel</button>
+              <button onClick={deleteMessage} className="confirm-btn">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
