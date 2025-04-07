@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useLocation } from "react-router-dom";
 
@@ -19,7 +19,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [userProfilePic, setUserProfilePic] = useState<string>("");
 
   const [activeMenu, setActiveMenu] = useState("Dashboard");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -34,8 +33,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   }, [location.pathname, userRole]);
   
-  const [searchQuery, setSearchQuery] = useState<string>("");
-
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -201,25 +198,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   };
 
-  const handleSearch = async () => {
-    if (searchQuery.trim()) {
-      console.log("Searching for:", searchQuery);
-      const db = getFirestore();
-      const messagesRef = collection(db, "messages");
-      const q = query(messagesRef, where("sender", "==", searchQuery), where("text", "array-contains", searchQuery));
-      const querySnapshot = await getDocs(q);
-      const inboxResults = querySnapshot.docs.map((doc) => doc.data());
-      const filteredSidebarItems = userRole
-        ? menuItems[userRole].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        : [];
-      navigate(`/search?query=${searchQuery}`, { state: { filteredSidebarItems, inboxResults } });
-    }
-  };
-
-  const toggleSearchForm = () => {
-    setIsSearchOpen(prevState => !prevState);
-  };
-
   if (!userRole) return null;
 
   return (
@@ -264,24 +242,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
-          
-          <form className={`d-flex ${isSearchOpen ? "show" : ""}`}>
-            <input
-              type="search"
-              className="form-control"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-            />
-            <button type="button" className="btn btn-outline-secondary" onClick={handleSearch}>
-              <i className={`bx ${isSearchOpen ? "bx-x" : "bx-search"}`}></i>
-            </button>
-          </form>
 
           <div className="position-relative" ref={notificationMenuRef}>
             <button className="btn notification" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
