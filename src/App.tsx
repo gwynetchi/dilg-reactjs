@@ -44,6 +44,7 @@ import SubmissionAnalytics from "./pages/submission-analytics";
 import UserAnalytics from "./pages/user-analytics";
 import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
+import Scoreboard from "./pages/scoreBoard";
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
@@ -55,6 +56,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/inbox", element: <Inbox /> },
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
+    { path: "/admin/scoreBoard", element: <Scoreboard /> },
+
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -70,7 +73,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics/submission-analytics", element: <SubmissionAnalytics /> },
     { path: "/evaluator/analytics/user-analytics", element: <UserAnalytics /> },
     { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
-
+    { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
 
   ],
   LGU: [
@@ -82,6 +85,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
+    { path: "/lgu/scoreBoard", element: <Scoreboard /> },
+
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <ViewerDashboard /> },
@@ -92,6 +97,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
+    { path: "/viewer/scoreBoard", element: <Scoreboard /> },
+
   ],
 };
 
