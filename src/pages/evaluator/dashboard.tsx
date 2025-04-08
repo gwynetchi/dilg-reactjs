@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../../firebase';
-import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth'; 
 import "../../styles/components/dashboard.css";
 import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
@@ -75,51 +75,65 @@ const Dashboard = () => {
         fetchRegisteredUsers();
     }, []);  // Only run once when component mounts
 
-    const fetchReportsMetrics = async () => {
-        try {
-            const reportsRef = collection(db, 'communications');  // For total reports
-            const submitRef = collection(db, 'submittedDetails'); // For submitted reports
-    
-            // Total reports from the communications collection
-            const reportsSnapshot = await getDocs(reportsRef);
+
+    // Real-time metrics fetching for Reports
+    useEffect(() => {
+        const reportsRef = collection(db, 'communications');
+        const submitRef = collection(db, 'submittedDetails');
+
+        // Real-time listener for total reports (communications collection)
+        const reportsUnsubscribe = onSnapshot(reportsRef, (reportsSnapshot) => {
             setTotalReports(reportsSnapshot.size);  // Set total reports count
-    
-            // Fetch all submissions from the submittedDetails collection
-            const submittedSnapshot = await getDocs(submitRef);
-            const submittedReportsIds = submittedSnapshot.docs.map((doc) => doc.data().messageId);
-    
+        });
+
+        // Real-time listener for submitted reports (submittedDetails collection)
+        const submitUnsubscribe = onSnapshot(submitRef, async (submitSnapshot) => {
+            const submittedReportsIds = submitSnapshot.docs.map((doc) => doc.data().messageId);
+
+            // Fetch the reportsSnapshot inside the submitUnsubscribe callback
+            const reportsSnapshot = await getDocs(reportsRef);
+
             // Calculate No Submission reports by subtracting submitted reports from total reports
             const noSubmissionReportsCount = reportsSnapshot.docs.filter(doc => 
                 !submittedReportsIds.includes(doc.id)  // Check if this report ID is not in the submittedDetails
             ).length;
-            
-            setNoSubmissionReports(noSubmissionReportsCount);  // Set No Submission reports count
-    
+
+            // Directly add reports where evaluatorStatus is "No Submission"
+            const noSubmissionQuery = query(
+                submitRef, 
+                where("evaluatorStatus", "==", "No Submission")
+            );
+            const noSubmissionSnapshot = await getDocs(noSubmissionQuery);
+
+            // Combine both counts: No Submission reports from subtraction + those directly set to "No Submission"
+            setNoSubmissionReports(noSubmissionReportsCount + noSubmissionSnapshot.size);  // Set No Submission reports count
+
             // On Time Reports
-            const onTimeQuery = query(submitRef, where("evaluatorStatus", "==", "On Time"))
+            const onTimeQuery = query(submitRef, where("evaluatorStatus", "==", "On Time"));
             const onTimeSnapshot = await getDocs(onTimeQuery);
             setOnTimeReports(onTimeSnapshot.size);  // Set On Time reports count
-    
+
             // Pending reports
             const pendingQuery = query(submitRef, where("evaluatorStatus", "==", "Pending"));
             const pendingSnapshot = await getDocs(pendingQuery);
             setPendingReports(pendingSnapshot.size);  // Set Pending reports count
-    
+
             // Late reports
             const lateQuery = query(
                 submitRef,
-                where("evaluatorStatus", "==", "Late"));
+                where("evaluatorStatus", "==", "Late")
+            );
             const lateSnapshot = await getDocs(lateQuery);
             setLateReports(lateSnapshot.size);  // Set Late reports count
-        } catch (error) {
-            console.error('Error fetching reports metrics:', error);
-        }
-    };
-    
-    useEffect(() => {
-        fetchReportsMetrics();
-    }, []);  // Only run once when component mounts
+        });
 
+        // Cleanup listeners when the component is unmounted
+        return () => {
+            reportsUnsubscribe();
+            submitUnsubscribe();
+        };
+    }, []);
+   
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
             const newTaskObj = { 
@@ -229,7 +243,7 @@ const Dashboard = () => {
                         </div>
                         <div className="metric">
                             <h3>On Time Report Submitted</h3>
-                            <p>{onTimeReports}</p>
+                            <p>{onTimeReports} ({((onTimeReports / totalReports) * 100).toFixed(2)}%)</p>
                         </div>
                         <div className="metric">
                             <h3>Pending Reports</h3>

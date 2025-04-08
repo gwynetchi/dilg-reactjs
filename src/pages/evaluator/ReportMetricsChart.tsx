@@ -15,7 +15,7 @@ const ReportMetricsChart = ({ totalReports, pendingReports, lateReports, onTimeR
   const completedReports = totalReports - pendingReports - lateReports - onTimeReports; // Completed reports calculation
 
   const data = {
-    labels: ['Pending Reports', 'Late Reports', 'On Time Reports', 'Unlabeled'],  // Pie chart labels
+    labels: ['Pending Reports', 'Late Reports', 'On Time Reports', 'No Submission'],  // Pie chart labels
     datasets: [
       {
         data: [
