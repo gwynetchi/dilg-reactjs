@@ -14,10 +14,11 @@ const Dashboard = () => {
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);  // Modal visibility state
     const [activeUsers, setActiveUsers] = useState<number>(0); // Registered users count
-    const [totalReports, setTotalReports] = useState(0);
-    const [lateReports, setLateReports] = useState(0);
-    const [pendingReports, setPendingReports] = useState(0);
-
+    const [totalReports, setTotalReports] = useState(0); // Total Reports Count from communications collection
+    const [onTimeReports, setOnTimeReports] = useState(0); // On Time reports count
+    const [lateReports, setLateReports] = useState(0); // Late reports count
+    const [pendingReports, setPendingReports] = useState(0); // Pending reports count
+    const [noSubmissionReports, setNoSubmissionReports] = useState(0); // No Submission reports count
     // Firebase Authentication state listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -74,30 +75,47 @@ const Dashboard = () => {
         fetchRegisteredUsers();
     }, []);  // Only run once when component mounts
 
-    // Fetch reports metrics
     const fetchReportsMetrics = async () => {
         try {
-            const reportsRef = collection(db, 'communications');
-            const submitRef = collection(db, 'submittedDetails');
-            
-            // Total reports
+            const reportsRef = collection(db, 'communications');  // For total reports
+            const submitRef = collection(db, 'submittedDetails'); // For submitted reports
+    
+            // Total reports from the communications collection
             const reportsSnapshot = await getDocs(reportsRef);
-            setTotalReports(reportsSnapshot.size);  // Total reports count
-
+            setTotalReports(reportsSnapshot.size);  // Set total reports count
+    
+            // Fetch all submissions from the submittedDetails collection
+            const submittedSnapshot = await getDocs(submitRef);
+            const submittedReportsIds = submittedSnapshot.docs.map((doc) => doc.data().messageId);
+    
+            // Calculate No Submission reports by subtracting submitted reports from total reports
+            const noSubmissionReportsCount = reportsSnapshot.docs.filter(doc => 
+                !submittedReportsIds.includes(doc.id)  // Check if this report ID is not in the submittedDetails
+            ).length;
+            
+            setNoSubmissionReports(noSubmissionReportsCount);  // Set No Submission reports count
+    
+            // On Time Reports
+            const onTimeQuery = query(submitRef, where("evaluatorStatus", "==", "On Time"))
+            const onTimeSnapshot = await getDocs(onTimeQuery);
+            setOnTimeReports(onTimeSnapshot.size);  // Set On Time reports count
+    
             // Pending reports
             const pendingQuery = query(submitRef, where("evaluatorStatus", "==", "Pending"));
             const pendingSnapshot = await getDocs(pendingQuery);
-            setPendingReports(pendingSnapshot.size);  // Pending reports count
-
+            setPendingReports(pendingSnapshot.size);  // Set Pending reports count
+    
             // Late reports
-            const lateQuery = query(submitRef, where("evaluatorStatus", "==", "Late"));
+            const lateQuery = query(
+                submitRef,
+                where("evaluatorStatus", "==", "Late"));
             const lateSnapshot = await getDocs(lateQuery);
-            setLateReports(lateSnapshot.size);  // Late reports count
+            setLateReports(lateSnapshot.size);  // Set Late reports count
         } catch (error) {
             console.error('Error fetching reports metrics:', error);
         }
     };
-
+    
     useEffect(() => {
         fetchReportsMetrics();
     }, []);  // Only run once when component mounts
@@ -191,7 +209,7 @@ const Dashboard = () => {
                 <main>
                     <div className="head-title">
                         <div className="left">
-                            <h1>Admin Dashboard</h1>
+                            <h1>Evaluator Dashboard</h1>
                             <ul className="breadcrumb">
                                 <li><a className="active" href="#">Home</a></li>
                                 <li><i className='bx bx-chevron-right'></i></li>
@@ -201,33 +219,53 @@ const Dashboard = () => {
                     </div>
 
                     {/* Display Metrics */}
-                    <div className="metrics-container">
+                    {/* Combined Metrics + Chart Section */}
+                        <div className="dashboard-metrics-chart-wrapper">
+                    {/* Metrics on the left */}
+                        <div className="metrics-panel">
+                            <div className="metric">
+                                <h3>Total Reports Submitted</h3>
+                                    <p>{totalReports}</p>
+                        </div>
                         <div className="metric">
-                            <h3>Total Reports Submitted</h3>
-                            <p>{totalReports}</p>
+                            <h3>On Time Report Submitted</h3>
+                            <p>{onTimeReports}</p>
                         </div>
                         <div className="metric">
                             <h3>Pending Reports</h3>
-                            <p>{pendingReports} ({((pendingReports / totalReports) * 100).toFixed(2)}%)</p>
+                                <p>{pendingReports} ({((pendingReports / totalReports) * 100).toFixed(2)}%)</p>
                         </div>
                         <div className="metric">
                             <h3>Late Reports</h3>
-                            <p>{lateReports} ({((lateReports / totalReports) * 100).toFixed(2)}%)</p>
+                                <p>{lateReports} ({((lateReports / totalReports) * 100).toFixed(2)}%)</p>
                         </div>
+                        <div className="metric">
+    <h3>No Submission Reports</h3>
+    <p>{noSubmissionReports} ({((noSubmissionReports / totalReports) * 100).toFixed(2)}%)</p>
+</div>
+
                         <div className="metric">
                             <h3>Total Registered Users</h3>
                             <p>{activeUsers}</p>
                         </div>
                     </div>
-                    {/* Display the Pie Chart */}
-                        <ReportMetricsChart 
+
+                    {/* Chart on the right */}
+                        <div className="chart-panel">
+                            <ReportMetricsChart 
                             totalReports={totalReports} 
                             pendingReports={pendingReports} 
                             lateReports={lateReports} 
-                    />
+                            onTimeReports={onTimeReports}
+                        />
+                        </div>
+                    </div>
 
-                    {/* Button to open To-Do List Modal */}
-                    <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
+                    {/* View To-Do List button */}
+                    <div className="metrics-footer">
+                        <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
+                    </div>
+
 
                     {/* Modal for To-Do List */}
                     {isModalOpen && (
