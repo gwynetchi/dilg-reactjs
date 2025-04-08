@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -14,39 +14,39 @@ interface User {
 
 const Scoreboard = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);    
+  const [loading, setLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [editingScore, setEditingScore] = useState<string | null>(null); // Manage which user's score is being edited
-  const [newScore, setNewScore] = useState<number | null>(null); // Track the updated score
+  const [editingScore, setEditingScore] = useState<string | null>(null);
+  const [newScore, setNewScore] = useState<number | null>(null);
 
-  // Function to fetch recipient details (full name)
-  const fetchRecipientDetails = async (uid: string): Promise<string> => {
+  // Fetch user details (full name) and return it as a promise
+  const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> => {
     const userRef = doc(db, "users", uid);
     const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {
       const data = userDoc.data();
-      return `${data.fname} ${data.mname || ""} ${data.lname}`; // Full name format
+      return `${data.fname} ${data.mname || ""} ${data.lname}`;
     }
-    return 'Unknown User'; // Fallback if user doesn't exist
-  };
+    return 'Unknown User';
+  }, []);
 
-  // Fetch user data and their submitted reports metrics
+  // Optimized fetch function for user and report data
   useEffect(() => {
     const fetchScoreboardData = async () => {
       try {
         const usersRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersRef);
 
-        const usersList: User[] = [];
-        for (const userDoc of usersSnapshot.docs) {
+        // Concurrently fetch reports for each user and their full name
+        const usersList: User[] = await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
           const userId = userDoc.id;
 
-          // Fetch reports for each user
+          // Fetch reports data
           const reportsRef = collection(db, 'submittedDetails');
-          const reportsQuery = query(reportsRef, where('submittedBy', '==', userId));
-          const reportsSnapshot = await getDocs(reportsQuery);
+          const totalReportsQuery = query(reportsRef, where('submittedBy', '==', userId));
+          const totalReportsSnapshot = await getDocs(totalReportsQuery);
+          const totalReports = totalReportsSnapshot.size;
 
-          const totalReports = reportsSnapshot.size;
           const lateReportsQuery = query(reportsRef, where('submittedBy', '==', userId), where('evaluatorStatus', '==', 'Late'));
           const lateReportsSnapshot = await getDocs(lateReportsQuery);
           const lateReports = lateReportsSnapshot.size;
@@ -55,21 +55,21 @@ const Scoreboard = () => {
           const pendingReportsSnapshot = await getDocs(pendingReportsQuery);
           const pendingReports = pendingReportsSnapshot.size;
 
-          // Fetch the full name of the user
+          // Fetch the user's full name
           const fullName = await fetchRecipientDetails(userId);
 
-          // Calculate score (you can modify the logic to suit your needs)
-          const score = totalReports - lateReports - pendingReports; // Example scoring logic
+          // Calculate score
+          const score = totalReports - lateReports - pendingReports;
 
-          usersList.push({
+          return {
             id: userId,
             fullName,
             totalReports,
             lateReports,
             pendingReports,
             score,
-          });
-        }
+          };
+        }));
 
         // Sort users based on their scores (descending order)
         usersList.sort((a, b) => b.score - a.score);
@@ -83,14 +83,14 @@ const Scoreboard = () => {
     };
 
     fetchScoreboardData();
-  }, []);
+  }, [fetchRecipientDetails]);
 
+  // Fetch current user data
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           setCurrentUser(user);
-          // Fetch user role from Firestore
           const userRef = doc(db, "users", user.uid);
           const userDoc = await getDoc(userRef);
           if (userDoc.exists()) {
@@ -105,13 +105,13 @@ const Scoreboard = () => {
       });
       return () => unsubscribe();
     };
-  
+
     fetchCurrentUser();
   }, []);
-  
 
+  // Handle score update
   const handleScoreChange = (_uid: string, newScore: number) => {
-    setNewScore(newScore); // Temporarily update the score
+    setNewScore(newScore);
   };
 
   const handleSaveScore = async (uid: string) => {
@@ -124,25 +124,24 @@ const Scoreboard = () => {
             user.id === uid ? { ...user, score: newScore } : user
           )
         );
-        setEditingScore(null); // Stop editing after saving
-        setNewScore(null); // Clear the updated score
+        setEditingScore(null);
+        setNewScore(null);
       }
     } catch (error) {
       console.error('Error updating score in Firestore:', error);
-      alert('Failed to update score!');  // Optional alert to inform the user
+      alert('Failed to update score!');
     }
   };
 
   const toggleEditMode = (uid: string, score: number) => {
     if (editingScore === uid) {
-      setEditingScore(null); // Disable editing if the same user is clicked
+      setEditingScore(null);
     } else {
-      setEditingScore(uid); // Enable editing for the clicked user
-      setNewScore(score); // Pre-fill the input field with the current score
+      setEditingScore(uid);
+      setNewScore(score);
     }
   };
 
-  // Ensure the current user is an Evaluator before allowing score changes
   const isEvaluator = currentUser?.role === 'Evaluator' || currentUser?.role === 'evaluator';
 
   if (loading) {
@@ -161,7 +160,7 @@ const Scoreboard = () => {
             <th>Late Reports</th>
             <th>Pending Reports</th>
             <th>Score</th>
-            {isEvaluator && <th>Actions</th>} {/* Change to "Actions" */}
+            {isEvaluator && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>

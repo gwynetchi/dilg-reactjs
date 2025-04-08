@@ -29,6 +29,8 @@ li {
 	--light-yellow: #FFF2C6;
 	--orange: #FD7238;
 	--light-orange: #FFE0D3;
+	--DILG: #ffffe0;
+	--calamansi: #fcffa4
 }
 
 html {
@@ -36,7 +38,7 @@ html {
 }
 
 body {
-	background: var(--grey);
+	background: var(--calamansi);
 	overflow-x: hidden;
 	overflow-y: hidden;
 }
@@ -351,7 +353,7 @@ ol, ul {
     margin-top: 20px;  /* Adjusted margin to create space at the top */
     margin: 20px;      /* General margin on all sides */
     padding: 20px;     /* Padding inside the container for spacing */
-    background: var(--light);
+    background: var(--DILG);
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     font-family: var(--lato); /* Ensure the font family is applied */
