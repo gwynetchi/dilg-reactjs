@@ -219,12 +219,12 @@ const Dashboard = () => {
                             <p>{activeUsers}</p>
                         </div>
                     </div>
-                              {/* Display the Pie Chart */}
-          <ReportMetricsChart 
-            totalReports={totalReports} 
-            pendingReports={pendingReports} 
-            lateReports={lateReports} 
-          />
+                    {/* Display the Pie Chart */}
+                        <ReportMetricsChart 
+                            totalReports={totalReports} 
+                            pendingReports={pendingReports} 
+                            lateReports={lateReports} 
+                    />
 
                     {/* Button to open To-Do List Modal */}
                     <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>

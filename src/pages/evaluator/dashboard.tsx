@@ -201,33 +201,43 @@ const Dashboard = () => {
                     </div>
 
                     {/* Display Metrics */}
-                    <div className="metrics-container">
-                        <div className="metric">
-                            <h3>Total Reports Submitted</h3>
-                            <p>{totalReports}</p>
+                    {/* Combined Metrics + Chart Section */}
+                        <div className="dashboard-metrics-chart-wrapper">
+                    {/* Metrics on the left */}
+                        <div className="metrics-panel">
+                            <div className="metric">
+                                <h3>Total Reports Submitted</h3>
+                                    <p>{totalReports}</p>
                         </div>
                         <div className="metric">
                             <h3>Pending Reports</h3>
-                            <p>{pendingReports} ({((pendingReports / totalReports) * 100).toFixed(2)}%)</p>
+                                <p>{pendingReports} ({((pendingReports / totalReports) * 100).toFixed(2)}%)</p>
                         </div>
                         <div className="metric">
                             <h3>Late Reports</h3>
-                            <p>{lateReports} ({((lateReports / totalReports) * 100).toFixed(2)}%)</p>
+                                <p>{lateReports} ({((lateReports / totalReports) * 100).toFixed(2)}%)</p>
                         </div>
-                        <div className="metric">
-                            <h3>Total Registered Users</h3>
-                            <p>{activeUsers}</p>
+                            <div className="metric">
+                                <h3>Total Registered Users</h3>
+                                    <p>{activeUsers}</p>
                         </div>
                     </div>
-                              {/* Display the Pie Chart */}
-          <ReportMetricsChart 
-            totalReports={totalReports} 
-            pendingReports={pendingReports} 
-            lateReports={lateReports} 
-          />
 
-                    {/* Button to open To-Do List Modal */}
-                    <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
+                    {/* Chart on the right */}
+                        <div className="chart-panel">
+                            <ReportMetricsChart 
+                            totalReports={totalReports} 
+                            pendingReports={pendingReports} 
+                            lateReports={lateReports} 
+                        />
+                        </div>
+                    </div>
+
+                    {/* View To-Do List button */}
+                    <div className="metrics-footer">
+                        <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
+                    </div>
+
 
                     {/* Modal for To-Do List */}
                     {isModalOpen && (
