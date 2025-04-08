@@ -1038,7 +1038,7 @@ ol, ul {
 	position: absolute;
 	top: 42px;
 	left: -100px; /* Start off-screen to the left */
-	width: 50px; /* Adjust as needed */
+	width: 70px; /* Adjust as needed */
 	height: auto; /* Maintain aspect ratio */
 	opacity: 0; /* Start invisible */
 	transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out; /* Slide and fade in/out */
