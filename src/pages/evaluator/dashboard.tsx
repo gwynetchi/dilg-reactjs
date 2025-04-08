@@ -4,7 +4,6 @@ import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, query, w
 import { onAuthStateChanged } from 'firebase/auth';
 import "../../styles/components/dashboard.css";
 import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
-import Calendar from '../calendar.tsx'
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [tasks, setTasks] = useState<any[]>([]);
