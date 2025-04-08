@@ -6,12 +6,15 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "fire
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
+import TopNavbar from "../components/Nav/TopNavbar";
+
+
 const AuthForm = () => {
   const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Admin");
+  const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -43,7 +46,7 @@ const AuthForm = () => {
   const resetForm = () => {
     setEmail("");
     setPassword("");
-    setRole("Admin"); // Default to "Admin" instead of empty
+    setRole("Select Role"); // Default to "Admin" instead of empty
     setError("");
     setLoading(false);
     setSuccessMessage("");
@@ -54,6 +57,11 @@ const AuthForm = () => {
     setLoading(true);
     setError("");
     setSuccessMessage("");
+    if (role === "Select Role" || role === "") {
+      setError("❌ Please select a valid role.");
+      setLoading(false);
+      return;
+    }
   
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -187,6 +195,7 @@ const AuthForm = () => {
                 </div>
                 <div className={styles.inputBox}>
                   <select value={role} onChange={(e) => setRole(e.target.value)} required>
+                    <option value="Select Role" disabled>Select Role</option>
                     <option value="Admin">Admin</option>
                     <option value="LGU">LGU</option>
                     <option value="Viewer">Viewer</option>

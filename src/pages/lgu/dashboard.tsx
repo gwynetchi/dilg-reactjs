@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
-import { db, auth } from '../../firebase'; // Import Firebase configuration
+import { db, auth } from '../../firebase';
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth'; // Firebase authentication state listener
-import "../../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
+import { onAuthStateChanged } from 'firebase/auth'; 
+import "../../styles/components/dashboard.css";
+import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
 
 const Dashboard = () => {
-    const [currentUser, setCurrentUser] = useState<any>(null);  // State to store the current user
-    const [tasks, setTasks] = useState<any[]>([]);  // State to store tasks
-    const [newTask, setNewTask] = useState("");  // State for new task input
-    const [loading, setLoading] = useState(true);  // Loading state while fetching data
-    const [error, setError] = useState<string | null>(null); // Error state to handle fetch/add task errors
-    const [statusMessage, setStatusMessage] = useState<string | null>(null);  // State to store status messages
-
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [tasks, setTasks] = useState<any[]>([]);  
+    const [newTask, setNewTask] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);  // Modal visibility state
+    const [activeUsers, setActiveUsers] = useState<number>(0); // Registered users count
+    const [totalReports, setTotalReports] = useState(0); // Total Reports Count from communications collection
+    const [onTimeReports, setOnTimeReports] = useState(0); // On Time reports count
+    const [lateReports, setLateReports] = useState(0); // Late reports count
+    const [pendingReports, setPendingReports] = useState(0); // Pending reports count
+    const [noSubmissionReports, setNoSubmissionReports] = useState(0); // No Submission reports count
     // Firebase Authentication state listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -24,7 +31,6 @@ const Dashboard = () => {
         return () => unsubscribe();
     }, []);
 
-    // Fetch tasks from Firestore for the logged-in user
     useEffect(() => {
         if (currentUser) {
             const fetchTasks = async () => {
@@ -32,13 +38,23 @@ const Dashboard = () => {
                     const tasksRef = collection(db, 'tasks');
                     const q = query(tasksRef, where("userId", "==", currentUser.uid));
                     const tasksSnapshot = await getDocs(q);
-                    const tasksList = tasksSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                    const tasksList = tasksSnapshot.docs.map((doc) => {
+                        const data = doc.data();
+                        return { 
+                            id: doc.id, 
+                            ...data, 
+                            createdAt: data.createdAt ? data.createdAt : { seconds: 0 } 
+                        };
+                    });
+
+                    // Sort tasks by createdAt in descending order (latest first)
+                    tasksList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
                     setTasks(tasksList);
                 } catch (error) {
                     console.error('Error fetching tasks from Firestore:', error);
                     setError('Failed to fetch tasks. Please try again later.');
                     setTimeout(() => setStatusMessage(null), 3000);
-
                 } finally {
                     setLoading(false);
                 }
@@ -48,33 +64,85 @@ const Dashboard = () => {
         }
     }, [currentUser]);
 
-    // Function to handle adding a new task to Firestore
+    // Fetch total registered users
+    const fetchRegisteredUsers = async () => {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        setActiveUsers(usersSnapshot.size); // Set total registered users count
+    };
+
+    useEffect(() => {
+        fetchRegisteredUsers();
+    }, []);  // Only run once when component mounts
+
+    const fetchReportsMetrics = async () => {
+        try {
+            const reportsRef = collection(db, 'communications');  // For total reports
+            const submitRef = collection(db, 'submittedDetails'); // For submitted reports
+    
+            // Total reports from the communications collection
+            const reportsSnapshot = await getDocs(reportsRef);
+            setTotalReports(reportsSnapshot.size);  // Set total reports count
+    
+            // Fetch all submissions from the submittedDetails collection
+            const submittedSnapshot = await getDocs(submitRef);
+            const submittedReportsIds = submittedSnapshot.docs.map((doc) => doc.data().messageId);
+    
+            // Calculate No Submission reports by subtracting submitted reports from total reports
+            const noSubmissionReportsCount = reportsSnapshot.docs.filter(doc => 
+                !submittedReportsIds.includes(doc.id)  // Check if this report ID is not in the submittedDetails
+            ).length;
+            
+            setNoSubmissionReports(noSubmissionReportsCount);  // Set No Submission reports count
+    
+            // On Time Reports
+            const onTimeQuery = query(submitRef, where("evaluatorStatus", "==", "On Time"))
+            const onTimeSnapshot = await getDocs(onTimeQuery);
+            setOnTimeReports(onTimeSnapshot.size);  // Set On Time reports count
+    
+            // Pending reports
+            const pendingQuery = query(submitRef, where("evaluatorStatus", "==", "Pending"));
+            const pendingSnapshot = await getDocs(pendingQuery);
+            setPendingReports(pendingSnapshot.size);  // Set Pending reports count
+    
+            // Late reports
+            const lateQuery = query(
+                submitRef,
+                where("evaluatorStatus", "==", "Late"));
+            const lateSnapshot = await getDocs(lateQuery);
+            setLateReports(lateSnapshot.size);  // Set Late reports count
+        } catch (error) {
+            console.error('Error fetching reports metrics:', error);
+        }
+    };
+    
+    useEffect(() => {
+        fetchReportsMetrics();
+    }, []);  // Only run once when component mounts
+
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
             const newTaskObj = { 
                 text: newTask, 
                 completed: false, 
-                userId: currentUser.uid,  // Ensure the userId is set correctly
-                createdAt: new Date() // Timestamp for when the task was created
+                userId: currentUser.uid,
+                createdAt: new Date() 
             };
             try {
                 const docRef = await addDoc(collection(db, 'tasks'), newTaskObj);
                 setTasks((prevTasks) => [...prevTasks, { id: docRef.id, ...newTaskObj }]);
-                setNewTask(""); // Clear input field after adding
+                setNewTask(""); 
                 setStatusMessage('Task added successfully!');
                 setTimeout(() => setStatusMessage(null), 3000);
-
             } catch (error) {
                 console.error('Error adding task to Firestore:', error);
                 setError('Failed to add task. Please try again later.');
                 setStatusMessage('An error occurred while adding the task.');
                 setTimeout(() => setStatusMessage(null), 3000);
-
             }
         }
     };
 
-    // Function to toggle the completion status of a task in Firestore
     const toggleTaskCompletion = async (id: string, completed: boolean) => {
         const updatedTask = { completed: !completed };
 
@@ -88,46 +156,47 @@ const Dashboard = () => {
             );
             setStatusMessage(completed ? 'Task marked as incomplete' : 'Task completed');
             setTimeout(() => setStatusMessage(null), 3000);
-
         } catch (error) {
             console.error('Error updating task completion in Firestore:', error);
             setError('Failed to update task status. Please try again later.');
             setStatusMessage('An error occurred while updating the task status.');
             setTimeout(() => setStatusMessage(null), 3000);
-
         }
     };
 
-    // Function to remove a task from Firestore
-    const removeTask = async (id: string) => {
+    const removeTask = async (id: string, completed: boolean) => {
+        if (!completed) {
+            setError("Task hasn't been resolved yet");
+            setTimeout(() => setError(null), 3000); // Hide the error after 3 seconds
+            return;
+        }
+    
         try {
             const taskDoc = doc(db, 'tasks', id);
             await deleteDoc(taskDoc);
-            setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id)); // Remove from state
+            setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
             setStatusMessage('Task deleted successfully!');
-            setTimeout(() => setStatusMessage(null),3000);
-
+            setTimeout(() => setStatusMessage(null), 3000);
         } catch (error) {
             console.error('Error deleting task from Firestore:', error);
             setError('Failed to delete task. Please try again later.');
             setStatusMessage('An error occurred while deleting the task.');
             setTimeout(() => setStatusMessage(null), 3000);
-
         }
     };
 
-    // Format the created date to display it
     const formatDate = (timestamp: any) => {
         if (!timestamp) {
-            return "No date available"; // If there's no timestamp, return a fallback message.
+            return "No date available"; 
         }
-        
-        // Check if it's a Firestore timestamp and convert it to a date
+
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        
         return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
     };
-    
+
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
+
     if (loading) return <div>Loading...</div>;
 
     if (!currentUser) {
@@ -140,7 +209,7 @@ const Dashboard = () => {
                 <main>
                     <div className="head-title">
                         <div className="left">
-                            <h1>Admin Dashboard</h1>
+                            <h1>Evaluator Dashboard</h1>
                             <ul className="breadcrumb">
                                 <li><a className="active" href="#">Home</a></li>
                                 <li><i className='bx bx-chevron-right'></i></li>
@@ -149,62 +218,123 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* TODO List as Table */}
-                    <div className="todo">
-                        <div className="head">
-                            <h3>Todos</h3>
-                            <i className='bx bx-plus icon' onClick={addTask}></i>
-                            <i className='bx bx-filter'></i>
+                    {/* Display Metrics */}
+                    {/* Combined Metrics + Chart Section */}
+                        <div className="dashboard-metrics-chart-wrapper">
+                    {/* Metrics on the left */}
+                        <div className="metrics-panel">
+                            <div className="metric">
+                                <h3>Total Reports Submitted</h3>
+                                    <p>{totalReports}</p>
                         </div>
-                        <div className="todo-input">
-                            <input
-                                type="text"
-                                value={newTask}
-                                onChange={(e) => setNewTask(e.target.value)}
-                                placeholder="New task..."
-                            />
-                            <button onClick={addTask}>Add</button>
+                        <div className="metric">
+                            <h3>On Time Report Submitted</h3>
+                            <p>{onTimeReports}</p>
                         </div>
+                        <div className="metric">
+                            <h3>Pending Reports</h3>
+                                <p>{pendingReports} ({((pendingReports / totalReports) * 100).toFixed(2)}%)</p>
+                        </div>
+                        <div className="metric">
+                            <h3>Late Reports</h3>
+                                <p>{lateReports} ({((lateReports / totalReports) * 100).toFixed(2)}%)</p>
+                        </div>
+                        <div className="metric">
+    <h3>No Submission Reports</h3>
+    <p>{noSubmissionReports} ({((noSubmissionReports / totalReports) * 100).toFixed(2)}%)</p>
+</div>
 
-                        {/* Display Status Message */}
-                        {statusMessage && <div className="status-message">{statusMessage}</div>}
-                        {error && <div className="error-message">{error}</div>}
-
-                        <table className="todo-table">
-                            <thead>
-                                <tr>
-                                    <th>Completed</th>
-                                    <th>Task</th>
-                                    <th>Created At</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tasks.length > 0 ? (
-                                    tasks.map(({ id, text, completed, createdAt }) => (
-                                        <tr key={id} className={completed ? "completed" : "not-completed"}>
-                                            <td>
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={completed} 
-                                                    onChange={() => toggleTaskCompletion(id, completed)} 
-                                                />
-                                            </td>
-                                            <td>{text}</td>
-                                            <td>{formatDate(createdAt)}</td>
-                                            <td>
-                                                <button onClick={() => removeTask(id)} className="delete-btn">Delete</button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={4}>No tasks available</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                        <div className="metric">
+                            <h3>Total Registered Users</h3>
+                            <p>{activeUsers}</p>
+                        </div>
                     </div>
+
+                    {/* Chart on the right */}
+                        <div className="chart-panel">
+                            <ReportMetricsChart 
+                            totalReports={totalReports} 
+                            pendingReports={pendingReports} 
+                            lateReports={lateReports} 
+                            onTimeReports={onTimeReports}
+                        />
+                        </div>
+                    </div>
+
+                    {/* View To-Do List button */}
+                    <div className="metrics-footer">
+                        <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
+                    </div>
+
+
+                    {/* Modal for To-Do List */}
+                    {isModalOpen && (
+                        <div className="modal-overlay">
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h3>To-Do List</h3>
+                                    <button className="close-modal-btn" onClick={closeModal}>X</button>
+                                </div>
+
+                                <div className="todo-input">
+                                    <textarea
+                                        value={newTask}
+                                        onChange={(e) => setNewTask(e.target.value)}
+                                        placeholder="New task..."
+                                        rows={3}
+                                    />
+                                    <button onClick={addTask}>Add</button>
+                                </div>
+
+                                {/* Display Status Message */}
+                                {statusMessage && <div className="status-message">{statusMessage}</div>}
+                                {error && <div className="error-message">{error}</div>}
+
+                                {/* To-Do List Table */}
+                                <div className="todo-table-wrapper">
+                                    <table className="todo-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Completed</th>
+                                                <th>Task</th>
+                                                <th>Created At</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {tasks.length > 0 ? (
+                                                tasks.map(({ id, text, completed, createdAt }) => (
+                                                    <tr key={id} className={completed ? "completed" : "not-completed"}>
+                                                        <td>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={completed} 
+                                                                onChange={() => toggleTaskCompletion(id, completed)} 
+                                                            />
+                                                        </td>
+                                                        <td>{text}</td>
+                                                        <td>{formatDate(createdAt)}</td>
+                                                        <td>
+                                                            <button 
+                                                                onClick={() => removeTask(id, completed)} 
+                                                                className="delete-btn"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4}>No tasks available</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </main>
             </section>
         </div>

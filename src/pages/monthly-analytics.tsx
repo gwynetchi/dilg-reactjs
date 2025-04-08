@@ -3,7 +3,6 @@ import Select from "react-select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
-import { Table } from "react-bootstrap";
 import "../styles/components/pages.css";
 
 interface Communication {
@@ -53,8 +52,8 @@ const Analytics: React.FC = () => {
 
     const unsubscribe = onSnapshot(commQuery, (snapshot) => {
       const fetchedCommunications = snapshot.docs.map((doc) => ({
+        ...(doc.data() as Omit<Communication, "id">),
         id: doc.id,
-        ...(doc.data() as Communication),
       }));
 
       setCommunications(fetchedCommunications);
@@ -76,8 +75,8 @@ const Analytics: React.FC = () => {
 
       const subSnapshot = await getDocs(subQuery);
       const fetchedSubmissions = subSnapshot.docs.map((doc) => ({
+        ...(doc.data() as Omit<Submission, "id">),
         id: doc.id,
-        ...(doc.data() as Submission),
       }));
 
       return { [comm.id]: fetchedSubmissions.length > 0 ? fetchedSubmissions : [{ id: "no-submission", submittedBy: "None", status: "No Submission" }] };
@@ -107,12 +106,13 @@ const Analytics: React.FC = () => {
     const subs = submissions[comm.id] || [];
     return {
       subject: comm.subject,
-      onTime: subs.filter((s) => s.status === "On Time").length,
-      late: subs.filter((s) => s.status === "Late").length,
-      incomplete: subs.filter((s) => s.status === "Incomplete").length,
-      noSubmission: subs.filter((s) => s.status === "No Submission").length,
+      onTime: subs.filter((s) => s.status === "On Time").map((s) => users[s.submittedBy] || s.submittedBy),
+      late: subs.filter((s) => s.status === "Late").map((s) => users[s.submittedBy] || s.submittedBy),
+      incomplete: subs.filter((s) => s.status === "Incomplete").map((s) => users[s.submittedBy] || s.submittedBy),
+      noSubmission: subs.filter((s) => s.status === "No Submission").map((s) => users[s.submittedBy] || s.submittedBy),
     };
   });
+  
 
   return (
     <div className="dashboard-container">

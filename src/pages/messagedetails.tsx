@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, arrayUnion } from "firebase/firestore";
 import { getAuth, User } from "firebase/auth";
 import { db } from "../firebase";
 
@@ -83,10 +83,11 @@ const MessageDetails: React.FC = () => {
 
   const handleMarkAsSubmitted = async () => {
     if (!message || !id || !currentUser) return;
-
+  
     try {
-      const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
-
+      const submissionId = `${id}_${currentUser.uid}`;
+      const submissionRef = doc(db, "submittedDetails", submissionId);
+  
       let autoStatus = "On Time"; // Default status
       if (message.deadline?.seconds) {
         const deadlineDate = new Date(message.deadline.seconds * 1000);
@@ -95,7 +96,7 @@ const MessageDetails: React.FC = () => {
           autoStatus = "Late"; // Mark as Late if past the deadline
         }
       }
-
+  
       await setDoc(submissionRef, {
         messageId: id,
         submittedBy: currentUser.uid,
@@ -104,12 +105,20 @@ const MessageDetails: React.FC = () => {
         autoStatus,
         evaluatorStatus: "Pending",
       }, { merge: true });
+  
+      // ✅ Update the "communications" collection to store the submission ID
+      const messageRef = doc(db, "communications", id);
+await updateDoc(messageRef, { 
+  submitID: arrayUnion(submissionId) // ✅ Append the submissionId to the submitID array
+});
 
+  
+      // Fetch the updated submission status
       const updatedSubmissionSnap = await getDoc(submissionRef);
       if (updatedSubmissionSnap.exists()) {
         setSubmissionStatus(updatedSubmissionSnap.data());
       }
-
+  
       alert(`Marked as Submitted! Status: ${autoStatus}`);
     } catch (error) {
       console.error("Error updating submission status:", error);

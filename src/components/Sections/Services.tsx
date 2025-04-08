@@ -60,7 +60,7 @@ export default function Services() {
               <ServiceBox
                 icon="FADlogo"
                 title="Financial and Administrative Section (FAS)"
-                subtitle="Nangangasiwa sa pinansyal, human resource, at administratibong operasyon upang matiyak ang maayos at transparent na paggamit ng mga pondo at mapagkukunan ng ahensya."
+                subtitle="Oversees financial, human resource, and administrative operations to ensure the proper and transparent use of the agency’s funds and resources."
               />
             </ServiceBoxWrapper>
           </ServiceBoxRow>
