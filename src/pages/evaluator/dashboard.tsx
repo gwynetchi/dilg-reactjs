@@ -4,7 +4,7 @@ import { collection, onSnapshot, addDoc, getDocs, updateDoc, doc, deleteDoc, que
 import { onAuthStateChanged } from 'firebase/auth'; 
 import "../../styles/components/dashboard.css";
 import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
-
+import Calendar from '../calendar.tsx'
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [tasks, setTasks] = useState<any[]>([]);  
@@ -218,9 +218,10 @@ const Dashboard = () => {
     }
 
     return (
+        <main>
         <div className="dashboard-container">
             <section id="content">
-                <main>
+               
                     <div className="head-title">
                         <div className="left">
                             <h1>Evaluator Dashboard</h1>
@@ -349,9 +350,13 @@ const Dashboard = () => {
                             </div>
                         </div>
                     )}
-                </main>
+                
             </section>
+           
         </div>
+
+       <Calendar/>
+        </main>
     );
 };
 

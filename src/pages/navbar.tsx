@@ -16,12 +16,12 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [userProfilePic, setUserProfilePic] = useState<string>("");
+  const [, setUserProfilePic] = useState<string>("");
 
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [, setIsProfileOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -40,7 +40,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const menuItems: Record<string, { name: string; icon: string; path: string }[]> = {
     Viewer: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/viewer/profile"},
       { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
       { name: "Message", icon: "bxs-message", path: "/viewer/message" },
@@ -48,7 +47,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     ],
     Evaluator: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/evaluator/profile" },
       { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
@@ -59,7 +57,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/lgu/profile" },
       { name: "Inbox", icon: "bxs-message", path: "/lgu/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
@@ -69,7 +66,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     ],
     Admin: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
-      { name: "Profile", icon: "bxs-id-card", path: "/admin/profile" },
       { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
@@ -212,6 +208,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
       <Link to="/dashboards" className="brand">
         <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
+        <img src="/images/gel2.png" alt="jumpscare" className="jumpscare-img" />
+
       </Link>
 
         <ul className="side-menu top">
@@ -249,10 +247,10 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
-
+          <div className="d-flex justify-content-end align-items-center">
           <div className="position-relative" ref={notificationMenuRef}>
             <button className="btn notification" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
-              <i className="bx bx-md bxs-bell bx-tada-hover"></i>
+              <i className="bx bx-md bx-bell bx-tada-hover"></i>
               {unreadCount > 0 && <span className="num">{unreadCount}</span>}
             </button>
 
@@ -285,21 +283,19 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
               </div>
             )}
           </div>
-
           <div className="position-relative" ref={profileMenuRef}>
-            <button className="btn profile" onClick={(e) => { e.stopPropagation(); setIsProfileOpen(!isProfileOpen); }}>
-              <img src={userProfilePic} alt="Profile" />
-            </button>
+          <button
+  className="btn btn-profile"
+  onClick={() => {
+    if (userRole) {
+      navigate(`/${userRole.toLowerCase()}/profile`);
+    }
+  }}
+>
+  <i className="bx bx-md bx-user"></i>
+</button>
 
-            {isProfileOpen && (
-              <div className="profile-menu">
-                <ul>
-                  <li><Link to="/profile">My Profile</Link></li>
-                  <li><button className="btn btn-link" onClick={handleLogout}>Log Out</button></li>
-                </ul>
-              </div>
-            )}
-          </div>
+          </div></div>
         </nav>
       </section>
     </div>

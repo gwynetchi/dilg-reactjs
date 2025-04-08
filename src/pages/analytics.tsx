@@ -5,10 +5,10 @@ import "../styles/components/dashboard.css";
 const Analytics = () => {
   const navigate = useNavigate(); 
 
-  return (
+  return (<main>
     <div className="dashboard-container">
       <section id="content">
-        <main>
+        
         <div className="head-title">
             <div className="left">
               <h2>Analytics</h2>
@@ -44,9 +44,9 @@ const Analytics = () => {
             </div>
           </div>
           </section>
-        </main>    
+           
       </section>
-    </div>
+    </div></main> 
   );
 };
 
