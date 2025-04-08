@@ -30,7 +30,7 @@ li {
 	--orange: #FD7238;
 	--light-orange: #FFE0D3;
 	--DILG: #ffffe0;
-	--calamansi: #fcffa4
+	--calamansi: #fcffa4;
 }
 
 html {
@@ -109,7 +109,7 @@ ol, ul {
 	padding: 4px;
 }
 #sidebar .side-menu li.active {
-	background: var(--grey);
+	background: var(--calamansi);
 	position: relative;
 }
 #sidebar .side-menu li.active::before {
@@ -120,7 +120,7 @@ ol, ul {
 	border-radius: 50%;
 	top: -40px;
 	right: 0;
-	box-shadow: 20px 20px 0 var(--grey);
+	box-shadow: 20px 20px 0 var(--calamansi);
 	z-index: -1;
 }
 #sidebar .side-menu li.active::after {
@@ -131,7 +131,7 @@ ol, ul {
 	border-radius: 50%;
 	bottom: -40px;
 	right: 0;
-	box-shadow: 20px -20px 0 var(--grey);
+	box-shadow: 20px -20px 0 var(--calamansi);
 	z-index: -1;
 }
 #sidebar .side-menu li a {
@@ -428,7 +428,7 @@ ol, ul {
 	padding: 5px;
 	height: 100%;
 	border: none;
-	background: var(--grey);
+	background: var(--calamansi);
 	border-radius: 36px 0 0 36px;
 	outline: none;
 	width: 100px;
@@ -494,7 +494,7 @@ ol, ul {
 
 #contentnav nav .notification-menu li {
     padding: 10px;
-    border-bottom: 1px solid var(--grey);
+    border-bottom: 1px solid var(--calamansi);
 	color: var(--dark);
 }
 
@@ -503,7 +503,7 @@ ol, ul {
 	color: var(--dark);
 }
 #contentnav nav .notification-menu li:hover a{
-    background-color: var(--dark-grey);
+    background-color: var(--calamansi);
 	color: var(--light);
 }
 #contentnav nav .profile img {
@@ -533,7 +533,7 @@ ol, ul {
 
 #contentnav nav .profile-menu li {
     padding: 10px;
-    border-bottom: 1px solid var(--grey);
+    border-bottom: 1px solid var(--calamansi);
 }
 
 #contentnav nav .profile-menu li:hover {

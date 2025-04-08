@@ -11,17 +11,20 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale);
 
-const ReportMetricsChart = ({ totalReports, pendingReports, lateReports }: any) => {
+const ReportMetricsChart = ({ totalReports, pendingReports, lateReports, onTimeReports }: any) => {
+  const completedReports = totalReports - pendingReports - lateReports - onTimeReports; // Completed reports calculation
+
   const data = {
-    labels: ['Pending Reports', 'Late Reports', 'Completed Reports'],
+    labels: ['Pending Reports', 'Late Reports', 'On Time Reports', 'Unlabeled'],  // Pie chart labels
     datasets: [
       {
         data: [
-          pendingReports,
-          lateReports,
-          totalReports - pendingReports - lateReports,
-        ],
-        backgroundColor: ['#FFB800', '#FF4D4D', '#4DFF4D'],
+          pendingReports, 
+          lateReports, 
+          onTimeReports,  // On time reports
+          completedReports, // Completed reports (calculated dynamically)
+        ], // Pie chart data
+        backgroundColor: ['#FFB800', '#4169e1', '#4DFF4D', '#343A40'], // Colors for each segment
         hoverOffset: 4,
       },
     ],

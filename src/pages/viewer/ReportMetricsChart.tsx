@@ -14,7 +14,7 @@ const ReportMetricsChart = ({ totalReports, pendingReports, lateReports }: any) 
           lateReports, 
           totalReports - pendingReports - lateReports
         ], // Pie chart data (calculated dynamically)
-        backgroundColor: ['#FFB800', '#FF4D4D', '#4DFF4D'], // Colors for each segment
+        backgroundColor: ['#FFB800', '#4169e1', '#4DFF4D'], // Colors for each segment
         hoverOffset: 4,
       },
     ],
