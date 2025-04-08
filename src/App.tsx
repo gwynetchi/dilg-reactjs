@@ -44,6 +44,7 @@ import SubmissionAnalytics from "./pages/submission-analytics";
 import UserAnalytics from "./pages/user-analytics";
 import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
+import Scoreboard from "./pages/scoreBoard";
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
@@ -55,6 +56,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/inbox", element: <Inbox /> },
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
+    { path: "/admin/scoreBoard", element: <Scoreboard /> },
+
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -70,7 +73,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics/submission-analytics", element: <SubmissionAnalytics /> },
     { path: "/evaluator/analytics/user-analytics", element: <UserAnalytics /> },
     { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
-
+    { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
 
   ],
   LGU: [
@@ -82,6 +85,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
+    { path: "/lgu/scoreBoard", element: <Scoreboard /> },
+
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <ViewerDashboard /> },
@@ -92,6 +97,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
+    { path: "/viewer/scoreBoard", element: <Scoreboard /> },
+
   ],
 };
 
@@ -136,7 +143,7 @@ const App: React.FC = () => {
         </div>
       );
     
-    if (!user) return <Navigate to="/" replace />;
+    if (!user) return <Navigate to="/dashboard" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
     
     return children;
@@ -159,7 +166,7 @@ const App: React.FC = () => {
         <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Landing />} />
+            <Route path="/dashboard" element={<Landing />} />
             <Route path="/login" element={<AuthForm />} />
             <Route path="/register-success" element={<Navigate to="/login" replace />} />
 
@@ -170,8 +177,9 @@ const App: React.FC = () => {
               ))}
 
             {/* Catch-All Route */}
-            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/"} replace />} />
+            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
           </Routes>
+          
         </div>
       </div>
     </Router>

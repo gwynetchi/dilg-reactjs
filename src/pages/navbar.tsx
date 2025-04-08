@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useLocation } from "react-router-dom";
 
@@ -19,7 +19,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [userProfilePic, setUserProfilePic] = useState<string>("");
 
   const [activeMenu, setActiveMenu] = useState("Dashboard");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -34,8 +33,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   }, [location.pathname, userRole]);
   
-  const [searchQuery, setSearchQuery] = useState<string>("");
-
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -47,6 +44,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
       { name: "Message", icon: "bxs-message", path: "/viewer/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
     ],
     Evaluator: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
@@ -56,6 +54,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
       { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/evaluator/scoreBoard" },
+
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
@@ -64,6 +64,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
       { name: "Message", icon: "bxs-message", path: "/lgu/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
+
     ],
     Admin: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
@@ -72,6 +74,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
       { name: "Message", icon: "bxs-message", path: "/admin/message" },
+      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
+
     ],
   };
 
@@ -130,7 +134,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         });
 
         setUnreadCount(unread); // Set the unread message count
-        setUnreadMessages(newUnseenMessages); // Store the message details in state
+        setUnreadMessages(newUnseenMessages); 
       });
 
       return () => unsubscribe();
@@ -156,12 +160,13 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   
     const rolePath = rolePaths[userRole] || "viewer"; // Default to "viewer" if role is unknown
     navigate(`/${rolePath}/inbox/${messageId}`);
-  
+
+
     // Mark the notification as read by adding the current user's ID to the "seenBy" array in Firestore
     try {
       const messageRef = doc(db, "communications", messageId);
       const messageDoc = await getDoc(messageRef);
-  
+      
       if (messageDoc.exists()) {
         const data = messageDoc.data();
         const seenBy = data?.seenBy || [];
@@ -178,7 +183,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       console.error("Error marking message as read:", error);
     }
   };
-  
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -200,34 +205,15 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   };
 
-  const handleSearch = async () => {
-    if (searchQuery.trim()) {
-      console.log("Searching for:", searchQuery);
-      const db = getFirestore();
-      const messagesRef = collection(db, "messages");
-      const q = query(messagesRef, where("sender", "==", searchQuery), where("text", "array-contains", searchQuery));
-      const querySnapshot = await getDocs(q);
-      const inboxResults = querySnapshot.docs.map((doc) => doc.data());
-      const filteredSidebarItems = userRole
-        ? menuItems[userRole].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        : [];
-      navigate(`/search?query=${searchQuery}`, { state: { filteredSidebarItems, inboxResults } });
-    }
-  };
-
-  const toggleSearchForm = () => {
-    setIsSearchOpen(prevState => !prevState);
-  };
-
   if (!userRole) return null;
 
   return (
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
-        <Link to="/dashboards" className="brand">
-          <img src="/images/logo.png" alt="Logo" className="brand-logo" />
-          <span className="text"></span>
-        </Link>
+      <Link to="/dashboards" className="brand">
+        <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
+      </Link>
+
         <ul className="side-menu top">
           {menuItems[userRole].map(({ name, icon, path }) => (
             <li key={name} className={activeMenu === name ? "active" : ""}>
@@ -263,24 +249,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
           <i className="bx bx-menu bx-sm" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
-{/*           <button type="button" className="btn btn-outline-secondary" onClick={toggleSearchForm}></button> */}
-          <form className={`d-flex ${isSearchOpen ? "show" : ""}`}>
-            <input
-              type="search"
-              className="form-control"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-            />
-            <button type="button" className="btn btn-outline-secondary" onClick={handleSearch}>
-              <i className={`bx ${isSearchOpen ? "bx-x" : "bx-search"}`}></i>
-            </button>
-          </form>
 
           <div className="position-relative" ref={notificationMenuRef}>
             <button className="btn notification" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
@@ -327,7 +295,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
               <div className="profile-menu">
                 <ul>
                   <li><Link to="/profile">My Profile</Link></li>
-                  <li><Link to="/settings">Settings</Link></li>
                   <li><button className="btn btn-link" onClick={handleLogout}>Log Out</button></li>
                 </ul>
               </div>

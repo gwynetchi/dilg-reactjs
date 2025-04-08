@@ -1,6 +1,47 @@
+/* scoreboard.css */
+.scoreboard-container {
+	padding: 20px;
+	background-color: #f4f6f9;
+	border-radius: 8px;
+  }
+  
+  h1 {
+	text-align: center;
+	margin-bottom: 20px;
+  }
+  
+  .scoreboard-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 20px;
+	border-radius: 8px;
+	overflow: hidden;
+  }
+  
+  .scoreboard-table th, .scoreboard-table td {
+	padding: 12px;
+	text-align: center;
+	border: 1px solid #ddd;
+  }
+  
+  .scoreboard-table th {
+	background-color: #f0f0f0;
+	font-weight: bold;
+  }
+  
+  .scoreboard-table tr:nth-child(even) {
+	background-color: #f9f9f9;
+  }
+  
+  .scoreboard-table tr:hover {
+	background-color: #f1f1f1;
+  }
+  
+  .scoreboard-table td {
+	font-size: 14px;
+  }
 /* MESSAGING COMPONENT */
 .chat-container {
-	max-width: 90%;
 	max-width: 90%;
 	margin: 20px auto;
 	padding: 20px;
@@ -10,62 +51,56 @@
 	font-family: var(--lato);
 	display: flex;
 	flex-direction: column;
-	display: flex;
-	flex-direction: column;
-}
-
-.chat-container h2 {
+	box-sizing: border-box; /* Ensure padding is included in the size */
+	overflow: hidden; /* Prevent outer scrollbar */
+  }
+  
+  .chat-container h2 {
 	margin-bottom: 16px;
 	font-family: var(--poppins);
 	font-size: 24px;
 	color: var(--dark);
 	text-align: center;
-}
-.mention {
+  }
+  
+  .mention {
 	color: #007bff;
 	font-weight: bold;
   }
   
-.chat-box {
+  .chat-box {
 	max-height: 300px;
 	min-height: 200px;
-	min-height: 200px;
-	overflow-y: auto;
+	overflow-y: auto; /* Ensure chat box has its own scrollbar */
 	margin-bottom: 16px;
 	padding: 10px;
 	background: var(--grey);
 	border-radius: 8px;
 	display: flex;
 	flex-direction: column;
-	display: flex;
-	flex-direction: column;
-}
-
-.chat-message {
+  }
+  
+  .chat-message {
 	margin-bottom: 10px;
 	padding: 8px;
 	background: var(--light);
 	border-radius: 6px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	word-wrap: break-word;
-	word-wrap: break-word;
-}
-
-.chat-message strong {
+  }
+  
+  .chat-message strong {
 	color: var(--blue);
-}
-
-.chat-input {
+  }
+  
+  .chat-input {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 	width: 100%;
-	align-items: center;
-	width: 100%;
-}
-
-
-.chat-input textarea {
+  }
+  
+  .chat-input textarea {
 	flex: 1;
 	padding: 10px;
 	border: 1px solid var(--grey);
@@ -77,10 +112,10 @@
 	max-height: fit-content;
 	overflow: hidden; /* Prevent scrollbars */
 	transition: height 0.2s ease-in-out;
-}
-
-
-.chat-input textarea:focus, .chat-input textarea:active {
+  }
+  
+  .chat-input textarea:focus,
+  .chat-input textarea:active {
 	height: auto;
 	min-height: 40px;
 	max-height: 300px;
@@ -90,16 +125,9 @@
 	max-height: fit-content;
 	overflow: hidden; /* Prevent scrollbars */
 	transition: height 0.2s ease-in-out;
-}
-
-
-.chat-input textarea:focus, .chat-input textarea:active {
-	height: auto;
-	min-height: 40px;
-	max-height: 300px;
-}
-
-.chat-input button {
+  }
+  
+  .chat-input button {
 	padding: 10px 16px;
 	background: var(--blue);
 	color: white;
@@ -108,83 +136,238 @@
 	cursor: pointer;
 	font-size: 14px;
 	transition: background 0.3s ease;
-}
-
-.chat-input button:hover {
+  }
+  
+  .chat-input button:hover {
 	background: darken(var(--blue), 10%);
 	color: cadetblue;
+  }
+  
+  /* Prevent two scrollbars by applying overflow settings */
+	.dashboard-container {
+		max-height: 80vh; /* You can adjust this value based on your needs */
+		overflow: auto; /* Allow scrolling if content exceeds max-height */
+		padding: 20px;
+		color: --yellow;
+		box-sizing: border-box;
+	}
+  
+/* Ensure the table width is constrained */
+.todo-table-wrapper {
+    overflow-x: auto; /* Allows horizontal scrolling if content overflows */
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+.todo-table {
+    width: 100%;  /* Use full width of the container */
+    table-layout: fixed;  /* Ensures table layout respects width constraints */
+    border-collapse: collapse;
+}
+
+/* Styling for table headers and cells */
+.todo-table th, .todo-table td {
+    padding: 10px;
+    text-align: left;
+    max-width: 200px; /* Set a maximum width for each column */
+    word-wrap: break-word; /* Allow text to break into multiple lines */
+    overflow-wrap: break-word; /* Ensures long words are wrapped */
+    text-overflow: ellipsis; /* Add ellipsis for text overflow */
+}
+
+/* Styling for the textarea (multiline input) */
+textarea {
+    width: 100%;  /* Make the textarea span the full width of its container */
+    max-width: 100%;  /* Remove max-width to allow full width */
+    height: auto;  /* Automatically adjust height based on content */
+    padding: 10px;  /* Match padding of input */
+    resize: vertical;  /* Let the user resize the height if needed */
+    box-sizing: border-box;  /* Ensure padding doesn’t affect width calculation */
+    border: 1px solid #ccc;  /* Match the previous input border */
+    border-radius: 4px;  /* Match the border radius for a consistent look */
+    font-size: 16px;  /* Match the font size of the previous input */
+}
+
+.todo-table th:hover {
+	background-color: #f1f1f1;
+}
+/* Styling for table rows */
+.todo-table tr {
+    border-bottom: 1px solid #ddd; /* Light border to separate rows */
+}
+
+/* Optional: Add a hover effect for better row distinction */
+.todo-table tr:hover {
+    background-color: #f1f1f1;  /* Slightly darker grey when hovering over a row */
+}
+
+/* Styling for table headers */
+.todo-table th {
+    background-color: #f1f1f1; /* Light grey background for headers */
+    border-bottom: 2px solid #ccc; /* Slightly darker border for headers */
+    padding: 10px;
+}
+
+/* Styling for table cells */
+.todo-table td {
+    padding: 10px;
+    text-align: left;
+    word-wrap: break-word;  /* Wrap text to avoid overflow */
+    overflow-wrap: break-word;  /* Same as word-wrap for additional compatibility */
+    text-overflow: ellipsis;  /* Add ellipsis for text overflow */
+}
+
+button {
+    padding: 10px;
+    /* background-color: #007bff;
+    color: white; */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* button:hover {
+    background-color: #0056b3;
+} */
+
+  .todo-input {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 16px;
+  }
+  
+  .todo-input input {
+	flex: 1;
+	padding: 8px;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+  }
+  
+  .todo-input button {
+	padding: 8px 16px;
+	background-color: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+  }
+  
+  .todo-input button:hover {
+	background-color: #45a049;
+  }
+  
+  .status-message, .error-message {
+	margin-top: 10px;
+	padding: 10px;
+	background: #f4f4f4;
+	border-radius: 4px;
+  }
+  
+  .completed {
+	text-decoration: line-through;
+	background-color: #d3ffd3;
+  }
+  
+  .not-completed {
+	background-color: #fff;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+	.dashboard-container {
+	  padding: 15px;
+	}
+  
+	.todo-table {
+	  font-size: 14px; /* Slightly smaller font size on tablets */
+	}
+  
+	.todo-input {
+	  flex-direction: column; /* Stack input fields and buttons */
+	}
+  
+	.todo-input input,
+	.todo-input button {
+	  width: 100%; /* Make input fields and buttons full width */
+	  margin-bottom: 10px;
+	}
+  
+	.todo-input button {
+	  margin-top: 10px;
+	}
+  }
+  
+  @media (max-width: 768px) {
 	.chat-input textarea {
-		font-size: 12px;
-		padding: 8px;
+	  font-size: 12px;
+	  padding: 8px;
 	}
+  
 	.chat-input button {
-		padding: 8px 12px;
-		font-size: 12px;
+	  padding: 8px 12px;
+	  font-size: 12px;
+	} /* Make dashboard mobile-friendly */
+	
+	.todo-table {
+	  font-size: 12px; /* Reduce font size */
 	}
-}
-
-@media (max-width: 480px) {
+  
+	.todo-input input {
+	  padding: 8px;
+	}
+  
+	.todo-input button {
+	  font-size: 12px;
+	  padding: 8px 14px;
+	}
+  
+	.todo-table th, .todo-table td {
+	  padding: 10px; /* Adjust padding for smaller screens */
+	}
+  
+	.todo-table {
+	  display: block; /* Keep it scrollable on small screens */
+	  overflow-x: auto;
+	}
+  }
+  
+  @media (max-width: 480px) {
 	.chat-input {
-		flex-direction: column;
-		gap: 5px;
+	  flex-direction: column;
+	  gap: 5px;
 	}
+  
 	.chat-input textarea {
-		width: 100%;
+	  width: 100%;
 	}
+  
 	.chat-input button {
-		width: 100%;
+	  width: 100%;
 	}
-}
-
-
-/* Responsive Design */
-@media (max-width: 768px) {
-	.chat-input textarea {
-		font-size: 12px;
-		padding: 8px;
+  
+	.todo-table {
+	  font-size: 10px; /* Reduce font size even more for smaller devices */
 	}
-	.chat-input button {
-		padding: 8px 12px;
-		font-size: 12px;
+  
+	.todo-table th, .todo-table td {
+	  padding: 8px; /* Adjust padding */
 	}
-}
-
-@media (max-width: 480px) {
-	.chat-input {
-		flex-direction: column;
-		gap: 5px;
+  
+	.todo-input input, .todo-input button {
+	  width: 100%; /* Ensure full-width input fields and buttons */
+	  margin-bottom: 10px;
 	}
-	.chat-input textarea {
-		width: 100%;
+  
+	.todo-input button {
+	  font-size: 14px;
 	}
-	.chat-input button {
-		width: 100%;
+  
+	/* For very small devices, make buttons stack vertically */
+	.todo-input {
+	  flex-direction: column;
 	}
-}
-
-.content-layout {
-	transition: margin-left 0.3s ease;
-}
-
-
-
-.content-layout.expanded {
-	margin-left: 220px; /* Adjust width based on sidebar size */
-}
-
-.content-layout.collapsed {
-	margin-left: 80px;
-}
-
-
-.content-layout.collapsed {
-	margin-left: 80px;
-}
-.jumpscare-overlay {
+  }
+  
+  .jumpscare-overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -210,9 +393,9 @@
 	75% { transform: translate(-2px, 2px) rotate(-2deg); }
 	100% { transform: translate(2px, 2px) rotate(0deg); }
   }
-
-/*Loading*/
-.loading-container {
+  
+  /* Loading */
+  .loading-container {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -233,4 +416,4 @@
 	  transform: rotate(360deg);
 	}
   }
-    
+  

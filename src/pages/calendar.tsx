@@ -118,7 +118,14 @@ const Calendar: React.FC = () => {
         height="80vh"
         eventClick={handleEventClick}
         eventContent={(eventInfo) => (
-          <div>
+          <div style={{
+            wordWrap: "break-word",
+            overflowWrap: "break-word",
+            whiteSpace: "normal",
+            maxWidth: "100%",
+            padding: "2px",
+            fontSize: "0.8em",
+          }}>
             <b>{eventInfo.event.extendedProps.subject}</b>
             <br />
             <small>{eventInfo.event.extendedProps.senderName}</small>
@@ -126,6 +133,7 @@ const Calendar: React.FC = () => {
             <small>{eventInfo.event.extendedProps.time}</small>
           </div>
         )}
+        
       />
       </main>
       </section>

@@ -1,6 +1,5 @@
 import styled from "styled-components";
 // Components
-import FullButton from "../Buttons/FullButton";
 // Assets
 // import RollerIcon from "../../assets/svg/Services/RollerIcon";
 // import MonitorIcon from "../../assets/svg/Services/MonitorIcon";
@@ -17,7 +16,7 @@ interface PricingTableProps {
   action: () => void;
 }
 
-export default function PricingTable({  icon, price, title, text, offers, action }: PricingTableProps) {
+export default function PricingTable({price, title, text, offers}: PricingTableProps) {
   //let getIcon;
 
   // switch (icon) {
