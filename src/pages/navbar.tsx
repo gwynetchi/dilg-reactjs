@@ -52,7 +52,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
       { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
-      { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/evaluator/scoreBoard" },
+      { name: "Score Board", icon: "bxs-crown", path: "/evaluator/scoreBoard" },
+      { name: "Programs", icon: "bxs-doughnut-chart", path: "/evaluator/programs" },
 
     ],
     LGU: [

@@ -1395,3 +1395,8 @@ ol, ul {
 	justify-content: center;
 	align-items: center;
   }
+  .additional-remarks {
+	color: red;
+	font-weight: bold;
+  }
+  
