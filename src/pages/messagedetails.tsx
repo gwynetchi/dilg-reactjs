@@ -14,6 +14,7 @@ const MessageDetails: React.FC = () => {
   const [message, setMessage] = useState<any>(null);
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [remark, setRemark] = useState<string | null>(null); // State for storing the added remark
   
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -65,7 +66,10 @@ const MessageDetails: React.FC = () => {
             const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
             const submissionSnap = await getDoc(submissionRef);
             if (submissionSnap.exists()) {
-              setSubmissionStatus(submissionSnap.data());
+              const submissionData = submissionSnap.data();
+              setSubmissionStatus(submissionData);
+              // Fetch the remark from the submission data and set it
+              setRemark(submissionData.remark || null); // Set the remark
             }
           }
         } else {
@@ -108,10 +112,9 @@ const MessageDetails: React.FC = () => {
   
       // ✅ Update the "communications" collection to store the submission ID
       const messageRef = doc(db, "communications", id);
-await updateDoc(messageRef, { 
-  submitID: arrayUnion(submissionId) // ✅ Append the submissionId to the submitID array
-});
-
+      await updateDoc(messageRef, { 
+        submitID: arrayUnion(submissionId) // ✅ Append the submissionId to the submitID array
+      });
   
       // Fetch the updated submission status
       const updatedSubmissionSnap = await getDoc(submissionRef);
@@ -192,8 +195,8 @@ await updateDoc(messageRef, {
             <h2><strong>Subject:</strong> {message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
             <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
-            <p><strong>Remarks:</strong> {message.remarks || "No remarks available"}</p>
-            
+            <p><strong>Content:</strong> {message.remarks || "No remarks/comments available"}</p>
+            <p><strong>Additional Remarks:</strong> {remark || "No additional remarks available"}</p>
             {message.link && (
               <div>
                 <strong>Link:</strong> <a href={message.link} target="_blank" rel="noopener noreferrer">{message.link}</a>
@@ -202,11 +205,11 @@ await updateDoc(messageRef, {
                   Preview
                 </button>
               </div>
-            )}
-            
+            )}     
+                  <br />
             <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
-            
-            <br />
+
+      
             {submissionStatus ? (
               <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
             ) : (
@@ -216,6 +219,11 @@ await updateDoc(messageRef, {
                 </button>
               )
             )}
+
+            <br/>
+            <p><strong>Additional Remarks:</strong> <span className="additional-remarks">{submissionStatus?.remark || "No additional remarks available"}</span></p>
+
+        
           </div>
         </main>
       </section>
