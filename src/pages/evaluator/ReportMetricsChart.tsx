@@ -26,7 +26,7 @@ const ReportMetricsChart = ({
   // Update "No Submission" to be the sum of pendingReports and noSubmission
   const noSubmissionCombined = pendingReports + noSubmission;
 
-  // Pie chart data
+  // Pie charth data
   const data = {
     labels: [
       'No Submission', // Red

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../../firebase';
-import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, query, where, doc } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, query, where, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import "../../styles/components/dashboard.css";
 import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
+
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [tasks, setTasks] = useState<any[]>([]);
@@ -17,7 +18,9 @@ const Dashboard = () => {
     const [onTimeReports, setOnTimeReports] = useState(0);
     const [lateReports, setLateReports] = useState(0);
     const [pendingReports, setPendingReports] = useState(0);
-    const [noSubmissionReports, setNoSubmissionReports] = useState(0);
+    const [forRevision, setForRevision] = useState(0);
+    const [incomplete, setIncomplete] = useState(0);
+    const [noSubmission, setNoSubmission] = useState(0);
 
     // Firebase Authentication state listener
     useEffect(() => {
@@ -65,46 +68,47 @@ const Dashboard = () => {
 
     useEffect(() => {
         const submitRef = collection(db, 'submittedDetails');
-        
+    
         // Subscribe to submittedDetails collection
         const submitUnsubscribe = onSnapshot(submitRef, async () => {
             // Fetch total submitted reports count
             const submitSnapshot = await getDocs(submitRef);
             setTotalReports(submitSnapshot.size); // Total reports submitted
-            
-            // Get the list of report IDs from submittedDetails
-            const submittedReportsIds = submitSnapshot.docs.map(doc => doc.data().messageId);
     
-            // Get the reports that have not been submitted
-            const reportsSnapshot = await getDocs(collection(db, 'communications'));
-            const noSubmissionCount = reportsSnapshot.docs.filter(doc => !submittedReportsIds.includes(doc.id)).length;
-    
-            // Query for "No Submission" status reports in submittedDetails
-            const noSubmissionQuery = query(submitRef, where("evaluatorStatus", "==", "No Submission"));
-            const noSubmissionSnapshot = await getDocs(noSubmissionQuery);
-            
-            setNoSubmissionReports(noSubmissionCount + noSubmissionSnapshot.size);
-    
-            // Fetch OnTime, Pending, and Late Reports
+            // Fetch the status counts: OnTime, Pending, Late, For Revision, Incomplete, and No Submission
             const statusQueries = [
                 { status: "On Time", setter: setOnTimeReports },
                 { status: "Pending", setter: setPendingReports },
                 { status: "Late", setter: setLateReports },
+                { status: "For Revision", setter: setForRevision },
+                { status: "Incomplete", setter: setIncomplete },
             ];
     
-            // Fetch and set the counts for each status
+            // Fetch and set the counts for each status (On Time, Pending, Late, etc.)
             await Promise.all(
                 statusQueries.map(async ({ status, setter }) => {
                     const statusSnapshot = await getDocs(query(submitRef, where("evaluatorStatus", "==", status)));
                     setter(statusSnapshot.size);
                 })
             );
+    
+            // Fetch the "No Submission" status separately
+            const noSubmissionSnapshot = await getDocs(query(submitRef, where("evaluatorStatus", "==", "No Submission")));
+            setNoSubmission(noSubmissionSnapshot.size);
+    
+            // Now update the total pending reports: Pending + No Submission
+            setPendingReports(prev => noSubmissionSnapshot.size + prev);  // Adding Pending reports + No Submission reports
         });
     
         return () => {
             submitUnsubscribe();
         };
-    }, []);
+    }, []); // This effect will run only once to set up the listener
+    
+    // Update No Submission after pendingReports state has been updated
+    useEffect(() => {
+        setNoSubmission(pendingReports); // Assuming 'pendingReports' is the number of reports with no submission
+    }, [pendingReports]); // Run this effect when 'pendingReports' changes
     
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
@@ -182,7 +186,7 @@ const Dashboard = () => {
                             <h1>Evaluator Dashboard</h1>
                             <ul className="breadcrumb">
                                 <li>
-                                    <a href="/dashboards"className="active">Home</a>
+                                    <a href="/dashboards" className="active">Home</a>
                                 </li>
                                 <li>
                                     <i className='bx bx-chevron-right'> </i>
@@ -197,12 +201,13 @@ const Dashboard = () => {
                     {/* Metrics + Chart Section */}
                     <div className="dashboard-metrics-chart-wrapper">
                         <div className="metrics-panel">
-                            {[
+                            {[ 
                                 { label: 'Total Reports Submitted', value: totalReports },
                                 { label: 'On Time Report Submitted', value: onTimeReports, percent: onTimeReports / totalReports },
-                                { label: 'Pending Reports', value: pendingReports, percent: pendingReports / totalReports },
+                                { label: 'Pending Reports / No Submission', value: pendingReports, percent: pendingReports + noSubmission / totalReports },
                                 { label: 'Late Reports', value: lateReports, percent: lateReports / totalReports },
-                                { label: 'No Submission Reports', value: noSubmissionReports, percent: noSubmissionReports / totalReports },
+                                { label: 'For Revision', value: forRevision, percent: forRevision / totalReports },
+                                { label: 'Incomplete Reports', value: incomplete, percent: incomplete / totalReports },
                                 { label: 'Total Registered Users', value: activeUsers },
                             ].map(({ label, value, percent }, index) => (
                                 <div key={index} className="metric">
@@ -218,7 +223,10 @@ const Dashboard = () => {
                                 pendingReports={pendingReports}
                                 lateReports={lateReports}
                                 onTimeReports={onTimeReports}
-                            />
+                                forRevision={forRevision}
+                                incomplete={incomplete}
+                                noSubmission    
+                                />
                         </div>
                     </div>
 
@@ -287,12 +295,9 @@ const Dashboard = () => {
                             </div>
                         </div>
                     )}
-                    </main>
+                </main>
             </section>
         </div>
     );
 };
-
 export default Dashboard;
-// Removed incorrect implementation of the `doc` function.
-
