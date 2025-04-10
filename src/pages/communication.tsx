@@ -11,6 +11,7 @@ import {
   query,
   where,
   getDocs as firestoreGetDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
@@ -22,6 +23,8 @@ const Communication: React.FC = () => {
   const [remarks, setRemarks] = useState("");
   const [inputLink, setInputLink] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
@@ -125,59 +128,87 @@ const Communication: React.FC = () => {
       showAlert("Please fill in all fields before sending");
       return;
     }
-
+  
     const currentDate = new Date();
     const deadlineDate = new Date(deadline);
-    
-    // Check if the deadline is in the past
+  
     if (deadlineDate < currentDate) {
       showAlert("Invalid Date: The deadline cannot be in the past");
       return;
     }
-
+  
     if (inputLink && !inputLink.startsWith("https://")) {
       showAlert("Only HTTPS links are allowed!");
       return;
     }
+  
     setLoading(true);
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-
+  
       if (!user) {
         showAlert("You must be logged in to send a communication");
         setLoading(false);
         return;
       }
-
-      const communicationRef = collection(db, "communications");
-      await addDoc(communicationRef, {
-        subject,
-        recipients, // Store the userIds
-        deadline: new Date(deadline),
-        remarks,
-        link: inputLink,
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        submitID: [],
-      });
-
-      showAlert("Message Sent Successfully!", "success");
-
+  
+      if (isEditing && editingId) {
+        // Update existing communication
+        const docRef = doc(db, "communications", editingId);
+        await updateDoc(docRef, {
+          subject,
+          recipients,
+          deadline: new Date(deadline),
+          remarks,
+          link: inputLink,
+        });
+        showAlert("Communication updated successfully!", "success");
+      } else {
+        // Create new communication
+        const communicationRef = collection(db, "communications");
+        await addDoc(communicationRef, {
+          subject,
+          recipients,
+          deadline: new Date(deadline),
+          remarks,
+          link: inputLink,
+          createdBy: user.uid,
+          createdAt: serverTimestamp(),
+          submitID: [],
+        });
+        showAlert("Message Sent Successfully!", "success");
+      }
+  
+      // Reset form
       setSubject("");
-      setRecipients([]); // Reset selection
+      setRecipients([]);
       setDeadline("");
       setRemarks("");
       setInputLink("");
-
-      fetchSentCommunications(); // Fetch sent communications after sending new one
+      setIsEditing(false);
+      setEditingId(null);
+  
+      fetchSentCommunications();
     } catch (error) {
-      console.error("Error sending message:", error);
-      showAlert("Failed to send message. Please try again!");
+      console.error("Error submitting message:", error);
+      showAlert("Failed to process message. Please try again!");
     } finally {
       setLoading(false);
     }
   };
+  
+  const handleEdit = (comm: any) => {
+    setSubject(comm.subject);
+    setRecipients(comm.recipients);
+    setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16)); // for datetime-local
+    setRemarks(comm.remarks);
+    setInputLink(comm.link || "");
+    setEditingId(comm.id);
+    setIsEditing(true);
+    setShowDetails(true);
+  };
+  
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -383,6 +414,11 @@ const Communication: React.FC = () => {
                     </td>
                     <td>{new Date(comm.deadline.seconds * 1000).toLocaleString()}</td>
                     <td>{comm.remarks}</td>
+                    <td>
+                      <button className="btn btn-sm btn-warning" onClick={() => handleEdit(comm)}>
+                        ✏️ Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

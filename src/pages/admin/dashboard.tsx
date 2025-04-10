@@ -3,7 +3,7 @@ import { db, auth } from '../../firebase';
 import { collection, onSnapshot, getDocs, query, where, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import "../../styles/components/dashboard.css";
-import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
+import ReportMetricsChart from '../../pages/ReportMetricsChart'; // Import the chart component
 
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -81,6 +81,7 @@ const Dashboard = () => {
                 { status: "Pending", setter: setPendingReports },
                 { status: "Late", setter: setLateReports },
                 { status: "For Revision", setter: setForRevision },
+                { status: "No Submission", setter: setNoSubmission },
                 { status: "Incomplete", setter: setIncomplete },
             ];
     
@@ -91,25 +92,12 @@ const Dashboard = () => {
                     setter(statusSnapshot.size);
                 })
             );
-    
-            // Fetch the "No Submission" status separately
-            const noSubmissionSnapshot = await getDocs(query(submitRef, where("evaluatorStatus", "==", "No Submission")));
-            setNoSubmission(noSubmissionSnapshot.size);
-    
-            // Now update the total pending reports: Pending + No Submission
-            setPendingReports(prev => noSubmissionSnapshot.size + prev);  // Adding Pending reports + No Submission reports
-        });
+            });
     
         return () => {
             submitUnsubscribe();
         };
-    }, []); // This effect will run only once to set up the listener
-    
-    // Update No Submission after pendingReports state has been updated
-    useEffect(() => {
-        setNoSubmission(pendingReports); // Assuming 'pendingReports' is the number of reports with no submission
-    }, [pendingReports]); // Run this effect when 'pendingReports' changes
-    
+    }, []); // This effect will run only once to set up the listene
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
             const newTaskObj = {
@@ -204,7 +192,8 @@ const Dashboard = () => {
                             {[ 
                                 { label: 'Total Reports Submitted', value: totalReports },
                                 { label: 'On Time Report Submitted', value: onTimeReports, percent: onTimeReports / totalReports },
-                                { label: 'Pending Reports / No Submission', value: pendingReports, percent: pendingReports + noSubmission / totalReports },
+                                { label: 'Pending Reports', value: pendingReports, percent: pendingReports / totalReports },
+                                { label: 'No Submission', value: noSubmission, percent: noSubmission / totalReports },
                                 { label: 'Late Reports', value: lateReports, percent: lateReports / totalReports },
                                 { label: 'For Revision', value: forRevision, percent: forRevision / totalReports },
                                 { label: 'Incomplete Reports', value: incomplete, percent: incomplete / totalReports },
@@ -225,7 +214,7 @@ const Dashboard = () => {
                                 onTimeReports={onTimeReports}
                                 forRevision={forRevision}
                                 incomplete={incomplete}
-                                noSubmission    
+                                noSubmission= {noSubmission}
                                 />
                         </div>
                     </div>
