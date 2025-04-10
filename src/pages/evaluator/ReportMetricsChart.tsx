@@ -11,28 +11,56 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale);
 
-const ReportMetricsChart = ({ totalReports, pendingReports, lateReports, onTimeReports }: any) => {
-  const completedReports = totalReports - pendingReports - lateReports - onTimeReports; // Completed reports calculation
+const ReportMetricsChart = ({
+  totalReports,
+  pendingReports,
+  lateReports,
+  onTimeReports,
+  forRevision,
+  incomplete,
+  noSubmission,
+}: any) => {
+  // Calculate the completed reports based on the remaining data
+  const completedReports = Math.max(0, totalReports - pendingReports - lateReports - onTimeReports - forRevision - incomplete - noSubmission);
 
+  // Update "No Submission" to be the sum of pendingReports and noSubmission
+  const noSubmissionCombined = pendingReports + noSubmission;
+
+  // Pie chart data
   const data = {
-    labels: ['Pending Reports', 'Late Reports', 'On Time Reports', 'No Submission'],  // Pie chart labels
+    labels: [
+      'No Submission', // Red
+      'Late Reports',  // Blue
+      'On Time Reports', // Green
+      'Incomplete', // Yellow
+      'For Revision', // Orange
+    ],
     datasets: [
       {
         data: [
-          pendingReports, 
+          noSubmissionCombined, // Combined No Submission (Pending + No Submission)
           lateReports, 
-          onTimeReports,  // On time reports
-          completedReports, // Completed reports (calculated dynamically)
-        ], // Pie chart data
-        backgroundColor: ['#FFB800', '#4169e1', '#4DFF4D', '#343A40'], // Colors for each segment
+          onTimeReports,  // On Time Reports
+          incomplete,      // Incomplete Reports
+          forRevision,     // For Revision Reports
+          completedReports // Completed Reports (calculated dynamically)
+        ],
+        backgroundColor: [
+          '#FF0000',  // Red for No Submission (Pending + No Submission)
+          '#4169e1',  // Blue for Late
+          '#4DFF4D',  // Green for On Time
+          '#FFFF00',  // Yellow for Incomplete
+          '#FFB800',  // Orange for Revision
+        ],
         hoverOffset: 4,
       },
     ],
   };
 
+  // Chart options
   const options = {
     responsive: true,
-    maintainAspectRatio: false, // 👈 this is crucial
+    maintainAspectRatio: false, // Make sure the chart maintains aspect ratio
     plugins: {
       legend: {
         position: 'top' as const,

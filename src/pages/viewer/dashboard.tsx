@@ -3,8 +3,7 @@ import { db, auth } from '../../firebase';
 import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, query, where, doc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import "../../styles/components/dashboard.css";
-import ReportMetricsChart from './ReportMetricsChart';
-
+import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [tasks, setTasks] = useState<any[]>([]);
@@ -64,33 +63,36 @@ const Dashboard = () => {
         fetchRegisteredUsers();
     }, []);
 
-    // Real-time reports metrics
     useEffect(() => {
-        const reportsRef = collection(db, 'communications');
         const submitRef = collection(db, 'submittedDetails');
         
-        const reportsUnsubscribe = onSnapshot(reportsRef, (reportsSnapshot) => {
-            setTotalReports(reportsSnapshot.size);
-        });
-
+        // Subscribe to submittedDetails collection
         const submitUnsubscribe = onSnapshot(submitRef, async () => {
-            const reportsSnapshot = await getDocs(reportsRef);
-            const submittedReportsIds = (await getDocs(submitRef)).docs.map(doc => doc.data().messageId);
-
-            // Calculate No Submission reports
+            // Fetch total submitted reports count
+            const submitSnapshot = await getDocs(submitRef);
+            setTotalReports(submitSnapshot.size); // Total reports submitted
+            
+            // Get the list of report IDs from submittedDetails
+            const submittedReportsIds = submitSnapshot.docs.map(doc => doc.data().messageId);
+    
+            // Get the reports that have not been submitted
+            const reportsSnapshot = await getDocs(collection(db, 'communications'));
             const noSubmissionCount = reportsSnapshot.docs.filter(doc => !submittedReportsIds.includes(doc.id)).length;
+    
+            // Query for "No Submission" status reports in submittedDetails
             const noSubmissionQuery = query(submitRef, where("evaluatorStatus", "==", "No Submission"));
             const noSubmissionSnapshot = await getDocs(noSubmissionQuery);
-
+            
             setNoSubmissionReports(noSubmissionCount + noSubmissionSnapshot.size);
-
+    
             // Fetch OnTime, Pending, and Late Reports
             const statusQueries = [
                 { status: "On Time", setter: setOnTimeReports },
                 { status: "Pending", setter: setPendingReports },
                 { status: "Late", setter: setLateReports },
             ];
-
+    
+            // Fetch and set the counts for each status
             await Promise.all(
                 statusQueries.map(async ({ status, setter }) => {
                     const statusSnapshot = await getDocs(query(submitRef, where("evaluatorStatus", "==", status)));
@@ -98,13 +100,12 @@ const Dashboard = () => {
                 })
             );
         });
-
+    
         return () => {
-            reportsUnsubscribe();
             submitUnsubscribe();
         };
     }, []);
-
+    
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
             const newTaskObj = {
@@ -180,9 +181,15 @@ const Dashboard = () => {
                         <div className="left">
                             <h1>Evaluator Dashboard</h1>
                             <ul className="breadcrumb">
-                                <li><a className="active" href="#">Home</a></li>
-                                <li><i className='bx bx-chevron-right'></i></li>
-                                <li><a href="#">Dashboard Tools</a></li>
+                                <li>
+                                    <a href="/dashboards"className="active">Home</a>
+                                </li>
+                                <li>
+                                    <i className='bx bx-chevron-right'> </i>
+                                </li>
+                                <li>
+                                    <a>Dashboard Tools</a>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -280,7 +287,7 @@ const Dashboard = () => {
                             </div>
                         </div>
                     )}
-                </main>
+                    </main>
             </section>
         </div>
     );

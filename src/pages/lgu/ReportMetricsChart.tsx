@@ -11,24 +11,41 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale);
 
-const ReportMetricsChart = ({ totalReports, pendingReports, lateReports, onTimeReports }: any) => {
-  const completedReports = totalReports - pendingReports - lateReports - onTimeReports; // Completed reports calculation
+const ReportMetricsChart = ({ totalReports, pendingReports, lateReports, onTimeReports, forRevision, incomplete }: any) => {
+  const completedReports = totalReports - pendingReports - lateReports - onTimeReports - forRevision - incomplete; // Completed reports calculation
 
   const data = {
-    labels: ['Pending Reports', 'Late Reports', 'On Time Reports', 'No Submission'],  // Pie chart labels
+    labels: [
+      'Pending Reports', 
+      'Late Reports', 
+      'On Time Reports', 
+      'No Submission', 
+      'Incomplete', 
+      'For Revision'
+    ],
     datasets: [
       {
         data: [
           pendingReports, 
           lateReports, 
           onTimeReports,  // On time reports
-          completedReports, // Completed reports (calculated dynamically)
-        ], // Pie chart data
-        backgroundColor: ['#FFB800', '#4169e1', '#4DFF4D', '#343A40'], // Colors for each segment
+          incomplete,      // Incomplete reports
+          forRevision,     // For Revision reports
+          completedReports // Completed reports
+        ],
+        backgroundColor: [
+          '#FF0000',  // Red for No Submission (Pending or Late)
+          '#4169e1',  // Blue for Late
+          '#4DFF4D',  // Green for On Time
+          '#FFB800',  // Orange for Revision
+          '#FFFF00',  // Yellow for Incomplete
+          '#343A40'   // Default color for completed (or you can choose another color)
+        ],
         hoverOffset: 4,
       },
     ],
   };
+  
 
   const options = {
     responsive: true,
