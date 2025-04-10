@@ -392,6 +392,7 @@ const Communication: React.FC = () => {
                   <th>Recipients</th>
                   <th>Deadline</th>
                   <th>Remarks</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
