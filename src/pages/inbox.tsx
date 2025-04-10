@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, query, where, doc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { updateDoc, arrayUnion, deleteDoc } from "firebase/firestore";
 
 const Inbox: React.FC = () => {
@@ -176,18 +176,17 @@ const Inbox: React.FC = () => {
               <h1>Inbox</h1>
               <ul className="breadcrumb">
                 <li>
-                  <Link to="/dashboards" className="active">Home</Link>
+                  <a href="/dashboards" className="active">Home</a>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <Link to="#" >Inbox</Link>
+                  <a>Inbox</a>
                 </li>
               </ul>
             </div>
           </div>
-
           <div className="table-data">
             <div className="order">
               <div className="inbox-container">
