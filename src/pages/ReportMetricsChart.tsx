@@ -45,13 +45,14 @@ const ReportMetricsChart = ({
           completedReports // Completed Reports (calculated dynamically)
         ],
         backgroundColor: [
-          '#FF0000',  // Red for No Submission
-          '#808080',  // Grey for Pending Reports
-          '#4169e1',  // Blue for Late
-          '#4DFF4D',  // Green for On Time
-          '#FF0000',  // Yellow for Incomplete
-          '#FFB800',  // Orange for Revision
+          '#EF476F',  // Rose Red – for No Submission
+          '#A8A8A8',  // Muted Gray – for Pending Reports
+          '#3A86FF',  // Royal Blue – for Late
+          '#06D6A0',  // Mint Green – for On Time
+          '#FFD166',  // Warm Yellow – for Incomplete
+          '#FFA500',  // Soft Orange – for Revision
         ],
+        
         hoverOffset: 4,
       },
     ],
