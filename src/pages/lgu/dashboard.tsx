@@ -3,7 +3,7 @@ import { db, auth } from '../../firebase';
 import { collection, onSnapshot, getDocs, query, where, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import "../../styles/components/dashboard.css";
-import ReportMetricsChart from './ReportMetricsChart'; // Import the chart component
+import ReportMetricsChart from '../../pages/ReportMetricsChart'; // Import the chart component
 
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);

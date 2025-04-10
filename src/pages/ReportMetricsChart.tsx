@@ -23,13 +23,11 @@ const ReportMetricsChart = ({
   // Calculate the completed reports based on the remaining data
   const completedReports = Math.max(0, totalReports - pendingReports - lateReports - onTimeReports - forRevision - incomplete - noSubmission);
 
-  // Update "No Submission" to be the sum of pendingReports and noSubmission
-  const noSubmissionCombined = pendingReports + noSubmission;
-
   // Pie chart data
   const data = {
     labels: [
-      'Pending Reports / No Submission', // Red
+      'No Submission', // Red
+      'Pending Reports', // Grey
       'Late Reports',  // Blue
       'On Time Reports', // Green
       'Incomplete', // Yellow
@@ -38,18 +36,20 @@ const ReportMetricsChart = ({
     datasets: [
       {
         data: [
-          noSubmissionCombined, // Combined No Submission (Pending + No Submission)
-          lateReports, 
+          noSubmission, // Combined No Submission (Pending + No Submission)
+          pendingReports,
+          lateReports,  // Late Reports
           onTimeReports,  // On Time Reports
           incomplete,      // Incomplete Reports
           forRevision,     // For Revision Reports
           completedReports // Completed Reports (calculated dynamically)
         ],
         backgroundColor: [
-          '#FF0000',  // Red for No Submission (Pending + No Submission)
+          '#FF0000',  // Red for No Submission
+          '#808080',  // Grey for Pending Reports
           '#4169e1',  // Blue for Late
           '#4DFF4D',  // Green for On Time
-          '#FFFF00',  // Yellow for Incomplete
+          '#FF0000',  // Yellow for Incomplete
           '#FFB800',  // Orange for Revision
         ],
         hoverOffset: 4,
