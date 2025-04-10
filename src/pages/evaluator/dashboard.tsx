@@ -185,39 +185,40 @@ const Dashboard = () => {
                             </ul>
                         </div>
                     </div>
+{/* Metrics + Chart Section */}
+<div className="dashboard-metrics-chart-wrapper">
+  <div className="chart-panel">
+    <div className="metrics-panel row-panel">
+      {[
+        { label: 'Total Reports Submitted', value: totalReports },
+        { label: 'On Time Report Submitted', value: onTimeReports, percent: onTimeReports / totalReports },
+        { label: 'Pending Reports', value: pendingReports, percent: pendingReports / totalReports },
+        { label: 'No Submission', value: noSubmission, percent: noSubmission / totalReports },
+        { label: 'Late Reports', value: lateReports, percent: lateReports / totalReports },
+        { label: 'For Revision', value: forRevision, percent: forRevision / totalReports },
+        { label: 'Incomplete Reports', value: incomplete, percent: incomplete / totalReports },
+        { label: 'Total Registered Users', value: activeUsers },
+      ].map(({ label, value, percent }, index) => (
+        <div key={index} className="metric">
+          <h3>{label}</h3>
+          <p>{value} {percent != null && `(${(percent * 100).toFixed(2)}%)`}</p>
+        </div>
+      ))}
+    </div>
+    <div className="chart-wrapper">
+      <ReportMetricsChart 
+        totalReports={totalReports}
+        pendingReports={pendingReports}
+        lateReports={lateReports}
+        onTimeReports={onTimeReports}
+        forRevision={forRevision}
+        incomplete={incomplete}
+        noSubmission={noSubmission}
+      />
+    </div>
+  </div>
+</div>
 
-                    {/* Metrics + Chart Section */}
-                    <div className="dashboard-metrics-chart-wrapper">
-                        <div className="metrics-panel">
-                            {[ 
-                                { label: 'Total Reports Submitted', value: totalReports },
-                                { label: 'On Time Report Submitted', value: onTimeReports, percent: onTimeReports / totalReports },
-                                { label: 'Pending Reports', value: pendingReports, percent: pendingReports / totalReports },
-                                { label: 'No Submission', value: noSubmission, percent: noSubmission / totalReports },
-                                { label: 'Late Reports', value: lateReports, percent: lateReports / totalReports },
-                                { label: 'For Revision', value: forRevision, percent: forRevision / totalReports },
-                                { label: 'Incomplete Reports', value: incomplete, percent: incomplete / totalReports },
-                                { label: 'Total Registered Users', value: activeUsers },
-                            ].map(({ label, value, percent }, index) => (
-                                <div key={index} className="metric">
-                                    <h3>{label}</h3>
-                                    <p>{value} {percent && `(${(percent * 100).toFixed(2)}%)`}</p>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="chart-panel">
-                            <ReportMetricsChart 
-                                totalReports={totalReports}
-                                pendingReports={pendingReports}
-                                lateReports={lateReports}
-                                onTimeReports={onTimeReports}
-                                forRevision={forRevision}
-                                incomplete={incomplete}
-                                noSubmission= {noSubmission}
-                                />
-                        </div>
-                    </div>
 
                     <div className="metrics-footer">
                         <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
