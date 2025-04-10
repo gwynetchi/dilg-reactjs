@@ -29,7 +29,7 @@ const ReportMetricsChart = ({
   // Pie chart data
   const data = {
     labels: [
-      'No Submission', // Red
+      'Pending Reports / No Submission', // Red
       'Late Reports',  // Blue
       'On Time Reports', // Green
       'Incomplete', // Yellow
