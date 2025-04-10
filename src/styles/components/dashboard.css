@@ -1353,91 +1353,90 @@ ol, ul {
 	width: 100% !important;
 	height: 100% !important;
   }
-/* Main wrapper for the metrics + chart section */
-.dashboard-metrics-chart-wrapper {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 2rem;
-	justify-content: space-between;
-	padding: 2rem;
-	width: 100%;
-  }
-  
-  /* Chart Panel Styling */
-  .chart-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 2rem;
-	justify-content: space-between;
-	width: 100%;
-  }
-  
-  /* Styling for the metrics section inside the chart panel */
-  .metrics-panel {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	flex: 1 1 300px; /* Take up 1/3 of the space */
-	max-width: 350px;
-	padding: 1rem;
-  }
-  
-  /* Styling for each individual metric */
-  .metric {
-	background-color: #ffffff;
-	border-left: 4px solid #3A86FF;
-	padding: 1rem;
-	border-radius: 8px;
-	box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-	flex: 1 1 100%;
-	min-width: 250px;
-  }
-  
-  .metric h3 {
-	margin: 0;
-	font-size: 1.1rem;
-	color: #333;
-	font-weight: 600;
-  }
-  
-  .metric p {
-	margin: 0;
-	font-size: 1rem;
-	font-weight: 500;
-	color: #555;
-  }
-  
-  /* Styling for the chart inside the chart panel */
-  .chart-wrapper {
-	flex: 2 1 600px; /* The chart takes up more space */
-	min-width: 400px;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	padding: 1rem;
-	background-color: #f4f4f4;
-	border-radius: 8px;
-	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-	.metrics-panel {
-	  flex: 1 1 48%; /* On medium screens, it takes 48% of the space */
+	/* Main wrapper for the metrics */
+	.dashboard-metrics-chart-wrapper {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		justify-content: flex-start;  /* Aligns the metrics to the left */
+		padding: 1rem;
+		width: 100%;
 	}
-  
-	.chart-wrapper {
-	  flex: 1 1 100%; /* Full width for the chart on smaller screens */
+	
+	/* Panel holding the individual metrics */
+	.row-panel {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		width: 100%;
 	}
-  }
-  
-  @media (max-width: 480px) {
-	.metrics-panel {
-	  flex: 1 1 100%; /* Full width on very small screens */
+	
+	/* Styling for each individual metric */
+	.metric {
+		background-color: #ffffff; /* White background for clean contrast */
+		border-left: 4px solid #3A86FF; /* Blue left border for consistency */
+		padding: 1rem;
+		border-radius: 8px; /* Slightly rounded corners for a softer look */
+		box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Deeper shadow for elevated effect */
+		flex: 1 1 calc(33% - 1rem); /* Default 33% width on larger screens */
+		transition: transform 0.3s ease, box-shadow 0.3s ease;
+		min-width: 250px; /* Minimum width to prevent shrinking too much */
 	}
-  
-	.chart-wrapper {
-	  flex: 1 1 100%; /* Full width for the chart */
+	
+	.metric:hover {
+		transform: translateY(-8px); /* Slightly bigger hover effect for more interactivity */
+		box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15); /* More prominent shadow on hover */
 	}
-  }
-  
+	
+	/* Title inside the metric box */
+	.metric h3 {
+		margin: 0;
+		font-size: 1.2rem;
+		color: #333;
+		font-weight: 600; /* Bold text for better prominence */
+		margin-bottom: 0.5rem;
+	}
+	
+	/* Value inside the metric box */
+	.metric p {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 500;
+		color: #555;
+	}
+	
+	/* Responsive Styles */
+	@media (max-width: 768px) {
+		.metric {
+		flex: 1 1 calc(48% - 1rem); /* On medium screens, 48% width */
+		max-width: calc(48% - 1rem);
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.metric {
+		flex: 1 1 100%; /* Full width on very small screens */
+		max-width: 100%;
+		}
+	}
+	
+	/* Styling for chart panel (maybe a placeholder for graph/chart) */
+	.chart-panel {
+		flex: 1 1 400px; /* Default size, but can be adjusted depending on the chart's aspect */
+		min-width: 320px; /* Minimum width for better display on smaller screens */
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 1rem;
+		background-color: #f4f4f4; /* Light background for the chart */
+		border-radius: 8px;
+		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+	}
+	
+	/* Optional: Responsive adjustments for the chart on smaller screens */
+	@media (max-width: 768px) {
+		.chart-panel {
+		flex: 1 1 100%; /* Take up 100% on smaller screens */
+		}
+	}
+	
