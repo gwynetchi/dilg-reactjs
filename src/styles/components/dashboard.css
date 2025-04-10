@@ -1353,45 +1353,91 @@ ol, ul {
 	width: 100% !important;
 	height: 100% !important;
   }
-
-/* ===== Dashboard Metrics and Chart Layout ===== */
+/* Main wrapper for the metrics + chart section */
 .dashboard-metrics-chart-wrapper {
 	display: flex;
 	flex-wrap: wrap;
-	justify-content: space-between;
 	gap: 2rem;
-	margin-top: 2rem;
+	justify-content: space-between;
+	padding: 2rem;
+	width: 100%;
   }
   
+  /* Chart Panel Styling */
+  .chart-panel {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2rem;
+	justify-content: space-between;
+	width: 100%;
+  }
+  
+  /* Styling for the metrics section inside the chart panel */
   .metrics-panel {
-	flex: 1 1 300px;
 	display: flex;
 	flex-direction: column;
-	gap: 1.2rem;
+	gap: 1rem;
+	flex: 1 1 300px; /* Take up 1/3 of the space */
+	max-width: 350px;
+	padding: 1rem;
   }
   
+  /* Styling for each individual metric */
   .metric {
 	background-color: #ffffff;
-	padding: 1rem 1.5rem;
-	border-radius: 12px;
-	box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+	border-left: 4px solid #3A86FF;
+	padding: 1rem;
+	border-radius: 8px;
+	box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+	flex: 1 1 100%;
+	min-width: 250px;
   }
   
   .metric h3 {
-	margin-bottom: 0.25rem;
+	margin: 0;
 	font-size: 1.1rem;
 	color: #333;
+	font-weight: 600;
   }
   
   .metric p {
-	font-size: 1.25rem;
-	font-weight: bold;
-	color: #222;
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 500;
+	color: #555;
   }
   
-  .chart-panel {
-	flex: 1 1 400px;
+  /* Styling for the chart inside the chart panel */
+  .chart-wrapper {
+	flex: 2 1 600px; /* The chart takes up more space */
+	min-width: 400px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	padding: 1rem;
+	background-color: #f4f4f4;
+	border-radius: 8px;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   }
+  
+  /* Responsive Styles */
+  @media (max-width: 768px) {
+	.metrics-panel {
+	  flex: 1 1 48%; /* On medium screens, it takes 48% of the space */
+	}
+  
+	.chart-wrapper {
+	  flex: 1 1 100%; /* Full width for the chart on smaller screens */
+	}
+  }
+  
+  @media (max-width: 480px) {
+	.metrics-panel {
+	  flex: 1 1 100%; /* Full width on very small screens */
+	}
+  
+	.chart-wrapper {
+	  flex: 1 1 100%; /* Full width for the chart */
+	}
+  }
+  
