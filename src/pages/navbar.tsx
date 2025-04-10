@@ -40,37 +40,37 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const menuItems: Record<string, { name: string; icon: string; path: string }[]> = {
     Viewer: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/viewer/inbox" },
+      { name: "Inbox", icon: "bxs-inbox", path: "/viewer/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
-      { name: "Message", icon: "bxs-message", path: "/viewer/message" },
+      { name: "Message", icon: "bxs-chat", path: "/viewer/message" },
       { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
     ],
     Evaluator: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/evaluator/inbox" },
+      { name: "Inbox", icon: "bxs-inbox", path: "/evaluator/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
       { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
-      { name: "Message", icon: "bxs-message", path: "/evaluator/message" },
+      { name: "Message", icon: "bxs-chat", path: "/evaluator/message" },
       { name: "Score Board", icon: "bxs-crown", path: "/evaluator/scoreBoard" },
       { name: "Programs", icon: "bxs-doughnut-chart", path: "/evaluator/programs" },
 
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/lgu/inbox" },
+      { name: "Inbox", icon: "bxs-inbox", path: "/lgu/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
-      { name: "Message", icon: "bxs-message", path: "/lgu/message" },
+      { name: "Message", icon: "bxs-chat", path: "/lgu/message" },
       { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
 
     ],
     Admin: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
-      { name: "Inbox", icon: "bxs-message", path: "/admin/inbox" },
+      { name: "Inbox", icon: "bxs-inbox", path: "/admin/inbox" },
       { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
-      { name: "Message", icon: "bxs-message", path: "/admin/message" },
+      { name: "Message", icon: "bxs-chat", path: "/admin/message" },
       { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
 
     ],
