@@ -209,7 +209,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
       <Link to="/dashboards" className="brand">
         <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
-        <img src="/images/gel2.png" alt="jumpscare" className="jumpscare-img" />
 
       </Link>
 
