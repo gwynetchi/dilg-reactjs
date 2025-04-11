@@ -5,7 +5,8 @@
 	border-radius: 8px;
   }
   
-  h1 {
+  .scoreboard-container h1 {
+	text-align: center;
 	margin-bottom: 20px;
   }
   
