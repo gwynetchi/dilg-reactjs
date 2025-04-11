@@ -148,7 +148,7 @@ const Scoreboard = () => {
     return <div>Loading scoreboard...</div>;
   }
 
-  return (
+  return ( <main>
     <div className="dashboard-container">
       <h1>Scoreboard</h1>
       <table className="scoreboard-table">
@@ -164,47 +164,68 @@ const Scoreboard = () => {
           </tr>
         </thead>
         <tbody>
-          {users.length > 0 ? (
-            users.map((user, index) => (
-              <tr key={user.id}>
-                <td>{index + 1}</td>
-                <td>{user.fullName}</td>
-                <td>{user.totalReports}</td>
-                <td>{user.lateReports}</td>
-                <td>{user.pendingReports}</td>
-                <td>{user.score}</td>
-                {isEvaluator && (
-                  <td>
-                    <button
-                      onClick={() => toggleEditMode(user.id, user.score)}
-                      style={{ marginRight: '10px' }}
-                    >
-                      {editingScore === user.id ? 'Cancel Edit' : 'Edit'}
-                    </button>
-                    {editingScore === user.id && (
-                      <>
-                        <input
-                          type="number"
-                          value={newScore || ''}
-                          onChange={(e) => handleScoreChange(user.id, parseInt(e.target.value))}
-                          min="0"
-                          style={{ width: '60px' }}
-                        />
-                        <button onClick={() => handleSaveScore(user.id)}>Save</button>
-                      </>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={7}>No users found</td>
-            </tr>
+  {users.length > 0 ? (
+    users.map((user, index) => {
+      let medal = '';
+      let rowStyle = {};
+
+      if (index === 0) {
+        medal = ' 🥇';
+        rowStyle = { backgroundColor: '#fff9c4' }; // gold tint
+      } else if (index === 1) {
+        medal = ' 🥈';
+        rowStyle = { backgroundColor: '#f0f0f0' }; // silver tint
+      } else if (index === 2) {
+        medal = ' 🥉';
+        rowStyle = { backgroundColor: '#ffe0b2' }; // bronze tint
+      } else {
+        // Clear any row style so it uses default (no zebra striping override)
+        rowStyle = { backgroundColor: 'transparent' };
+      }
+
+      return (
+        <tr key={user.id} style={rowStyle}>
+          <td>{index + 1}{medal}</td>
+          <td>{user.fullName}</td>
+          <td>{user.totalReports}</td>
+          <td>{user.lateReports}</td>
+          <td>{user.pendingReports}</td>
+          <td>{user.score}</td>
+          {isEvaluator && (
+            <td>
+              <button
+                onClick={() => toggleEditMode(user.id, user.score)}
+                style={{ marginRight: '10px' }}
+              >
+                {editingScore === user.id ? 'Cancel Edit' : 'Edit'}
+              </button>
+              {editingScore === user.id && (
+                <>
+                  <input
+                    type="number"
+                    value={newScore || ''}
+                    onChange={(e) => handleScoreChange(user.id, parseInt(e.target.value))}
+                    min="0"
+                    style={{ width: '60px' }}
+                  />
+                  <button onClick={() => handleSaveScore(user.id)}>Save</button>
+                </>
+              )}
+            </td>
           )}
-        </tbody>
+        </tr>
+      );
+    })
+  ) : (
+    <tr>
+      <td colSpan={7}>No users found</td>
+    </tr>
+  )}
+</tbody>
+
       </table>
     </div>
+    </main>
   );
 };
 
