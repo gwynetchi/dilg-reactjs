@@ -1034,6 +1034,11 @@ ol, ul {
 	z-index: 2; /* Keep the logo on top */
 }
 
+.navbar-logo {
+	display: flex;
+	justify-content: center;
+}
+
   .jumpscare-img {
 	position: absolute;
 	top: 42px;

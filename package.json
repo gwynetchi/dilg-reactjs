@@ -34,6 +34,7 @@
     "react-scroll": "^1.9.3",
     "react-select": "^5.10.1",
     "react-slick": "^0.30.3",
+    "react-zoom-pan-pinch": "^3.7.0",
     "recharts": "^2.15.1",
     "sass": "^1.85.1",
     "slick-carousel": "^1.8.1",
