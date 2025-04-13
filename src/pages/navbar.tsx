@@ -54,7 +54,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Message", icon: "bxs-chat", path: "/evaluator/message" },
       { name: "Score Board", icon: "bxs-crown", path: "/evaluator/scoreBoard" },
       { name: "Programs", icon: "bxs-doughnut-chart", path: "/evaluator/programs" },
-
+      
     ],
     LGU: [
       { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
@@ -210,11 +210,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <Link to="/dashboards" className="brand">
         <div className="navbar-logo">
         <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
-<<<<<<< Updated upstream
-
-=======
         </div>
->>>>>>> Stashed changes
       </Link>
 
         <ul className="side-menu top">
