@@ -413,7 +413,23 @@ const Communication: React.FC = () => {
                         );
                       })}
                     </td>
-                    <td>{new Date(comm.deadline.seconds * 1000).toLocaleString()}</td>
+                    <td>
+                      {(() => {
+                        const date = new Date(comm.deadline.seconds * 1000);
+                        const datePart = date.toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        });
+                        const timePart = date.toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                        return `${datePart} at ${timePart}`;
+                      })()}
+                    </td>
+
                     <td>{comm.remarks}</td>
                     <td>
                       <button className="btn btn-sm btn-warning" onClick={() => handleEdit(comm)}>

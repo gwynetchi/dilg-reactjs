@@ -163,7 +163,18 @@ useEffect(() => {
     if (commSnap.exists()) {
       const data = commSnap.data() as Communication;
       const deadline = data.deadline?.seconds ? data.deadline.seconds * 1000 : null;
-      setSelectedDeadline(deadline ? new Date(deadline).toLocaleString() : "No Deadline");
+      setSelectedDeadline(
+        deadline
+          ? new Date(deadline).toLocaleString("en-US", {
+              year: "numeric",
+              month: "long", // Converts the month to words like "April"
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              hour12: true,
+            }).replace("at", "") // Remove the "at" word
+          : "No Deadline"
+      );      
 
       return { deadline, submitIDs: data.submitID || [], recipients: data.recipients || [] };
     }
@@ -345,7 +356,15 @@ useEffect(() => {
                   <td>{users[sub.submittedBy] || "Unknown User"}</td>
                   <td>
                     {sub.submittedAt
-                      ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
+                      ? new Date(sub.submittedAt.seconds * 1000).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",  // Use full month name (e.g., "April")
+                          day: "numeric", // Numeric day
+                        }) + ' ' + new Date(sub.submittedAt.seconds * 1000).toLocaleTimeString("en-US", {
+                          hour: "numeric",   // Hour in 12-hour format
+                          minute: "numeric", // Minute
+                          hour12: true,      // Use 12-hour clock (AM/PM)
+                        }).replace(/:([0-9]{2})$/, ':$1') // Prevent extra space before time
                       : "Not Submitted"}
                   </td>
                   <td>{sub.autoStatus || "No Submission"}</td>
