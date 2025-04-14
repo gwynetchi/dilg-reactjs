@@ -167,7 +167,6 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-container">
-            <section id="content">
                 <main>
                     <div className="head-title">
                         <div className="left">
@@ -180,7 +179,7 @@ const Dashboard = () => {
                                     <i className='bx bx-chevron-right'> </i>
                                 </li>
                                 <li>
-                                    <a>Dashboard Tools</a>
+                                    <span>Dashboard Tools</span>
                                 </li>
                             </ul>
                         </div>
@@ -286,7 +285,6 @@ const Dashboard = () => {
                         </div>
                     )}
                 </main>
-            </section>
         </div>
     );
 };
