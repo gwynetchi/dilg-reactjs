@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+
 
 interface User {
   id: string;
@@ -18,6 +19,10 @@ const Scoreboard = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [editingScore, setEditingScore] = useState<string | null>(null);
   const [newScore, setNewScore] = useState<number | null>(null);
+  const confettiRef = useRef<HTMLCanvasElement>(null);
+  const [prevTopUserId, setPrevTopUserId] = useState<string | null>(null);
+
+
 
   // Fetch user details (full name) and return it as a promise
   const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> => {
@@ -36,7 +41,7 @@ const Scoreboard = () => {
       try {
         const usersRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersRef);
-
+  
         // Concurrently fetch reports for each user and their full name
         const usersList: User[] = await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
           const userId = userDoc.id;
@@ -71,9 +76,72 @@ const Scoreboard = () => {
           };
         }));
 
+        const triggerConfetti = () => {
+          const canvas = confettiRef.current;
+          if (!canvas) return;
+
+          // Sort users based on their scores (descending order)
+          usersList.sort((a, b) => b.score - a.score);
+
+          // Trigger confetti if the top user has changed
+          if (usersList.length > 0 && usersList[0].id !== prevTopUserId) {
+            setPrevTopUserId(usersList[0].id);  // Just update the prevTopUserId
+            triggerConfetti();  // Call confetti once, outside of recursion
+          }          
+        
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+        
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        
+          const particles = Array.from({ length: 150 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            r: Math.random() * 6 + 4,
+            d: Math.random() * 100,
+            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+            tilt: Math.random() * 10 - 5,
+          }));
+        
+          let angle = 0;
+        
+          const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            angle += 0.01;
+        
+            for (const p of particles) {
+              p.y += Math.cos(angle + p.d) + 1 + p.r / 2;
+              p.x += Math.sin(angle);
+              ctx.beginPath();
+              ctx.lineWidth = p.r;
+              ctx.strokeStyle = p.color;
+              ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+              ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+              ctx.stroke();
+            }
+          };
+        
+          let animationFrame: number;
+          const animate = () => {
+            draw();
+            animationFrame = requestAnimationFrame(animate);
+          };
+        
+          animate();
+        
+          setTimeout(() => {
+            cancelAnimationFrame(animationFrame);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }, 10000);
+        };
+        
+
         // Sort users based on their scores (descending order)
         usersList.sort((a, b) => b.score - a.score);
-
+        if (usersList.length > 0 && usersList[0].id === auth.currentUser?.uid) {
+          triggerConfetti();
+        }
         setUsers(usersList);
       } catch (error) {
         console.error('Error fetching scoreboard data:', error);
@@ -149,6 +217,16 @@ const Scoreboard = () => {
   }
 
   return ( <main>
+        <canvas
+      ref={confettiRef}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        pointerEvents: 'none',
+        zIndex: 9999,
+      }}
+    />
     <div className="dashboard-container">
       <h1>Scoreboard</h1>
       <table className="scoreboard-table">

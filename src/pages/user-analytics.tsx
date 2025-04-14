@@ -187,11 +187,24 @@ const Analytics: React.FC = () => {
               {submissions.length > 0 ? (
                 submissions.map((sub) => (
                   <tr key={sub.id}>
-                    <td>
-                      {sub.submittedAt
-                        ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
-                        : "Not Submitted"}
-                    </td>
+                  <td>
+                    {sub.submittedAt
+                      ? (() => {
+                          const date = new Date(sub.submittedAt.seconds * 1000);
+                          const formattedDate = date.toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          });
+                          const formattedTime = date.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "numeric",
+                            hour12: true,
+                          });
+                          return `${formattedDate} ${formattedTime}`;
+                        })()
+                      : "Not Submitted"}
+                  </td>
                     <td>{sub.subject || "N/A"}</td>
                     <td>{sub.evaluatorStatus || "No Submission"}</td>
                   </tr>

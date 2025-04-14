@@ -194,7 +194,25 @@ const MessageDetails: React.FC = () => {
           <div className="message-details-container">
             <h2><strong>Subject:</strong> {message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
-            <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
+            <p>
+              <strong>Sent:</strong>{" "}
+              {message.createdAt?.seconds
+                ? (() => {
+                    const created = new Date(message.createdAt.seconds * 1000);
+                    const date = created.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    }); // e.g., April 7, 2025
+                    const time = created.toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    }); // e.g., 2:32 PM
+                    return `${date} ${time}`;
+                  })()
+                : "Unknown"}
+            </p>
             <p><strong>Content:</strong> {message.remarks || "No remarks/comments available"}</p>
             <p><strong>Additional Remarks:</strong> {remark || "No additional remarks available"}</p>
             {message.link && (
@@ -207,11 +225,29 @@ const MessageDetails: React.FC = () => {
               </div>
             )}     
                   <br />
-            <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
-
+                  <p>
+                    <strong>Deadline:</strong>{" "}
+                    {message.deadline?.seconds
+                      ? (() => {
+                          const date = new Date(message.deadline.seconds * 1000);
+                          const options: Intl.DateTimeFormatOptions = {
+                            month: "long",
+                            day: "2-digit",
+                            year: "numeric",
+                          };
+                          const datePart = new Intl.DateTimeFormat("en-US", options).format(date);
+                          const timePart = date.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          });
+                          return `${datePart} ${timePart}`;
+                        })()
+                      : "No deadline specified"}
+                  </p>
       
             {submissionStatus ? (
-              <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
+              <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             ) : (
               message.recipients?.includes(currentUser?.uid) && (
                 <button onClick={handleMarkAsSubmitted} className="btn-submit bx bx-check btn btn-success btn-md w-20">
