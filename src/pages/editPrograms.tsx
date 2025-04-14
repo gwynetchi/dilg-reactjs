@@ -10,25 +10,32 @@ import {
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
-const Programs: React.FC = () => {
+const EditPrograms: React.FC = () => {
   const [programName, setProgramName] = useState("");
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
   const [showDetails, setShowDetails] = useState(false);
 
-
+  
   const [participants, setParticipants] = useState<string[]>([]);
-  const [frequency, setFrequency] = useState("");
   const [duration, setDuration] = useState({ from: "", to: "" });
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<{ id: string; fullName: string }[]>([]);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
-  const [yearlyDate, setYearlyDate] = useState("");
-const [monthlyDate, setMonthlyDate] = useState("");
-const [weeklyDay, setWeeklyDay] = useState("");
-const [dailyTime, setDailyTime] = useState("");
+  const [dailyTime, setDailyTime] = useState("");
+  const [weeklyDay, setWeeklyDay] = useState("");
+  const [monthlyDay, setMonthlyDay] = useState("");
+  const [yearlyMonth, setYearlyMonth] = useState("");
+  const [yearlyDay, setYearlyDay] = useState("");
+  const [quarter, setQuarter] = useState("");
+  const [quarterDay, setQuarterDay] = useState("");
+  const [frequency, setFrequency] = useState("");
+  const [, setFrequencyDetails] = useState({});
+
+  
 
 
+  
   // Fetch users for participant selection
   const fetchUsers = async () => {
     try {
@@ -70,56 +77,116 @@ const [dailyTime, setDailyTime] = useState("");
     setAlert({ message, type });
     setTimeout(() => setAlert(null), 8000);
   };
+  const handleFrequencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedFrequency = e.target.value;
+    console.log("Selected Frequency:", selectedFrequency); // Log selected frequency
+  
+    setFrequency(selectedFrequency);
+  
+    let details = {};
+    
+    switch (selectedFrequency) {
+      case "daily":
+        details = {
+          frequency: "daily",
+          time: dailyTime,
+        };
+        break;
+      case "weekly":
+        details = {
+          frequency: "weekly",
+          day: weeklyDay,
+        };
+        break;
+      case "monthly":
+        details = {
+          frequency: "monthly",
+          day: monthlyDay,
+        };
+        break;
+      case "quarterly":
+        details = {
+          frequency: "quarterly",
+          quarter: quarter,
+          day: quarterDay,
+        };
+        break;
+      case "yearly":
+        details = {
+          frequency: "yearly",
+          month: yearlyMonth,
+          day: yearlyDay,
+        };
+        break;
+      default:
+        details = {};
+        break;
+    }
+  
+    setFrequencyDetails(details);  // Set updated frequency details to state
+  
+    console.log("Frequency Details after update:", details); // Log updated frequency details
+  };
+  
 
   const handleSubmit = async () => {
     if (!programName || participants.length === 0 || !frequency || !duration.from || !duration.to) {
-      showAlert("Please fill in all fields before submitting.");
+      showAlert("Please fill in all required fields before submitting.");
       return;
     }
-
+  
     setLoading(true);
+  
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (!user) {
-        showAlert("You must be logged in to create a program");
-        setLoading(false);
-        return;
+      let frequencyDetails: any = {};
+  
+      switch (frequency) {
+        case "Daily":
+          frequencyDetails = { dailyTime };
+          break;
+        case "Weekly":
+          frequencyDetails = { weeklyDay };
+          break;
+        case "Monthly":
+          frequencyDetails = { monthlyDay };
+          break;
+        case "Quarterly":
+          frequencyDetails = { quarter, quarterDay };
+          break;
+        case "Yearly":
+          frequencyDetails = { yearlyMonth, yearlyDay };
+          break;
+        default:
+          break;
       }
-
-      const programRef = collection(db, "programs");
-      await addDoc(programRef, {
+  
+      await addDoc(collection(db, "programs"), {
         programName,
         link,
         description,
-        createdBy: user.uid,
         participants,
         frequency,
+        frequencyDetails,
         duration,
-        submitID: [],
         createdAt: serverTimestamp(),
-        yearlyDate,
-        monthlyDate,
-        weeklyDay,
-        dailyTime,
+        createdBy: getAuth().currentUser?.uid || null,
       });
-      
-
-      showAlert("Program created successfully!", "success");
-      setProgramName("");
-      setLink("");
-      setDescription("");
-      setParticipants([]);
-      setFrequency("");
-      setDuration({ from: "", to: "" });
+  
+      setAlert({ message: "Program successfully added!", type: "success" });
+      // Optional: reset form fields here
     } catch (error) {
-      console.error("Error creating program:", error);
-      showAlert("Failed to create program. Please try again!");
+      console.error("Error adding document: ", error);
+      showAlert("Something went wrong while saving the program.");
     } finally {
       setLoading(false);
     }
   };
+  
+  
+  
+  
+  
+  
   const daysOfWeek = [
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
   ];
@@ -138,16 +205,12 @@ const [dailyTime, setDailyTime] = useState("");
         return "ℹ️"; // Default info icon
     }
   };
+  const getDaysInMonth = (month: number, year: number = new Date().getFullYear()): number => {
+    return new Date(year, month, 0).getDate();
+  };
 
   return (
-    <div className="dashboard-container">
-      <button
-        className="btn-toggle btn btn-primary btn-md w-40 sticky-btn"
-        onClick={() => setShowDetails(!showDetails)}
-      >
-        <i className={`bx ${showDetails ? "bxs-minus-circle" : "bxs-plus-circle"} bx-tada-hover`}></i>
-        <span className="text">{showDetails ? "Hide" : "Create New Program"}</span>
-      </button>
+<main>
 
       {showDetails && (
         <div className="overlay">
@@ -206,7 +269,8 @@ const [dailyTime, setDailyTime] = useState("");
   <select
     className="form-select"
     value={frequency}
-    onChange={(e) => setFrequency(e.target.value)}
+    onChange={handleFrequencyChange} // ✅ Now calling your custom function
+    
   >
     <option value="">Select Frequency</option>
     <option value="Yearly">Yearly</option>
@@ -216,30 +280,100 @@ const [dailyTime, setDailyTime] = useState("");
     <option value="Daily">Daily</option>
   </select>
 </div>
-{(frequency === "Yearly" || frequency === "Quarterly") && (
+
+{frequency === "Yearly" && (
   <div className="mb-3">
-    <label className="form-label">What date?</label>
-    <input
-      type="date"
-      className="form-control"
-      value={yearlyDate}
-      onChange={(e) => setYearlyDate(e.target.value)}
-    />
+    <label className="form-label">Select month and day:</label>
+    <div className="d-flex gap-2">
+      <select
+        className="form-select"
+        value={yearlyMonth}
+        onChange={(e) => {
+          setYearlyMonth(e.target.value);
+          setYearlyDay(""); // reset day if month changes
+        }}
+      >
+        <option value="">Month</option>
+        {Array.from({ length: 12 }, (_, i) => (
+          <option key={i + 1} value={i + 1}>
+            {new Date(0, i).toLocaleString("default", { month: "long" })}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="form-select"
+        value={yearlyDay}
+        onChange={(e) => setYearlyDay(e.target.value)}
+        disabled={!yearlyMonth}
+      >
+        <option value="">Day</option>
+        {yearlyMonth &&
+Array.from({ length: getDaysInMonth(Number(yearlyMonth)) }, (_, i) => (
+
+            <option key={i + 1} value={i + 1}>
+              {i + 1}
+            </option>
+          ))}
+      </select>
+    </div>
+  </div>
+)}
+
+{frequency === "Quarterly" && (
+  <div className="mb-3">
+    <label className="form-label">Select quarter and day:</label>
+    <div className="d-flex gap-2">
+      <select
+        className="form-select"
+        value={quarter}
+        onChange={(e) => {
+          setQuarter(e.target.value);
+          setQuarterDay(""); // reset day on quarter change
+        }}
+      >
+        <option value="">Quarter</option>
+        <option value="1">Q1 (Jan–Mar)</option>
+        <option value="2">Q2 (Apr–Jun)</option>
+        <option value="3">Q3 (Jul–Sep)</option>
+        <option value="4">Q4 (Oct–Dec)</option>
+      </select>
+
+      <select
+        className="form-select"
+        value={quarterDay}
+        onChange={(e) => setQuarterDay(e.target.value)}
+        disabled={!quarter}
+      >
+        <option value="">Day</option>
+        {quarter &&
+          Array.from({ length: getDaysInMonth(Number(quarter) * 3 - 2) }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {i + 1}
+            </option>
+          ))}
+      </select>
+    </div>
   </div>
 )}
 
 {frequency === "Monthly" && (
   <div className="mb-3">
-    <label className="form-label">What date each month?</label>
-    <input
-      type="date"
-      className="form-control"
-      value={monthlyDate}
-      onChange={(e) => setMonthlyDate(e.target.value)}
-    />
+    <label className="form-label">Select day of the month:</label>
+    <select
+      className="form-select"
+      value={monthlyDay}
+      onChange={(e) => setMonthlyDay(e.target.value)}
+    >
+      <option value="">Day</option>
+      {Array.from({ length: getDaysInMonth(new Date().getMonth() + 1) }, (_, i) => (
+        <option key={i + 1} value={i + 1}>
+          {i + 1}
+        </option>
+      ))}
+    </select>
   </div>
 )}
-
 {frequency === "Weekly" && (
   <div className="mb-3">
     <label className="form-label">What day of the week?</label>
@@ -257,7 +391,6 @@ const [dailyTime, setDailyTime] = useState("");
     </select>
   </div>
 )}
-
 {frequency === "Daily" && (
   <div className="mb-3">
     <label className="form-label">What time of day?</label>
@@ -317,8 +450,8 @@ const [dailyTime, setDailyTime] = useState("");
           <span>{alert.message}</span>
         </div>
       )}
-    </div>
+</main>
   );
 };
 
-export default Programs;
+export default EditPrograms;
