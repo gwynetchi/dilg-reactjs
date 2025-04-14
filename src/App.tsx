@@ -46,7 +46,7 @@ import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 
-import EvaluatorPrograms from "./pages/programs";
+import EvaluatorPrograms from "./pages/managePrograms";
 
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
