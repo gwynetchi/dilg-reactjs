@@ -432,8 +432,8 @@ const Communication: React.FC = () => {
 
                     <td>{comm.remarks}</td>
                     <td>
-                      <button className="btn btn-sm btn-warning" onClick={() => handleEdit(comm)}>
-                        ✏️ Edit
+                      <button className="edit-btn" onClick={() => handleEdit(comm)}>
+                        Edit
                       </button>
                     </td>
                   </tr>
