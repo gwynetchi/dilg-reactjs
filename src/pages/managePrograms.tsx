@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import "bootstrap/dist/css/bootstrap.min.css";
+import CreatePrograms from "./createPrograms";
 
 interface Program {
   id: string;
@@ -89,8 +90,10 @@ const ManagePrograms: React.FC = () => {
   );
 
   return (
+
     <div className="container py-4">
       <h2>Manage Programs</h2>
+      <CreatePrograms/>
       <input
         type="text"
         className="form-control mb-3"
