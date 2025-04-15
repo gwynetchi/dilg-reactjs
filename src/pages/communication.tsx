@@ -6,6 +6,7 @@ import {
   getDoc,
   collection,
   addDoc,
+  deleteDoc,
   getDocs,
   serverTimestamp,
   query,
@@ -209,6 +210,20 @@ const Communication: React.FC = () => {
     setShowDetails(true);
   };
   
+const handleDelete = async (id: string) => {
+  const confirmed = window.confirm("Are you sure you want to delete this communication?");
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "communications", id));
+    showAlert("Communication deleted successfully!", "success");
+    fetchSentCommunications(); // Refresh the list
+  } catch (error) {
+    console.error("Error deleting communication:", error);
+    showAlert("Failed to delete communication. Please try again.", "error");
+  }
+};
+
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -434,6 +449,13 @@ const Communication: React.FC = () => {
                     <td>
                       <button className="edit-btn" onClick={() => handleEdit(comm)}>
                         Edit
+                      </button>
+                    <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(comm.id)}
+                        style={{ marginLeft: "8px", backgroundColor: "#dc3545", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px" }}
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>
