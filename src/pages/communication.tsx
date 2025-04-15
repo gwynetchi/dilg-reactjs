@@ -32,7 +32,8 @@ const Communication: React.FC = () => {
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
-
+  const [imageUrl, setImageUrl] = useState<string>("");
+  
   const fetchUsers = async () => {
     try {
       console.log("Fetching users...");
@@ -63,8 +64,39 @@ const Communication: React.FC = () => {
     }
   };
 
-  const fetchSentCommunications = async () => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "uploads"); // Replace with your actual upload preset
     const auth = getAuth();
+    const user = auth.currentUser;
+    formData.append("folder", `communications/${user?.uid}`);
+    
+    try {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Upload error:", errorData);
+        throw new Error("Image upload failed.");
+      }
+  
+      const data = await response.json();
+      setImageUrl(data.secure_url); // ✅ Set image URL
+      showAlert("Image uploaded successfully!", "success");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      showAlert("Image upload failed.", "error");
+    }
+  };
+  
+  const fetchSentCommunications = async () => {
+    const auth = getAuth(); 
     const user = auth.currentUser;
     if (user) {
       try {
@@ -163,8 +195,11 @@ const Communication: React.FC = () => {
           recipients,
           deadline: new Date(deadline),
           remarks,
+          imageUrl,
           link: inputLink,
-        });
+        }
+      );
+      
         showAlert("Communication updated successfully!", "success");
       } else {
         // Create new communication
@@ -176,11 +211,26 @@ const Communication: React.FC = () => {
           remarks,
           link: inputLink,
           createdBy: user.uid,
+          imageUrl,
           createdAt: serverTimestamp(),
           submitID: [],
         });
         showAlert("Message Sent Successfully!", "success");
       }
+const newDoc: any = {
+  subject,
+  recipients,
+  deadline: new Date(deadline),
+  remarks,
+  link: inputLink,
+  createdBy: user.uid,
+  createdAt: serverTimestamp(),
+  submitID: [],
+};
+
+if (imageUrl) {
+  newDoc.imageUrl = imageUrl;
+}
   
       // Reset form
       setSubject("");
@@ -210,6 +260,8 @@ const Communication: React.FC = () => {
     setIsEditing(true);
     setShowDetails(true);
   };
+
+  
   
 const handleDelete = async (id: string) => {
   const confirmed = window.confirm("Are you sure you want to delete this communication?");
@@ -280,6 +332,16 @@ const handleDelete = async (id: string) => {
                     onChange={(e) => setSubject(e.target.value)}
                   />
                 </div>
+                <div className="col-md-12 mb-3">
+  <label className="form-label">Upload Image (optional):</label>
+  <input type="file" className="form-control" onChange={handleImageUpload} />
+  {imageUrl && (
+    <div className="mt-2">
+      <img src={imageUrl} alt="Uploaded" style={{ maxWidth: "100%", maxHeight: "200px" }} />
+    </div>
+  )}
+</div>
+
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
                   <Select
@@ -404,6 +466,7 @@ const handleDelete = async (id: string) => {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Attachment</th>
                   <th>Subject</th>
                   <th>Recipients</th>
                   <th>Deadline</th>
@@ -414,6 +477,16 @@ const handleDelete = async (id: string) => {
               <tbody>
                 {sentCommunications.map((comm) => (
                   <tr key={comm.id}>
+                    <td>
+                    {comm.imageUrl ? (
+                      <a href={comm.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={comm.imageUrl} alt="attachment" style={{ width: "80px" }} />
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                    </td>
+                    
                     <td>{comm.subject}</td>
                     <td>
                       {comm.recipients.map((userId: string, idx: number) => {

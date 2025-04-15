@@ -16,7 +16,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [, setUserProfilePic] = useState<string>("");
+  const [userProfilePic, setUserProfilePic] = useState<string>("");
 
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
@@ -76,27 +76,28 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     ],
   };
 
-  // Track authenticated user and fetch role
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
-
-        // Fetch user role from Firestore
+  
+        // Fetch user role and profile picture from Firestore
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           setUserRole(userSnap.data().role);
-          setUserProfilePic(userSnap.data().profilePic || "/person.svg"); // Default profile image if none available
+          setUserProfilePic(userSnap.data().profileImage || "https://res.cloudinary.com/your-cloud-name/image/upload/v1645027603/person.svg"); // Default profile image if none available
         }
       } else {
         setUserId(null);
         setUserRole(null);
       }
     });
-
+  
     return () => unsubscribe();
   }, []);
+  
+
   useEffect(() => {
     console.log("Current User ID:", userId);
   }, [userId]);
@@ -208,9 +209,10 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
       <Link to="/dashboards" className="brand">
-        <div className="navbar-logo">
-        <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
-        </div>
+      <div className="navbar-logo">
+        <img src="/images/logo1.png" alt="Logo" className="logo" />
+        <span className="text">Dashboard</span>
+      </div>
       </Link>
 
         <ul className="side-menu top">
@@ -286,15 +288,21 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           </div>
           <div className="position-relative" ref={profileMenuRef}>
           <button
-  className="btn btn-profile"
+  className="btn btn-profile p-0 border-0 bg-transparent"
   onClick={() => {
     if (userRole) {
       navigate(`/${userRole.toLowerCase()}/profile`);
     }
   }}
 >
-  <i className="bx bx-md bx-user"></i>
+  <img
+    src={userProfilePic}
+    alt="User"
+    className="rounded-circle"
+    style={{ width: "40px", height: "40px", objectFit: "cover" }}
+  />
 </button>
+
 
           </div></div>
         </nav>
