@@ -726,6 +726,11 @@ ol, ul {
 	border-radius: 20px;
 	font-weight: 700;
 }
+
+tr {
+	align-items: center;
+	text-align: center;
+}
 #content main .table-data .order table tr td .status.completed {
 	background: var(--blue);
 }
