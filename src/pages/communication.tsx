@@ -14,6 +14,7 @@ import {
   getDocs as firestoreGetDocs,
   updateDoc,
 } from "firebase/firestore";
+
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
@@ -447,12 +448,11 @@ const handleDelete = async (id: string) => {
 
                     <td>{comm.remarks}</td>
                     <td>
-                      <button className="edit-btn" onClick={() => handleEdit(comm)}>
+                      <button className="btn btn-sm btn-primary me-2"
+onClick={() => handleEdit(comm)}>
                         Edit
                       </button>
-                    <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(comm.id)}
+                    <button className="btn btn-sm btn-danger"  onClick={() => handleDelete(comm.id)}
                         style={{ marginLeft: "8px", backgroundColor: "#dc3545", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px" }}
                       >
                         Delete

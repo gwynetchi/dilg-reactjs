@@ -231,7 +231,7 @@ const Scoreboard = () => {
                   rowStyle = { backgroundColor: '#fff9c4' };
                 } else if (index === 1) {
                   medal = ' 🥈';
-                  rowStyle = { backgroundColor: '#f0f0f0' };
+                  rowStyle = { backgroundColor: '#c0c0c0' };
                 } else if (index === 2) {
                   medal = ' 🥉';
                   rowStyle = { backgroundColor: '#ffe0b2' };
@@ -249,7 +249,7 @@ const Scoreboard = () => {
                     <td>{user.score}</td>
                     {isEvaluator && (
                       <td>
-                        <button
+                        <button className="btn btn-sm btn-primary me-2"
                           onClick={() => toggleEditMode(user.id, user.score)}
                           style={{ marginRight: '10px' }}
                         >
