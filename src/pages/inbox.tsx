@@ -7,6 +7,7 @@ import { updateDoc, arrayUnion, deleteDoc } from "firebase/firestore";
 
 const Inbox: React.FC = () => {
   interface Communication {
+    imageUrl: any;
     recipients: string[];
     seenBy: any;
     id: string;
@@ -65,6 +66,7 @@ const Inbox: React.FC = () => {
           createdAt: data.createdAt || serverTimestamp(), // Ensure timestamp exists
           seenBy: data.seenBy || [], // Add default empty array for seenBy
           subject: data.subject || "No Subject", // Make sure subject is included, default to "No Subject" if missing
+          imageUrl: data.imageUrl || "", // ✅ include this
         };
       });
 
@@ -198,6 +200,7 @@ const Inbox: React.FC = () => {
                   <table className="inbox-table">
                     <thead>
                       <tr>
+                        <th>Attachment</th>
                         <th>Sender</th>
                         <th>Subject</th>
                         <th>Date</th>
@@ -215,6 +218,21 @@ const Inbox: React.FC = () => {
                             backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5",
                           }}
                         >
+                          <td>
+                            {msg.imageUrl ? (
+                              <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={msg.imageUrl}
+                                  alt="attachment"
+                                  style={{ width: "60px", borderRadius: "5px" }}
+                                  onClick={(e) => e.stopPropagation()} // prevent triggering row click
+                                />
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+
                           <td>{senderNames[msg.createdBy] || "Loading..."}</td>
                           <td>{msg.subject}</td>
                           <td>

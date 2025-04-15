@@ -9,7 +9,7 @@ const MessageDetails: React.FC = () => {
   
   const auth = getAuth();
   const currentUser: User | null = auth.currentUser; // Ensure proper type safety
-  
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState<any>(null);
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
@@ -46,11 +46,10 @@ const MessageDetails: React.FC = () => {
       try {
         const msgRef = doc(db, "communications", id);
         const msgSnap = await getDoc(msgRef);
-
         if (msgSnap.exists()) {
           const msgData = msgSnap.data();
           let senderName = "Unknown";
-
+        
           if (msgData.createdBy) {
             const senderRef = doc(db, "users", msgData.createdBy);
             const senderSnap = await getDoc(senderRef);
@@ -59,20 +58,23 @@ const MessageDetails: React.FC = () => {
               senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
             }
           }
-
+        
           setMessage({ ...msgData, senderName });
-
+        
+          // 👇 NEW: Set imageUrl from communications document
+          setImageUrl(msgData.imageUrl || null);
+        
           if (currentUser) {
             const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
             const submissionSnap = await getDoc(submissionRef);
             if (submissionSnap.exists()) {
               const submissionData = submissionSnap.data();
               setSubmissionStatus(submissionData);
-              // Fetch the remark from the submission data and set it
               setRemark(submissionData.remark || null); // Set the remark
             }
           }
-        } else {
+        }
+        else {
           console.error("Message not found");
         }
       } catch (error) {
@@ -107,6 +109,7 @@ const MessageDetails: React.FC = () => {
         status: "Submitted",
         submittedAt: serverTimestamp(),
         autoStatus,
+        imageUrl: imageUrl, // Use the existing state variable for the uploaded image URL
         evaluatorStatus: "Pending",
       }, { merge: true });
   
@@ -192,6 +195,17 @@ const MessageDetails: React.FC = () => {
           </div>
 
           <div className="message-details-container">
+          {imageUrl && (
+            <div className="submitted-image-preview">
+              <strong>Submitted Image:</strong>
+              <br />
+              <img
+                src={imageUrl}
+                alt="Submitted"
+                style={{ maxWidth: "100%", maxHeight: "400px", borderRadius: "10px", marginTop: "10px" }}
+              />
+            </div>
+          )}
             <h2><strong>Subject:</strong> {message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
             <p>
