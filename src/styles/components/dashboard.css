@@ -18,19 +18,19 @@ li {
 	--poppins: 'Poppins', sans-serif;
 	--lato: 'Lato', sans-serif;
 
-	--light: #330059;
-	--blue: #330059;
-	--light-blue: #330059;
-	--grey: #330059;
-	--dark-grey: #330059;
-	--dark: #330059;
-	--red: #330059;
-	--yellow: #330059;
-	--light-yellow: #330059;
-	--orange: #330059;
-	--light-orange: #330059;
-	--DILG: #330059;
-	--calamansi: #330059;
+	--light: #F9F9F9;
+	--blue: #3C91E6;
+	--light-blue: #CFE8FF;
+	--grey: #eee;
+	--dark-grey: #AAAAAA;
+	--dark: #342E37;
+	--red: #DB504A;
+	--yellow: #FFCE26;
+	--light-yellow: #FFF2C6;
+	--orange: #FD7238;
+	--light-orange: #FFE0D3;
+	--DILG: #ffffe0;
+	--calamansi: #fffece;
 }
 
 html {
