@@ -9,6 +9,7 @@ import {
   getDoc,
   onSnapshot,
   documentId,
+  arrayRemove,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -21,7 +22,7 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { Table } from "react-bootstrap";
+import { Table, Modal, Button, Form } from "react-bootstrap";
 import "../styles/components/pages.css";
 import { Link } from "react-router-dom";
 
@@ -40,7 +41,8 @@ interface Submission {
   submittedAt?: { seconds: number };
   status?: string;
   autoStatus?: string;
-  evaluatorStatus?: string; // Keep only this field
+  evaluatorStatus?: string;
+  remark?: string; // <-- new field
 }
 
 interface ChartData {
@@ -71,7 +73,10 @@ const Analytics: React.FC = () => {
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
   const [selectedDeadline, setSelectedDeadline] = useState<string | null>(null);
   const [users, setUsers] = useState<Record<string, string>>({});
-  
+  const [showRemarkModal, setShowRemarkModal] = useState(false);
+const [currentSubmissionId, setCurrentSubmissionId] = useState<string | null>(null);
+const [remarkText, setRemarkText] = useState("");
+
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "communications"), (snapshot) => {
@@ -158,7 +163,18 @@ useEffect(() => {
     if (commSnap.exists()) {
       const data = commSnap.data() as Communication;
       const deadline = data.deadline?.seconds ? data.deadline.seconds * 1000 : null;
-      setSelectedDeadline(deadline ? new Date(deadline).toLocaleString() : "No Deadline");
+      setSelectedDeadline(
+        deadline
+          ? new Date(deadline).toLocaleString("en-US", {
+              year: "numeric",
+              month: "long", // Converts the month to words like "April"
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              hour12: true,
+            }).replace("at", "") // Remove the "at" word
+          : "No Deadline"
+      );      
 
       return { deadline, submitIDs: data.submitID || [], recipients: data.recipients || [] };
     }
@@ -340,7 +356,15 @@ useEffect(() => {
                   <td>{users[sub.submittedBy] || "Unknown User"}</td>
                   <td>
                     {sub.submittedAt
-                      ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
+                      ? new Date(sub.submittedAt.seconds * 1000).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",  // Use full month name (e.g., "April")
+                          day: "numeric", // Numeric day
+                        }) + ' ' + new Date(sub.submittedAt.seconds * 1000).toLocaleTimeString("en-US", {
+                          hour: "numeric",   // Hour in 12-hour format
+                          minute: "numeric", // Minute
+                          hour12: true,      // Use 12-hour clock (AM/PM)
+                        }).replace(/:([0-9]{2})$/, ':$1') // Prevent extra space before time
                       : "Not Submitted"}
                   </td>
                   <td>{sub.autoStatus || "No Submission"}</td>
@@ -379,6 +403,18 @@ useEffect(() => {
                         }),
                       }}
                     />
+                    <Button
+  variant="outline-primary"
+  size="sm"
+  onClick={() => {
+    setCurrentSubmissionId(sub.id);
+    setRemarkText(sub.remark || ""); // optional prefill
+    setShowRemarkModal(true);
+  }}
+>
+  Add Remark
+</Button>
+
                   </td>
                 </tr>
               ))
@@ -391,6 +427,51 @@ useEffect(() => {
             )}
           </tbody>
         </Table>
+        <Modal show={showRemarkModal} onHide={() => setShowRemarkModal(false)}>
+  <Modal.Header closeButton>
+    <Modal.Title>Add Remark</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    <Form.Group>
+      <Form.Label>Remark</Form.Label>
+      <Form.Control
+        as="textarea"
+        rows={4}
+        value={remarkText}
+        onChange={(e) => setRemarkText(e.target.value)}
+      />
+    </Form.Group>
+  </Modal.Body>
+  <Modal.Footer>
+    <Button variant="secondary" onClick={() => setShowRemarkModal(false)}>
+      Cancel
+    </Button>
+    <Button variant="primary" onClick={async () => {
+  if (currentSubmissionId) {
+    const submissionRef = doc(db, "submittedDetails", currentSubmissionId);
+    
+    // Get the submission to access submittedBy
+    const submissionSnap = await getDoc(submissionRef);
+    if (submissionSnap.exists()) {
+      const submittedBy = submissionSnap.data().submittedBy;
+
+      // Update the remark
+      await updateDoc(submissionRef, { remark: remarkText });
+
+      // Remove user from 'seenBy' in 'communications'
+      const commsRef = doc(db, "communications", selectedSubject); // Adjust ID if needed
+      await updateDoc(commsRef, {
+        seenBy: arrayRemove(submittedBy)
+      });
+    }
+  }
+  setShowRemarkModal(false);
+}}>
+  Save Remark
+</Button>
+  </Modal.Footer>
+</Modal>
+
       </main>
     </section>
   </div>

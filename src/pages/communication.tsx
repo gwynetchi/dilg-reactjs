@@ -6,12 +6,15 @@ import {
   getDoc,
   collection,
   addDoc,
+  deleteDoc,
   getDocs,
   serverTimestamp,
   query,
   where,
   getDocs as firestoreGetDocs,
+  updateDoc,
 } from "firebase/firestore";
+
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
@@ -22,12 +25,15 @@ const Communication: React.FC = () => {
   const [remarks, setRemarks] = useState("");
   const [inputLink, setInputLink] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
-
+  const [imageUrl, setImageUrl] = useState<string>("");
+  
   const fetchUsers = async () => {
     try {
       console.log("Fetching users...");
@@ -58,8 +64,39 @@ const Communication: React.FC = () => {
     }
   };
 
-  const fetchSentCommunications = async () => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "uploads"); // Replace with your actual upload preset
     const auth = getAuth();
+    const user = auth.currentUser;
+    formData.append("folder", `communications/${user?.uid}`);
+    
+    try {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Upload error:", errorData);
+        throw new Error("Image upload failed.");
+      }
+  
+      const data = await response.json();
+      setImageUrl(data.secure_url); // ✅ Set image URL
+      showAlert("Image uploaded successfully!", "success");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      showAlert("Image upload failed.", "error");
+    }
+  };
+  
+  const fetchSentCommunications = async () => {
+    const auth = getAuth(); 
     const user = auth.currentUser;
     if (user) {
       try {
@@ -125,59 +162,121 @@ const Communication: React.FC = () => {
       showAlert("Please fill in all fields before sending");
       return;
     }
-
+  
     const currentDate = new Date();
     const deadlineDate = new Date(deadline);
-    
-    // Check if the deadline is in the past
+  
     if (deadlineDate < currentDate) {
       showAlert("Invalid Date: The deadline cannot be in the past");
       return;
     }
-
+  
     if (inputLink && !inputLink.startsWith("https://")) {
       showAlert("Only HTTPS links are allowed!");
       return;
     }
+  
     setLoading(true);
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-
+  
       if (!user) {
         showAlert("You must be logged in to send a communication");
         setLoading(false);
         return;
       }
+  
+      if (isEditing && editingId) {
+        // Update existing communication
+        const docRef = doc(db, "communications", editingId);
+        await updateDoc(docRef, {
+          subject,
+          recipients,
+          deadline: new Date(deadline),
+          remarks,
+          imageUrl,
+          link: inputLink,
+        }
+      );
+      
+        showAlert("Communication updated successfully!", "success");
+      } else {
+        // Create new communication
+        const communicationRef = collection(db, "communications");
+        await addDoc(communicationRef, {
+          subject,
+          recipients,
+          deadline: new Date(deadline),
+          remarks,
+          link: inputLink,
+          createdBy: user.uid,
+          imageUrl,
+          createdAt: serverTimestamp(),
+          submitID: [],
+        });
+        showAlert("Message Sent Successfully!", "success");
+      }
+const newDoc: any = {
+  subject,
+  recipients,
+  deadline: new Date(deadline),
+  remarks,
+  link: inputLink,
+  createdBy: user.uid,
+  createdAt: serverTimestamp(),
+  submitID: [],
+};
 
-      const communicationRef = collection(db, "communications");
-      await addDoc(communicationRef, {
-        subject,
-        recipients, // Store the userIds
-        deadline: new Date(deadline),
-        remarks,
-        link: inputLink,
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        submitID: [],
-      });
-
-      showAlert("Message Sent Successfully!", "success");
-
+if (imageUrl) {
+  newDoc.imageUrl = imageUrl;
+}
+  
+      // Reset form
       setSubject("");
-      setRecipients([]); // Reset selection
+      setRecipients([]);
       setDeadline("");
       setRemarks("");
       setInputLink("");
-
-      fetchSentCommunications(); // Fetch sent communications after sending new one
+      setIsEditing(false);
+      setEditingId(null);
+  
+      fetchSentCommunications();
     } catch (error) {
-      console.error("Error sending message:", error);
-      showAlert("Failed to send message. Please try again!");
+      console.error("Error submitting message:", error);
+      showAlert("Failed to process message. Please try again!");
     } finally {
       setLoading(false);
     }
   };
+  
+  const handleEdit = (comm: any) => {
+    setSubject(comm.subject);
+    setRecipients(comm.recipients);
+    setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16)); // for datetime-local
+    setRemarks(comm.remarks);
+    setInputLink(comm.link || "");
+    setEditingId(comm.id);
+    setIsEditing(true);
+    setShowDetails(true);
+  };
+
+  
+  
+const handleDelete = async (id: string) => {
+  const confirmed = window.confirm("Are you sure you want to delete this communication?");
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "communications", id));
+    showAlert("Communication deleted successfully!", "success");
+    fetchSentCommunications(); // Refresh the list
+  } catch (error) {
+    console.error("Error deleting communication:", error);
+    showAlert("Failed to delete communication. Please try again.", "error");
+  }
+};
+
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -233,6 +332,16 @@ const Communication: React.FC = () => {
                     onChange={(e) => setSubject(e.target.value)}
                   />
                 </div>
+                <div className="col-md-12 mb-3">
+  <label className="form-label">Upload Image (optional):</label>
+  <input type="file" className="form-control" onChange={handleImageUpload} />
+  {imageUrl && (
+    <div className="mt-2">
+      <img src={imageUrl} alt="Uploaded" style={{ maxWidth: "100%", maxHeight: "200px" }} />
+    </div>
+  )}
+</div>
+
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
                   <Select
@@ -357,15 +466,27 @@ const Communication: React.FC = () => {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Attachment</th>
                   <th>Subject</th>
                   <th>Recipients</th>
                   <th>Deadline</th>
                   <th>Remarks</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {sentCommunications.map((comm) => (
                   <tr key={comm.id}>
+                    <td>
+                    {comm.imageUrl ? (
+                      <a href={comm.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={comm.imageUrl} alt="attachment" style={{ width: "80px" }} />
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                    </td>
+                    
                     <td>{comm.subject}</td>
                     <td>
                       {comm.recipients.map((userId: string, idx: number) => {
@@ -381,8 +502,35 @@ const Communication: React.FC = () => {
                         );
                       })}
                     </td>
-                    <td>{new Date(comm.deadline.seconds * 1000).toLocaleString()}</td>
+                    <td>
+                      {(() => {
+                        const date = new Date(comm.deadline.seconds * 1000);
+                        const datePart = date.toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        });
+                        const timePart = date.toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                        return `${datePart} at ${timePart}`;
+                      })()}
+                    </td>
+
                     <td>{comm.remarks}</td>
+                    <td>
+                      <button className="btn btn-sm btn-primary me-2"
+onClick={() => handleEdit(comm)}>
+                        Edit
+                      </button>
+                    <button className="btn btn-sm btn-danger"  onClick={() => handleDelete(comm.id)}
+                        style={{ marginLeft: "8px", backgroundColor: "#dc3545", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px" }}
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -46,6 +46,9 @@ import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 
+import EvaluatorPrograms from "./pages/managePrograms";
+
+
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
     { path: "/admin/dashboard", element: <AdminDashboard /> },
@@ -74,6 +77,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics/user-analytics", element: <UserAnalytics /> },
     { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
     { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
+    { path: "/evaluator/programs", element: <EvaluatorPrograms /> },
 
   ],
   LGU: [

@@ -102,10 +102,26 @@ const Calendar: React.FC = () => {
   };
 
   return (
+    <main>
     <div className="dashboard-container">
       <section id="content">
-        <main>
-      <h2>Deadlines</h2>
+
+        <div className="head-title">
+            <div className="left">
+              <h1>Deadlines</h1>
+              <ul className="breadcrumb">
+                <li>
+                  <a href="/dashboads" className="active">Home</a>
+                </li>
+                <li>
+                  <i className="bx bx-chevron-right"></i>
+                </li>
+                <li>
+                  <a>Calendar</a>
+                </li>
+              </ul>
+            </div>
+          </div>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
@@ -135,9 +151,10 @@ const Calendar: React.FC = () => {
         )}
         
       />
-      </main>
+
       </section>
     </div>
+    </main>
   );
 };
 
