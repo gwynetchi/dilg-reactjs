@@ -7,9 +7,11 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import "bootstrap/dist/css/bootstrap.min.css";
 import CreatePrograms from "./createPrograms";
+import Select from "react-select";
+import "bootstrap/dist/css/bootstrap.min.css";
 
+// Define Program interface
 interface Program {
   id: string;
   programName: string;
@@ -27,12 +29,37 @@ interface Program {
   quarterDay?: string;
 }
 
+// Define User interface for select options
+interface User {
+  id: string;
+  fullName: string;
+}
+
 const ManagePrograms: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Program>>({});
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
+  // Fetch users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const snapshot = await getDocs(collection(db, "users"));
+      const userList = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        const fullName = `${data.fname} ${data.mname || ""} ${data.lname}`.trim();
+        return { id: doc.id, fullName };
+      });
+      setUsers(userList);
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Fetch programs
   useEffect(() => {
     const fetchPrograms = async () => {
       const snapshot = await getDocs(collection(db, "programs"));
@@ -54,22 +81,6 @@ const ManagePrograms: React.FC = () => {
     setEditData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleParticipantChange = (index: number, value: string) => {
-    const updated = [...(editData.participants || [])];
-    updated[index] = value;
-    handleChange("participants", updated);
-  };
-
-  const addParticipant = () => {
-    handleChange("participants", [...(editData.participants || []), ""]);
-  };
-
-  const removeParticipant = (index: number) => {
-    const updated = [...(editData.participants || [])];
-    updated.splice(index, 1);
-    handleChange("participants", updated);
-  };
-
   const saveChanges = async () => {
     if (!editingId) return;
     const programRef = doc(db, "programs", editingId);
@@ -78,12 +89,19 @@ const ManagePrograms: React.FC = () => {
     setPrograms((prev) =>
       prev.map((prog) => (prog.id === editingId ? { ...prog, ...editData } : prog))
     );
-  };
+      // Show success alert
+  setShowSuccess(true);
+  setTimeout(() => setShowSuccess(false), 3000); // hides after 3s
+};
+const deleteProgram = async (id: string) => {
+  await deleteDoc(doc(db, "programs", id));
+  setPrograms(programs.filter((p) => p.id !== id));
 
-  const deleteProgram = async (id: string) => {
-    await deleteDoc(doc(db, "programs", id));
-    setPrograms(programs.filter((p) => p.id !== id));
-  };
+  // Show delete success message
+  setShowDeleteSuccess(true);
+  setTimeout(() => setShowDeleteSuccess(false), 3000); // Hide after 3s
+};
+
 
   const filteredPrograms = programs.filter((p) =>
     p.programName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -92,8 +110,22 @@ const ManagePrograms: React.FC = () => {
   return (
 
     <div className="container py-4">
+      <CreatePrograms />
       <h2>Manage Programs</h2>
-      <CreatePrograms/>
+      {showSuccess && (
+  <div className="alert alert-success alert-dismissible fade show" role="alert">
+    ✅ Program updated successfully!
+    <button type="button" className="btn-close" onClick={() => setShowSuccess(false)}></button>
+  </div>
+)}
+
+{showDeleteSuccess && (
+  <div className="alert alert-danger alert-dismissible fade show" role="alert">
+    🗑️ Program deleted successfully!
+    <button type="button" className="btn-close" onClick={() => setShowDeleteSuccess(false)}></button>
+  </div>
+)}
+
       <input
         type="text"
         className="form-control mb-3"
@@ -101,6 +133,7 @@ const ManagePrograms: React.FC = () => {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
+
       <table className="table table-striped">
         <thead>
           <tr>
@@ -151,11 +184,7 @@ const ManagePrograms: React.FC = () => {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Edit Program</h5>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-              ></button>
+              <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div className="modal-body">
               <input
@@ -204,32 +233,155 @@ const ManagePrograms: React.FC = () => {
                   />
                 </div>
               </div>
-              <input
-                className="form-control mb-2"
+
+              {/* Frequency */}
+              <select
+                className="form-select mb-2"
                 value={editData.frequency || ""}
                 onChange={(e) => handleChange("frequency", e.target.value)}
-                placeholder="Frequency"
-              />
+              >
+                <option value="">Select Frequency</option>
+                <option value="yearly">Yearly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+                <option value="daily">Daily</option>
+              </select>
+
+              {/* Frequency-specific Inputs */}
+              {editData.frequency === "daily" && (
+                <input
+                  type="time"
+                  className="form-control mb-2"
+                  value={editData.dailyTime || ""}
+                  onChange={(e) => handleChange("dailyTime", e.target.value)}
+                />
+              )}
+
+              {editData.frequency === "weekly" && (
+                <select
+                  className="form-select mb-2"
+                  value={editData.weeklyDay || ""}
+                  onChange={(e) => handleChange("weeklyDay", e.target.value)}
+                >
+                  <option value="">Select a day</option>
+                  {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map(
+                    (day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
+                    )
+                  )}
+                </select>
+              )}
+
+              {editData.frequency === "monthly" && (
+                <select
+                  className="form-select mb-2"
+                  value={editData.monthlyDay || ""}
+                  onChange={(e) => handleChange("monthlyDay", e.target.value)}
+                >
+                  <option value="">Select day of month</option>
+                  {Array.from({ length: 31 }, (_, i) => (
+                    <option key={i + 1} value={String(i + 1)}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {editData.frequency === "quarterly" && (
+                <div className="d-flex gap-2 mb-2">
+                  <select
+                    className="form-select"
+                    value={editData.quarter || ""}
+                    onChange={(e) => handleChange("quarter", e.target.value)}
+                  >
+                    <option value="">Select Quarter</option>
+                    <option value="1">Q1 (Jan–Mar)</option>
+                    <option value="2">Q2 (Apr–Jun)</option>
+                    <option value="3">Q3 (Jul–Sep)</option>
+                    <option value="4">Q4 (Oct–Dec)</option>
+                  </select>
+
+                  <select
+                    className="form-select"
+                    value={editData.quarterDay || ""}
+                    onChange={(e) => handleChange("quarterDay", e.target.value)}
+                    disabled={!editData.quarter}
+                  >
+                    <option value="">Select Day</option>
+                    {editData.quarter &&
+                      Array.from(
+                        { length: new Date(new Date().getFullYear(), Number(editData.quarter) * 3 - 2, 0).getDate() },
+                        (_, i) => (
+                          <option key={i + 1} value={String(i + 1)}>
+                            {i + 1}
+                          </option>
+                        )
+                      )}
+                  </select>
+                </div>
+              )}
+
+              {editData.frequency === "yearly" && (
+                <div className="d-flex gap-2 mb-2">
+                  <select
+                    className="form-select"
+                    value={editData.yearlyMonth || ""}
+                    onChange={(e) => handleChange("yearlyMonth", e.target.value)}
+                  >
+                    <option value="">Select Month</option>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={String(i + 1)}>
+                        {new Date(0, i).toLocaleString("default", { month: "long" })}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    className="form-select"
+                    value={editData.yearlyDay || ""}
+                    onChange={(e) => handleChange("yearlyDay", e.target.value)}
+                    disabled={!editData.yearlyMonth}
+                  >
+                    <option value="">Select Day</option>
+                    {editData.yearlyMonth &&
+                      Array.from(
+                        { length: new Date(new Date().getFullYear(), Number(editData.yearlyMonth), 0).getDate() },
+                        (_, i) => (
+                          <option key={i + 1} value={String(i + 1)}>
+                            {i + 1}
+                          </option>
+                        )
+                      )}
+                  </select>
+                </div>
+              )}
+
+              {/* Participants */}
               <div className="mb-2">
                 <label className="form-label">Participants</label>
-                {(editData.participants || []).map((p, idx) => (
-                  <div key={idx} className="input-group mb-1">
-                    <input
-                      className="form-control"
-                      value={p}
-                      onChange={(e) => handleParticipantChange(idx, e.target.value)}
-                    />
-                    <button
-                      className="btn btn-outline-danger"
-                      onClick={() => removeParticipant(idx)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button className="btn btn-outline-primary" onClick={addParticipant}>
-                  Add Participant
-                </button>
+                <Select
+                  isMulti
+                  options={users.map((user) => ({
+                    value: user.id,
+                    label: user.fullName,
+                  }))}
+                  value={(editData.participants || [])
+                    .map((id) => {
+                      const user = users.find((u) => u.id === id);
+                      return user ? { value: user.id, label: user.fullName } : null;
+                    })
+                    .filter(Boolean)} 
+                  onChange={(selectedOptions) =>
+                    handleChange(
+                      "participants",
+                      selectedOptions.map((option) => option?.value).filter((value) => value !== null)
+                    )
+                  }
+                  placeholder="Select participants..."
+                />
               </div>
             </div>
             <div className="modal-footer">

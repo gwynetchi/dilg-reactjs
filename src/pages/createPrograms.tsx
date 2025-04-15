@@ -15,8 +15,6 @@ const CreatePrograms: React.FC = () => {
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
   const [showDetails, setShowDetails] = useState(false);
-
-  
   const [participants, setParticipants] = useState<string[]>([]);
   const [duration, setDuration] = useState({ from: "", to: "" });
   const [loading, setLoading] = useState(false);
@@ -32,10 +30,6 @@ const CreatePrograms: React.FC = () => {
   const [frequency, setFrequency] = useState("");
   const [, setFrequencyDetails] = useState({});
 
-  
-
-
-  
   // Fetch users for participant selection
   const fetchUsers = async () => {
     try {
@@ -139,7 +133,7 @@ const CreatePrograms: React.FC = () => {
   
     try {
       let frequencyDetails: any = {};
-  
+
       switch (frequency) {
         case "Daily":
           frequencyDetails = { dailyTime };
@@ -159,19 +153,26 @@ const CreatePrograms: React.FC = () => {
         default:
           break;
       }
-  
+      
+      // Save everything as flat fields
       await addDoc(collection(db, "programs"), {
         programName,
         link,
         description,
         participants,
         frequency,
-        frequencyDetails,
         duration,
+        dailyTime,
+        weeklyDay,
+        monthlyDay,
+        yearlyMonth,
+        yearlyDay,
+        quarter,
+        quarterDay,
         createdAt: serverTimestamp(),
         createdBy: getAuth().currentUser?.uid || null,
       });
-  
+      
       setAlert({ message: "Program successfully added!", type: "success" });
       // Optional: reset form fields here
     } catch (error) {
@@ -181,12 +182,7 @@ const CreatePrograms: React.FC = () => {
       setLoading(false);
     }
   };
-  
-  
-  
-  
-  
-  
+
   const daysOfWeek = [
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
   ];
