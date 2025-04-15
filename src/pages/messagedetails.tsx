@@ -9,11 +9,12 @@ const MessageDetails: React.FC = () => {
   
   const auth = getAuth();
   const currentUser: User | null = auth.currentUser; // Ensure proper type safety
-  
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState<any>(null);
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [remark, setRemark] = useState<string | null>(null); // State for storing the added remark
   
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -45,11 +46,10 @@ const MessageDetails: React.FC = () => {
       try {
         const msgRef = doc(db, "communications", id);
         const msgSnap = await getDoc(msgRef);
-
         if (msgSnap.exists()) {
           const msgData = msgSnap.data();
           let senderName = "Unknown";
-
+        
           if (msgData.createdBy) {
             const senderRef = doc(db, "users", msgData.createdBy);
             const senderSnap = await getDoc(senderRef);
@@ -58,17 +58,23 @@ const MessageDetails: React.FC = () => {
               senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
             }
           }
-
+        
           setMessage({ ...msgData, senderName });
-
+        
+          // 👇 NEW: Set imageUrl from communications document
+          setImageUrl(msgData.imageUrl || null);
+        
           if (currentUser) {
             const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
             const submissionSnap = await getDoc(submissionRef);
             if (submissionSnap.exists()) {
-              setSubmissionStatus(submissionSnap.data());
+              const submissionData = submissionSnap.data();
+              setSubmissionStatus(submissionData);
+              setRemark(submissionData.remark || null); // Set the remark
             }
           }
-        } else {
+        }
+        else {
           console.error("Message not found");
         }
       } catch (error) {
@@ -103,15 +109,15 @@ const MessageDetails: React.FC = () => {
         status: "Submitted",
         submittedAt: serverTimestamp(),
         autoStatus,
+        imageUrl: imageUrl, // Use the existing state variable for the uploaded image URL
         evaluatorStatus: "Pending",
       }, { merge: true });
   
       // ✅ Update the "communications" collection to store the submission ID
       const messageRef = doc(db, "communications", id);
-await updateDoc(messageRef, { 
-  submitID: arrayUnion(submissionId) // ✅ Append the submissionId to the submitID array
-});
-
+      await updateDoc(messageRef, { 
+        submitID: arrayUnion(submissionId) // ✅ Append the submissionId to the submitID array
+      });
   
       // Fetch the updated submission status
       const updatedSubmissionSnap = await getDoc(submissionRef);
@@ -189,11 +195,40 @@ await updateDoc(messageRef, {
           </div>
 
           <div className="message-details-container">
+          {imageUrl && (
+            <div className="submitted-image-preview">
+              <strong>Submitted Image:</strong>
+              <br />
+              <img
+                src={imageUrl}
+                alt="Submitted"
+                style={{ maxWidth: "100%", maxHeight: "400px", borderRadius: "10px", marginTop: "10px" }}
+              />
+            </div>
+          )}
             <h2><strong>Subject:</strong> {message.subject}</h2>
             <p><strong>From:</strong> {message.senderName}</p>
-            <p><strong>Sent:</strong> {message.createdAt?.seconds ? new Date(message.createdAt.seconds * 1000).toLocaleString() : "Unknown"}</p>
-            <p><strong>Remarks:</strong> {message.remarks || "No remarks available"}</p>
-            
+            <p>
+              <strong>Sent:</strong>{" "}
+              {message.createdAt?.seconds
+                ? (() => {
+                    const created = new Date(message.createdAt.seconds * 1000);
+                    const date = created.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    }); // e.g., April 7, 2025
+                    const time = created.toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    }); // e.g., 2:32 PM
+                    return `${date} ${time}`;
+                  })()
+                : "Unknown"}
+            </p>
+            <p><strong>Content:</strong> {message.remarks || "No remarks/comments available"}</p>
+            <p><strong>Additional Remarks:</strong> {remark || "No additional remarks available"}</p>
             {message.link && (
               <div>
                 <strong>Link:</strong> <a href={message.link} target="_blank" rel="noopener noreferrer">{message.link}</a>
@@ -202,13 +237,31 @@ await updateDoc(messageRef, {
                   Preview
                 </button>
               </div>
-            )}
-            
-            <p><strong>Deadline:</strong> {message.deadline?.seconds ? new Date(message.deadline.seconds * 1000).toLocaleString() : "No deadline specified"}</p>
-            
-            <br />
+            )}     
+                  <br />
+                  <p>
+                    <strong>Deadline:</strong>{" "}
+                    {message.deadline?.seconds
+                      ? (() => {
+                          const date = new Date(message.deadline.seconds * 1000);
+                          const options: Intl.DateTimeFormatOptions = {
+                            month: "long",
+                            day: "2-digit",
+                            year: "numeric",
+                          };
+                          const datePart = new Intl.DateTimeFormat("en-US", options).format(date);
+                          const timePart = date.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          });
+                          return `${datePart} ${timePart}`;
+                        })()
+                      : "No deadline specified"}
+                  </p>
+      
             {submissionStatus ? (
-              <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString()}</p>
+              <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             ) : (
               message.recipients?.includes(currentUser?.uid) && (
                 <button onClick={handleMarkAsSubmitted} className="btn-submit bx bx-check btn btn-success btn-md w-20">
@@ -216,6 +269,11 @@ await updateDoc(messageRef, {
                 </button>
               )
             )}
+
+            <br/>
+            <p><strong>Additional Remarks:</strong> <span className="additional-remarks">{submissionStatus?.remark || "No additional remarks available"}</span></p>
+
+        
           </div>
         </main>
       </section>

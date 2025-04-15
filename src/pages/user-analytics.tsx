@@ -4,8 +4,8 @@ import { collection, query, where, onSnapshot, getDoc, doc } from "firebase/fire
 import { db } from "../firebase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
 import { Table } from "react-bootstrap";
-import "../styles/components/pages.css";
 import { Link } from "react-router-dom";
+import "../styles/components/pages.css";
 
 interface Submission {
   id: string;
@@ -38,6 +38,7 @@ const Analytics: React.FC = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
 
+  // Fetch users data
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
       const usersList = snapshot.docs.reduce((acc, doc) => {
@@ -50,8 +51,10 @@ const Analytics: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Fetch submissions based on selected user, month, and year
   useEffect(() => {
     if (!selectedUser) return;
+
     let submissionsQuery = query(
       collection(db, "submittedDetails"),
       where("submittedBy", "==", selectedUser)
@@ -78,6 +81,7 @@ const Analytics: React.FC = () => {
         });
       }
 
+      // Fetch communication subject for each submission
       for (const sub of fetchedSubmissions) {
         if (sub.messageID) {
           const commDoc = await getDoc(doc(db, "communications", sub.messageID));
@@ -89,9 +93,11 @@ const Analytics: React.FC = () => {
 
       setSubmissions(fetchedSubmissions);
     });
+
     return () => unsubscribe();
   }, [selectedUser, selectedMonth, selectedYear]);
 
+  // Prepare data for the chart
   useEffect(() => {
     const statusCount: Record<string, number> = allStatuses.reduce(
       (acc, status) => ({ ...acc, [status]: 0 }),
@@ -109,11 +115,11 @@ const Analytics: React.FC = () => {
   return (
     <div className="dashboard-container">
       <section id="content">
-      <main>
-        <div className="head-title">
+        <main>
+          <div className="head-title">
             <div className="left">
-            <h2>User Analytics Report</h2>
-            <ul className="breadcrumb">
+              <h2>User Analytics Report</h2>
+              <ul className="breadcrumb">
                 <li>
                   <Link to="/dashboards" className="active">Home</Link>
                 </li>
@@ -121,87 +127,99 @@ const Analytics: React.FC = () => {
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <Link to="/evaluator/analytics" className="active" >Analytics</Link>
+                  <Link to="/evaluator/analytics" className="active">Analytics</Link>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <Link to="" >User Analytics Report</Link>
+                  <Link to="">User Analytics Report</Link>
                 </li>
               </ul>
             </div>
           </div>
-        <div className="dropdown-container">
-          <Select
-            options={Object.entries(users).map(([id, name]) => ({ value: id, label: name }))}
-            onChange={(option) => setSelectedUser(option?.value || "")}
-            placeholder="Select User"
-            isClearable
-          />
-          <Select
-            options={Array.from({ length: 12 }, (_, i) => ({ value: i, label: new Date(0, i).toLocaleString('default', { month: 'long' }) }))}
-            onChange={(option) => setSelectedMonth(option?.value ?? null)}
-            placeholder="Select Month"
-            isClearable
-          />
-          <Select
-            options={Array.from({ length: 10 }, (_, i) => ({ value: new Date().getFullYear() - i, label: (new Date().getFullYear() - i).toString() }))}
-            onChange={(option) => setSelectedYear(option?.value ?? null)}
-            placeholder="Select Year"
-            isClearable
-          />
-        </div>
 
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <XAxis dataKey="status" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" name="Status Count" barSize={40}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={statusColors[entry.status]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+          <div className="dropdown-container">
+            <Select
+              options={Object.entries(users).map(([id, name]) => ({ value: id, label: name }))}
+              onChange={(option) => setSelectedUser(option?.value || "")}
+              placeholder="Select User"
+              isClearable
+            />
+            <Select
+              options={Array.from({ length: 12 }, (_, i) => ({ value: i, label: new Date(0, i).toLocaleString('default', { month: 'long' }) }))}
+              onChange={(option) => setSelectedMonth(option?.value ?? null)}
+              placeholder="Select Month"
+              isClearable
+            />
+            <Select
+              options={Array.from({ length: 10 }, (_, i) => ({ value: new Date().getFullYear() - i, label: (new Date().getFullYear() - i).toString() }))}
+              onChange={(option) => setSelectedYear(option?.value ?? null)}
+              placeholder="Select Year"
+              isClearable
+            />
+          </div>
 
-        <h3>Submission Details</h3>
-        <Table striped bordered hover>
-          <thead>
-            <tr>
-              <th>Submitted At</th>
-              <th>Subject in Communications</th>
-              <th>Evaluator Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {submissions.length > 0 ? (
-              submissions.map((sub) => (
-                <tr key={sub.id}>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <XAxis dataKey="status" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" name="Status Count" barSize={40}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={statusColors[entry.status]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+
+          <h3>Submission Details</h3>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Submitted At</th>
+                <th>Subject in Communications</th>
+                <th>Evaluator Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {submissions.length > 0 ? (
+                submissions.map((sub) => (
+                  <tr key={sub.id}>
                   <td>
                     {sub.submittedAt
-                      ? new Date(sub.submittedAt.seconds * 1000).toLocaleString()
+                      ? (() => {
+                          const date = new Date(sub.submittedAt.seconds * 1000);
+                          const formattedDate = date.toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          });
+                          const formattedTime = date.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "numeric",
+                            hour12: true,
+                          });
+                          return `${formattedDate} ${formattedTime}`;
+                        })()
                       : "Not Submitted"}
                   </td>
-                  <td>{sub.subject || "N/A"}</td>
-                  <td>{sub.evaluatorStatus || "No Submission"}</td>
+                    <td>{sub.subject || "N/A"}</td>
+                    <td>{sub.evaluatorStatus || "No Submission"}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3}>No submissions found.</td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={3}>No submissions found.</td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
-      </main>
+              )}
+            </tbody>
+          </Table>
+        </main>
       </section>
-    
     </div>
   );
 };
 
 export default Analytics;
- 

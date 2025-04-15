@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaFileAlt, FaUsers, FaChartBar } from "react-icons/fa";
 import "../styles/components/dashboard.css";
 
@@ -11,16 +11,16 @@ const Analytics = () => {
         <main>
         <div className="head-title">
             <div className="left">
-              <h2>Analytics</h2>
+              <h1>Analytics</h1>
               <ul className="breadcrumb">
                 <li>
-                  <Link to="/dashboards" className="active">Home</Link>
+                  <a href="/dashboads" className="active">Home</a>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
                 </li>
                 <li>
-                  <Link to="#" >Analytics</Link>
+                  <a>Analytics</a>
                 </li>
               </ul>
             </div>
@@ -44,7 +44,7 @@ const Analytics = () => {
             </div>
           </div>
           </section>
-        </main>    
+          </main> 
       </section>
     </div>
   );
