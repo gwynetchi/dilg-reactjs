@@ -30,7 +30,7 @@ li {
 	--orange: #FD7238;
 	--light-orange: #FFE0D3;
 	--DILG: #ffffe0;
-	--calamansi: #fcffa4;
+	--calamansi: #fffece;
 }
 
 html {
@@ -39,8 +39,6 @@ html {
 
 body {
 	background: var(--calamansi);
-	overflow-x: hidden;
-	overflow-y: hidden;
 }
 
 
@@ -213,6 +211,19 @@ ol, ul {
     text-align: center;
 }
 
+.edit-btn {
+	background: transparent;
+	border: 1px solid var(--yellow);
+
+}
+
+.edit-btn:hover {
+	background-color: var(--yellow);
+	color: white;
+	border: 1px solid var(--DILG);
+	cursor: pointer;
+	text-align: center;
+}
 .notification-dropdown {
 	position: absolute;
 	top: 100%;
@@ -348,20 +359,7 @@ ol, ul {
 }
 
 
-/* Dashboard container inside content */
-.dashboard-container {
-    margin-top: 20px;  /* Adjusted margin to create space at the top */
-    margin: 20px;      /* General margin on all sides */
-    padding: 20px;     /* Padding inside the container for spacing */
-    background: var(--DILG);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-family: var(--lato); /* Ensure the font family is applied */
-    max-width: auto;    /* Set max-width to 100% to make it responsive */
-    width: auto;        /* Ensure the container takes up the full width */
-    box-sizing: border-box; /* Include padding and border in the width calculation */
-    overflow-x: hidden;  /* Prevent horizontal scrolling if content overflows */
-}
+
 #sidebar.hide ~ #contentnav {
     width: calc(100% - 80px);
     left: 80px;
