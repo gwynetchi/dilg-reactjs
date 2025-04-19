@@ -225,6 +225,14 @@ const AuthForm = () => {
                 >
                   Register
                 </motion.button>
+
+                {/* Back to Home Page Link */}
+                <button
+                  className={styles.backLink}
+                  onClick={() => navigate("/")}
+                >
+                  ← Back to Home
+                </button>
               </div>
 
               <div className={`${styles.togglePanel} ${styles.toggleRight}`}>
@@ -242,6 +250,14 @@ const AuthForm = () => {
                 >
                   Login
                 </motion.button>
+
+                {/* Back to Home Page Link */}
+                <button
+                  className={styles.backLink}
+                  onClick={() => navigate("/")}
+                >
+                  ← Back to Home
+                </button>
               </div>
             </div>
           </motion.div>
