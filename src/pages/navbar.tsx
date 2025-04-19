@@ -207,12 +207,19 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
   return (
     <div className="d-flex">
-      <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
+      <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"} >
       <Link to="/dashboards" className="brand">
+<<<<<<< Updated upstream
       <div className="navbar-logo">
         <img src="/images/logo1.png" alt="Logo" className="logo" />
         <span className="text">Dashboard</span>
       </div>
+=======
+        <div className="navbar-logo">
+        <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
+
+        </div>
+>>>>>>> Stashed changes
       </Link>
 
         <ul className="side-menu top">
