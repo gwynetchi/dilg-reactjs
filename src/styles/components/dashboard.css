@@ -365,7 +365,7 @@ ol, ul {
     left: 80px;
 }
 
-@media screen and (max-width: 650px) {
+@media screen and (max-width: 768px) {
 	#sidebar.hide ~ #contentnav {
 		width: 100%;
 		left: 0px;
@@ -799,6 +799,10 @@ tr {
         margin-left: 200px;
 		left: 0;
     }
+
+	#sidebar.hide ~ #contentnav {
+		
+	}
 }
 
 @media screen and (max-width: 576px) {
@@ -1015,7 +1019,7 @@ tr {
     transition: margin .3s ease-in-out;
 }
 
-@media screen and (max-width: 650px) {
+@media screen and (max-width: 768px) {
 	.content-layout.collapsed {
 		margin-left: 0px;
 	}

@@ -350,3 +350,19 @@ form{ width: 100%; }
 
     .toggle-panel h1{font-size: 30px; }
 }
+
+
+.backLink {
+    margin-top: 1rem;
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
+  .backLink:hover {
+    color: #ffce1b;
+  }
+  

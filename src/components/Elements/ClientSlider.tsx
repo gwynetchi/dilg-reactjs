@@ -1,5 +1,6 @@
 import Slider from "react-slick";
 import styled from "styled-components";
+
 // Assets
 import ClientLogo01 from "../../public/images/logo.png";
 import ClientLogo02 from "../../assets/img/clients/bagongphlogo.png";
@@ -27,10 +28,39 @@ import ClientLogo23 from "../../assets/img/clients/cmendez.png";
 import ClientLogo24 from "../../assets/img/clients/cgea.png";
 import ClientLogo25 from "../../assets/img/clients/cternate.png";
 import ClientLogo26 from "../../assets/img/clients/calfonso.png";
-import ClientLogo27 from "../../assets/img/clients/calfonso.png";
+import ClientLogo27 from "../../assets/img/clients/cindang.png";
 import ClientLogo28 from "../../assets/img/clients/cindang.png";
 
-
+const logos = [
+  { src: ClientLogo01, alt: "client logo", link: "https://calabarzon.dilg.gov.ph" },
+  { src: ClientLogo02, alt: "Bagong Pilipinas", link: "https://www.bagongpilipinastayo.com/" },
+  { src: ClientLogo03, alt: "LGRC", link: "https://calabarzon.dilg.gov.ph" },
+  { src: ClientLogo04, alt: "CALABARZON", link: "https://calabarzon.dilg.gov.ph" },
+  { src: ClientLogo05, alt: "City of Bacoor", link: "https://bacoor.gov.ph/" },
+  { src: ClientLogo06, alt: "Cavite City", link: "http://cavitecity.gov.ph/" },
+  { src: ClientLogo07, alt: "City of Imus", link: "https://cityofimus.gov.ph/" },
+  { src: ClientLogo08, alt: "Noveleta", link: "https://noveleta.gov.ph/" },
+  { src: ClientLogo09, alt: "Kawit", link: "https://cavite.gov.ph/home/cities-and-municipalities/municipality-of-kawit/" },
+  { src: ClientLogo10, alt: "Rosario", link: "https://www.rosariocavite.ph/" },
+  { src: ClientLogo11, alt: "Trece Martires City", link: "https://trecemartirescity.gov.ph/" },
+  { src: ClientLogo12, alt: "City of Dasmariñas", link: "https://cityofdasmarinas.gov.ph/" },
+  { src: ClientLogo13, alt: "City of General Trias", link: "https://generaltrias.gov.ph/" },
+  { src: ClientLogo14, alt: "Tanza", link: "https://tanza.gov.ph/" },
+  { src: ClientLogo15, alt: "Amadeo", link: "https://cavite.gov.ph/home/cities-and-municipalities/municipality-of-amadeo/" },
+  { src: ClientLogo16, alt: "Carmona", link: "https://carmona.gov.ph/" },
+  { src: ClientLogo17, alt: "General Mariano Alvarez", link: "https://genmarianoalvarez.gov.ph/" },
+  { src: ClientLogo18, alt: "Silang", link: "https://silang.gov.ph/" },
+  { src: ClientLogo19, alt: "Tagaytay City", link: "http://tagaytay.gov.ph/" },
+  { src: ClientLogo20, alt: "Magallanes", link: "https://cavite.gov.ph/home/cities-and-municipalities/municipality-of-magallanes/" },
+  { src: ClientLogo21, alt: "Maragondon", link: "https://cavite.gov.ph/home/cities-and-municipalities/municipality-of-maragondon/" },
+  { src: ClientLogo22, alt: "Naic", link: "https://www.facebook.com/municipalityofnaic/" },
+  { src: ClientLogo23, alt: "Mendez", link: "https://cavite.gov.ph/home/cities-and-municipalities/municipality-of-mendez/" },
+  { src: ClientLogo24, alt: "General Emilio Aguinaldo", link: "https://cavite.gov.ph/home/cities-and-municipalities/municipality-of-general-emilio-aguinaldo/" },
+  { src: ClientLogo25, alt: "Ternate", link: "https://cavite.gov.ph/home/tag/municipality-of-ternate/" },
+  { src: ClientLogo26, alt: "Alfonso", link: "https://cavite.gov.ph/home/tag/municipality-of-alfonso/" },
+  { src: ClientLogo27, alt: "Indang", link: "https://indang-cavite.ph/" },
+  { src: ClientLogo28, alt: "client logo", link: "https://example.com/logo28" },
+];
 
 export default function ClientSlider() {
   const settings = {
@@ -63,93 +93,22 @@ export default function ClientSlider() {
       },
     ],
   };
+
   return (
     <div>
       <Slider {...settings}>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo01} alt="client logo" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo02} alt="Bagong Pilipinas" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo03} alt="LGRC" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo04} alt="client logo" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo05} alt="City of Bacoor" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo06} alt="Cavite City" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo07} alt="City of Imus" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo08} alt="Noveleta" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo09} alt="Kawit" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo10} alt="Rosario" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo11} alt="Trece Martires City" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo12} alt="City of Dasmariñas" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo13} alt="City of General Trias" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo14} alt="Tanza" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo15} alt="Amadeo" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo16} alt="Carmona" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo17} alt="General Mariano Alvarez" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo18} alt="Silang" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo19} alt="Tagaytay City" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo20} alt="Magallanes" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo21} alt="Maragondon" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo22} alt="Naic" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo23} alt="Mendez" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo24} alt="General Emilio Aguinaldo" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo25} alt="Ternate" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo26} alt="Alfonso" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo27} alt="Indang" />
-        </LogoWrapper>
-        <LogoWrapper className="flexCenter">
-          <ImgStyle src={ClientLogo28} alt="client logo" />
-        </LogoWrapper>
+        {logos.map((logo, index) => (
+          <LogoWrapper key={index} className="flexCenter">
+            <a
+              href={logo.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Visit ${logo.alt}`}
+            >
+              <ImgStyle src={logo.src} alt={logo.alt} />
+            </a>
+          </LogoWrapper>
+        ))}
       </Slider>
     </div>
   );
@@ -159,17 +118,23 @@ const LogoWrapper = styled.div`
   width: 100%;
   height: 100px;
   cursor: pointer;
-  :focus-visible {
-    outline: none;
-    border: 0px;
+
+  a {
+    display: inline-block;
+    width: 100%;
+    height: 100%;
   }
 `;
+
 const ImgStyle = styled.img`
   width: 110%;
   height: 100%;
-  padding: %;
   object-fit: contain;
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.9));
+  transition: transform 0.3s ease, opacity 0.3s ease;
 
-  
+  &:hover {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
 `;
