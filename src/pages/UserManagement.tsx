@@ -5,7 +5,7 @@ import { db } from "../firebase";
 type UserType = {
   id: string;
   email: string;
-  password?: string; // Add password if you're storing it (⚠️ see note below)
+  password?: string;
   role: string;
   fname?: string;
   mname?: string;
@@ -28,7 +28,6 @@ const UserManagement = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -38,11 +37,9 @@ const UserManagement = () => {
     try {
       const querySnapshot = await getDocs(collection(db, "users"));
       const usersList: UserType[] = [];
-
       querySnapshot.forEach((docSnap) => {
         usersList.push({ id: docSnap.id, ...docSnap.data() } as UserType);
       });
-
       setUsers(usersList);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -75,41 +72,76 @@ const UserManagement = () => {
       email: user.email || "",
       password: user.password || "", // ⚠️ Only if stored in Firestore
     });
-      };
+  };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setEditData({ ...editData, [e.target.name]: e.target.value });
   };
 
-  const handleUpdate = async () => {
-    if (!editingUser) return;
+  const updateUserAuth = async (uid: string, email: string, password: string) => {
+    const response = await fetch('http://localhost:5173/update-user-auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uid, email, password }),
+    });
   
-    // Validation for required fields
-    if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
-      alert("❗ Please fill in all required fields: First Name, Last Name, and Email.");
-      return;
+    // Check if the response status is OK (200)
+    if (!response.ok) {
+      const errorData = await response.json(); // Try to get the error message
+      throw new Error(errorData.error || 'Unknown error');
     }
   
-    try {
-      const userRef = doc(db, "users", editingUser.id);
-      await updateDoc(userRef, {
-        fname: editData.fname,
-        mname: editData.mname,
-        lname: editData.lname,
-        role: editData.role,
-        email: editData.email,
-        password: editData.password, // ⚠️ Only if you're storing it
-      });
-  
-      alert("✅ User credentials updated successfully!");
-      fetchUsers();
-      setEditingUser(null);
-    } catch (error) {
-      console.error("Error updating user:", error);
-      alert("❌ Failed to update user credentials.");
-    }
+    // If the response is OK, parse the JSON
+    const data = await response.json();
+    return data;
   };
   
+const handleUpdate = async () => {
+  if (!editingUser) return;
+
+  if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
+    alert("❗ Please fill in all required fields: First Name, Last Name, and Email.");
+    return;
+  }
+
+  try {
+    // Call backend to update Firebase Auth (email & password)
+    const response = await updateUserAuth(editingUser.id, editData.email, editData.password);
+
+    // Now, update Firestore
+    const userRef = doc(db, "users", editingUser.id);
+    await updateDoc(userRef, {
+      fname: editData.fname,
+      mname: editData.mname,
+      lname: editData.lname,
+      role: editData.role,
+      email: editData.email,
+      password: editData.password, // ⚠️ Only if you need this — avoid storing raw passwords
+    });
+
+    alert("✅ User updated successfully!");
+    fetchUsers();
+    setEditingUser(null);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    alert("❌ Failed to update user credentials.");
+  }
+};
+  
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditData({
+      fname: "",
+      mname: "",
+      lname: "",
+      role: "",
+      email: "",
+      password: "",
+    });
+  };
 
   const filteredUsers = filter === "All" ? users : users.filter((user) => user.role === filter);
 
@@ -244,7 +276,6 @@ const UserManagement = () => {
                     className="btn btn-outline-secondary"
                     onClick={() => setShowPassword((prev) => !prev)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    tabIndex={-1}
                   >
                     {showPassword ? "Hide" : "Show"}
                   </button>
@@ -261,7 +292,7 @@ const UserManagement = () => {
                   <option value="Viewer">Viewer</option>
                 </select>
                 <div className="d-flex justify-content-end">
-                  <button className="btn btn-secondary me-2" onClick={() => setEditingUser(null)}>
+                  <button className="btn btn-secondary me-2" onClick={handleCancelEdit}>
                     Cancel
                   </button>
                   <button className="btn btn-success" onClick={handleUpdate}>
