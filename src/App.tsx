@@ -45,6 +45,8 @@ import UserAnalytics from "./pages/user-analytics";
 import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
+import UserManagement from "./pages/UserManagement";
+
 
 import EvaluatorPrograms from "./pages/managePrograms";
 
@@ -60,6 +62,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
+    { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
 
   ],
   Evaluator: [
