@@ -799,10 +799,6 @@ tr {
         margin-left: 200px;
 		left: 0;
     }
-
-	#sidebar.hide ~ #contentnav {
-		
-	}
 }
 
 @media screen and (max-width: 576px) {
