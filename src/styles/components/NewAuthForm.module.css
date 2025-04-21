@@ -118,6 +118,25 @@
 
 form{ width: 100%; }
 
+.error-message {
+    background-color: #ffe0e0;
+    color: orangered;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+}
+
+p.error-message {
+    margin: 0;
+    font-size: 14px;
+    color: orangered;
+}
+p.error {
+    font-size: 14px;
+    color: orangered;
+    text-align: center;
+}
 .form-box{
     position: absolute;
     right: 0;

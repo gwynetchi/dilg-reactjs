@@ -203,14 +203,19 @@ ol, ul {
 }
 
 .error-message {
-    background-color: #ffe0e0;
-    color: orangered;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    text-align: center;
+	color: orangered;
+	padding: 10px;
+	margin: 10px 0;
+	border-radius: 5px;
+	text-align: center;
+  }
+  
+.error {
+	color: red;
+	font-size: 0.9rem;
+	margin: 0.5rem 0;
 }
-
+	
 .edit-btn {
 	background: transparent;
 	border: 1px solid var(--yellow);
@@ -1223,7 +1228,7 @@ tr {
   
   p {
 	font-size: 16px;
-	color: #333;
+	color: red;
 	margin-bottom: 8px;
   }
   

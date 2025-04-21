@@ -83,7 +83,13 @@ const UserManagement = () => {
 
   const handleUpdate = async () => {
     if (!editingUser) return;
-
+  
+    // Validation for required fields
+    if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
+      alert("❗ Please fill in all required fields: First Name, Last Name, and Email.");
+      return;
+    }
+  
     try {
       const userRef = doc(db, "users", editingUser.id);
       await updateDoc(userRef, {
@@ -92,10 +98,9 @@ const UserManagement = () => {
         lname: editData.lname,
         role: editData.role,
         email: editData.email,
-        password: editData.password, // ⚠️ Again, only if this is stored
-      
+        password: editData.password, // ⚠️ Only if you're storing it
       });
-
+  
       alert("✅ User credentials updated successfully!");
       fetchUsers();
       setEditingUser(null);
@@ -104,6 +109,7 @@ const UserManagement = () => {
       alert("❌ Failed to update user credentials.");
     }
   };
+  
 
   const filteredUsers = filter === "All" ? users : users.filter((user) => user.role === filter);
 
