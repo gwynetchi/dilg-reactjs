@@ -70,7 +70,7 @@ const AuthForm = () => {
   
       // Save user info to Firestore (avoid storing passwords in production!)
       await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
+        email,
         role,
         password, // Consider hashing or removing this in a real app
       });

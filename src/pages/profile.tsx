@@ -10,6 +10,8 @@ const Profile = () => {
   const [mname, setMiddleName] = useState("");
   const [lname, setLastName] = useState("");
   const [profileImage, setProfileImage] = useState("");
+  const [role, setRole] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
@@ -37,10 +39,11 @@ const Profile = () => {
         setMiddleName(data.mname || "");
         setLastName(data.lname || "");
         setProfileImage(data.profileImage || "");
+        setRole(data.role || ""); // 👈 Add this
       }
     });
   };
-
+  
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
@@ -221,6 +224,16 @@ const Profile = () => {
                         value={lname}
                         onChange={(e) => setLastName(e.target.value)}
                         disabled={!isEditing || loading}
+                      />
+                    </div>
+                    {/* Role */}
+                    <div className="col-md-4 mb-2">
+                      <label className="form-label">Role:</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        value={role}
+                        disabled
                       />
                     </div>
                   </div>

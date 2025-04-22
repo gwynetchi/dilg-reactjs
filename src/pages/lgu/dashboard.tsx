@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../../firebase';
-import { collection, onSnapshot, getDocs, query, where, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import {
+    collection, onSnapshot, getDocs, query, where, doc,
+    addDoc, updateDoc, deleteDoc,
+    getDoc
+} from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import "../../styles/components/dashboard.css";
-import ReportMetricsChart from '../../pages/ReportMetricsChart'; // Import the chart component
+import ReportMetricsChart from '../../pages/ReportMetricsChart';
 
 const Dashboard = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -13,6 +17,7 @@ const Dashboard = () => {
     const [error, setError] = useState<string | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
     const [activeUsers, setActiveUsers] = useState(0);
     const [totalReports, setTotalReports] = useState(0);
     const [onTimeReports, setOnTimeReports] = useState(0);
@@ -22,7 +27,10 @@ const Dashboard = () => {
     const [incomplete, setIncomplete] = useState(0);
     const [noSubmission, setNoSubmission] = useState(0);
 
-    // Firebase Authentication state listener
+    const [selectedMonth, setSelectedMonth] = useState<string>("");
+    const [selectedYear, setSelectedYear] = useState<string>("");
+    const [filteredReports, setFilteredReports] = useState<any[]>([]);
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user || null);
@@ -30,7 +38,6 @@ const Dashboard = () => {
         return () => unsubscribe();
     }, []);
 
-    // Fetch tasks only if user is logged in
     useEffect(() => {
         if (currentUser) {
             const fetchTasks = async () => {
@@ -52,12 +59,10 @@ const Dashboard = () => {
                     setLoading(false);
                 }
             };
-
             fetchTasks();
         }
     }, [currentUser]);
 
-    // Fetch total registered users count
     useEffect(() => {
         const fetchRegisteredUsers = async () => {
             const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -68,47 +73,57 @@ const Dashboard = () => {
 
     useEffect(() => {
         const submitRef = collection(db, 'submittedDetails');
-    
-        // Subscribe to submittedDetails collection
         const submitUnsubscribe = onSnapshot(submitRef, async () => {
-            // Fetch total submitted reports count
             const submitSnapshot = await getDocs(submitRef);
-            setTotalReports(submitSnapshot.size); // Total reports submitted
+            const allReports = submitSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as { submittedBy: string; [key: string]: any }) }));
+        
+            const filtered = allReports.filter((report: any) => {
+                const date = report?.submittedAt?.toDate?.();
+                if (!date) return false;
+                const monthMatches = selectedMonth ? date.getMonth() + 1 === parseInt(selectedMonth) : true;
+                const yearMatches = selectedYear ? date.getFullYear() === parseInt(selectedYear) : true;
+                return monthMatches && yearMatches;
+            });
+        
+            // Fetch user details based on the submittedBy (uid)
+            const enrichedReports = await Promise.all(filtered.map(async (report) => {
+                const userDoc = await getDoc(doc(db, 'users', report.submittedBy));
+                const userData = userDoc.exists() ? userDoc.data() : {};
+                const fullName =
+                    userData.fname && userData.lname
+                        ? `${userData.fname} ${userData.mname ? userData.mname + " " : " "}${userData.lname}`
+                        : userData.email || "Anonymous";
     
-            // Fetch the status counts: OnTime, Pending, Late, For Revision, Incomplete, and No Submission
+                // Include email along with userName (fullName)
+                return {
+                    ...report,
+                    userName: fullName,
+                    email: userData.email || "No email available", // Add email here
+                };
+            }));
+    
+            setFilteredReports(enrichedReports);
+            setTotalReports(enrichedReports.length);
+    
+            // Count reports by status
             const statusQueries = [
                 { status: "On Time", setter: setOnTimeReports },
                 { status: "Pending", setter: setPendingReports },
                 { status: "Late", setter: setLateReports },
                 { status: "For Revision", setter: setForRevision },
+                { status: "No Submission", setter: setNoSubmission },
                 { status: "Incomplete", setter: setIncomplete },
             ];
     
-            // Fetch and set the counts for each status (On Time, Pending, Late, etc.)
-            await Promise.all(
-                statusQueries.map(async ({ status, setter }) => {
-                    const statusSnapshot = await getDocs(query(submitRef, where("evaluatorStatus", "==", status)));
-                    setter(statusSnapshot.size);
-                })
-            );
-    
-            // Fetch the "No Submission" status separately
-            const noSubmissionSnapshot = await getDocs(query(submitRef, where("evaluatorStatus", "==", "No Submission")));
-            setNoSubmission(noSubmissionSnapshot.size);
-    
-            // Now update the total pending reports: Pending + No Submission
-            setPendingReports(prev => noSubmissionSnapshot.size + prev);  // Adding Pending reports + No Submission reports
+            statusQueries.forEach(({ status, setter }) => {
+                const count = enrichedReports.filter((report: any) => report.evaluatorStatus === status).length;
+                setter(count);
+            });
         });
     
-        return () => {
-            submitUnsubscribe();
-        };
-    }, []); // This effect will run only once to set up the listener
-    
-    // Update No Submission after pendingReports state has been updated
-    useEffect(() => {
-        setNoSubmission(pendingReports); // Assuming 'pendingReports' is the number of reports with no submission
-    }, [pendingReports]); // Run this effect when 'pendingReports' changes
+        return () => submitUnsubscribe();
+    }, [selectedMonth, selectedYear]);
+        
     
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
@@ -183,28 +198,45 @@ const Dashboard = () => {
                 <main>
                     <div className="head-title">
                         <div className="left">
-                            <h1>Evaluator Dashboard</h1>
+                            <h1>LGU Dashboard</h1>
                             <ul className="breadcrumb">
-                                <li>
-                                    <a href="/dashboards" className="active">Home</a>
-                                </li>
-                                <li>
-                                    <i className='bx bx-chevron-right'> </i>
-                                </li>
-                                <li>
-                                    <a>Dashboard Tools</a>
-                                </li>
+                                <li><a href="/dashboards" className="active">Home</a></li>
+                                <li><i className='bx bx-chevron-right'></i></li>
+                                <li><a>Dashboard Tools</a></li>
                             </ul>
                         </div>
                     </div>
 
-                    {/* Metrics + Chart Section */}
+                    {/* Filters */}
+                    <div className="month-filter">
+                        <label htmlFor="month">Filter by Month: </label>
+                        <select id="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+                            <option value="">All Months</option>
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i + 1} value={i + 1}>
+                                    {new Date(0, i).toLocaleString("default", { month: "long" })}
+                                </option>
+                            ))}
+                        </select>
+
+                        <label htmlFor="year" style={{ marginLeft: "1rem" }}>Year: </label>
+                        <select id="year" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                            <option value="">All Years</option>
+                            {Array.from({ length: 5 }, (_, i) => {
+                                const year = new Date().getFullYear() - i;
+                                return <option key={year} value={year}>{year}</option>;
+                            })}
+                        </select>
+                    </div>
+
+                    {/* Metrics + Chart */}
                     <div className="dashboard-metrics-chart-wrapper">
                         <div className="metrics-panel">
                             {[ 
                                 { label: 'Total Reports Submitted', value: totalReports },
                                 { label: 'On Time Report Submitted', value: onTimeReports, percent: onTimeReports / totalReports },
-                                { label: 'Pending Reports / No Submission', value: pendingReports, percent: pendingReports + noSubmission / totalReports },
+                                { label: 'Pending Reports', value: pendingReports, percent: pendingReports / totalReports },
+                                { label: 'No Submission', value: noSubmission, percent: noSubmission / totalReports },
                                 { label: 'Late Reports', value: lateReports, percent: lateReports / totalReports },
                                 { label: 'For Revision', value: forRevision, percent: forRevision / totalReports },
                                 { label: 'Incomplete Reports', value: incomplete, percent: incomplete / totalReports },
@@ -225,11 +257,44 @@ const Dashboard = () => {
                                 onTimeReports={onTimeReports}
                                 forRevision={forRevision}
                                 incomplete={incomplete}
-                                noSubmission    
-                                />
+                                noSubmission={noSubmission}
+                            />
                         </div>
                     </div>
 
+                    {/* Filtered Reports Table */}
+                    <div className="filtered-reports-table-wrapper">
+                        <h3>Filtered Reports</h3>
+                        {filteredReports.length ? (
+                            <table className="filtered-reports-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Submitted At</th>
+                                        <th>Status</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredReports.map((report) => {
+                                        const date = report.submittedAt?.toDate?.();
+                                        return (
+                                            <tr key={report.id}>
+                                                <td>{report.userName || report.email}</td>
+                                                <td>{date ? date.toLocaleString() : "N/A"}</td>
+                                                <td>{report.evaluatorStatus}</td>
+                                                <td>{report.remarks || "—"}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <p>No reports for the selected period.</p>
+                        )}
+                    </div>
+
+                    {/* To-Do Modal */}
                     <div className="metrics-footer">
                         <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
                     </div>
@@ -241,7 +306,6 @@ const Dashboard = () => {
                                     <h3>To-Do List</h3>
                                     <button className="close-modal-btn" onClick={closeModal}>X</button>
                                 </div>
-
                                 <div className="todo-input">
                                     <textarea
                                         value={newTask}
@@ -278,10 +342,7 @@ const Dashboard = () => {
                                                     <td>{text}</td>
                                                     <td>{formatDate(createdAt)}</td>
                                                     <td>
-                                                        <button 
-                                                            onClick={() => removeTask(id, completed)} 
-                                                            className="delete-btn"
-                                                        >
+                                                        <button onClick={() => removeTask(id, completed)} className="delete-btn">
                                                             Delete
                                                         </button>
                                                     </td>
@@ -300,4 +361,5 @@ const Dashboard = () => {
         </div>
     );
 };
+
 export default Dashboard;

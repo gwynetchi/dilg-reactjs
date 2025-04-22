@@ -79,7 +79,7 @@ const UserManagement = () => {
   };
 
   const updateUserAuth = async (uid: string, email: string, password: string) => {
-    const response = await fetch('http://localhost:5173/update-user-auth', {
+    const response = await fetch('http://localhost:5000/update-user-auth', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,50 +87,66 @@ const UserManagement = () => {
       body: JSON.stringify({ uid, email, password }),
     });
   
-    // Check if the response status is OK (200)
-    if (!response.ok) {
-      const errorData = await response.json(); // Try to get the error message
-      throw new Error(errorData.error || 'Unknown error');
+    // Safely handle empty or invalid JSON response
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (err) {
+      throw new Error("❌ Failed to parse response from server. Make sure backend is returning JSON.");
     }
   
-    // If the response is OK, parse the JSON
-    const data = await response.json();
+    if (!response.ok || !data?.success) {
+      throw new Error(data?.error || "❌ Unknown error occurred while updating user.");
+    }
+  
     return data;
   };
+    
+  const handleUpdate = async () => {
+    if (!editingUser) return;
   
-const handleUpdate = async () => {
-  if (!editingUser) return;
-
-  if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
-    alert("❗ Please fill in all required fields: First Name, Last Name, and Email.");
-    return;
-  }
-
-  try {
-    // Call backend to update Firebase Auth (email & password)
-    const response = await updateUserAuth(editingUser.id, editData.email, editData.password);
-
-    // Now, update Firestore
-    const userRef = doc(db, "users", editingUser.id);
-    await updateDoc(userRef, {
-      fname: editData.fname,
-      mname: editData.mname,
-      lname: editData.lname,
-      role: editData.role,
-      email: editData.email,
-      password: editData.password, // ⚠️ Only if you need this — avoid storing raw passwords
-    });
-
-    alert("✅ User updated successfully!");
-    fetchUsers();
-    setEditingUser(null);
-  } catch (error) {
-    console.error("Error updating user:", error);
-    alert("❌ Failed to update user credentials.");
-  }
-};
+    if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
+      alert("❗ Please fill in all required fields: First Name, Last Name, and Email.");
+      return;
+    }
   
-
+    try {
+      let authResponse = null;
+      const isPasswordChanged = editData.password !== editingUser.password;
+  
+      if (isPasswordChanged) {
+        authResponse = await updateUserAuth(editingUser.id, editData.email, editData.password);
+        if (!authResponse || !authResponse.success) {
+          alert("❌ Failed to update Firebase Auth credentials.");
+          return;
+        }
+      }
+  
+      const userRef = doc(db, "users", editingUser.id);
+  
+      const updatedData: any = {
+        fname: editData.fname,
+        mname: editData.mname,
+        lname: editData.lname,
+        role: editData.role,
+        email: editData.email,
+      };
+  
+      if (isPasswordChanged) {
+        updatedData.password = editData.password;
+      }
+  
+      await updateDoc(userRef, updatedData);
+  
+      alert("✅ User updated successfully!");
+      fetchUsers();
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("❌ Failed to update user credentials.");
+    }
+  };
+      
   const handleCancelEdit = () => {
     setEditingUser(null);
     setEditData({
