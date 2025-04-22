@@ -17,7 +17,6 @@ const Dashboard = () => {
     const [error, setError] = useState<string | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
     const [activeUsers, setActiveUsers] = useState(0);
     const [totalReports, setTotalReports] = useState(0);
     const [onTimeReports, setOnTimeReports] = useState(0);
@@ -30,14 +29,12 @@ const Dashboard = () => {
     const [selectedMonth, setSelectedMonth] = useState<string>("");
     const [selectedYear, setSelectedYear] = useState<string>("");
     const [filteredReports, setFilteredReports] = useState<any[]>([]);
-
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user || null);
         });
         return () => unsubscribe();
     }, []);
-
     useEffect(() => {
         if (currentUser) {
             const fetchTasks = async () => {
@@ -198,7 +195,7 @@ const Dashboard = () => {
                 <main>
                     <div className="head-title">
                         <div className="left">
-                            <h1>LGU Dashboard</h1>
+                            <h1>Evaluator Dashboard</h1>
                             <ul className="breadcrumb">
                                 <li><a href="/dashboards" className="active">Home</a></li>
                                 <li><i className='bx bx-chevron-right'></i></li>
@@ -295,6 +292,54 @@ const Dashboard = () => {
                     </div>
 
                     {/* To-Do Modal */}
+
+                                <li>
+                                    <a href="/dashboards" className="active">Home</a>
+                                </li>
+                                <li>
+                                    <i className='bx bx-chevron-right'> </i>
+                                </li>
+                                <li>
+                                    <span>Dashboard Tools</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+{/* Metrics + Chart Section */}
+<div className="dashboard-metrics-chart-wrapper">
+  <div className="chart-panel">
+    <div className="metrics-panel row-panel">
+      {[
+        { label: 'Total Reports Submitted', value: totalReports },
+        { label: 'On Time Report Submitted', value: onTimeReports, percent: onTimeReports / totalReports },
+        { label: 'Pending Reports', value: pendingReports, percent: pendingReports / totalReports },
+        { label: 'No Submission', value: noSubmission, percent: noSubmission / totalReports },
+        { label: 'Late Reports', value: lateReports, percent: lateReports / totalReports },
+        { label: 'For Revision', value: forRevision, percent: forRevision / totalReports },
+        { label: 'Incomplete Reports', value: incomplete, percent: incomplete / totalReports },
+        { label: 'Total Registered Users', value: activeUsers },
+      ].map(({ label, value, percent }, index) => (
+        <div key={index} className="metric">
+          <h3>{label}</h3>
+          <p>{value} {percent != null && `(${(percent * 100).toFixed(2)}%)`}</p>
+        </div>
+      ))}
+    </div>
+    <div className="chart-wrapper">
+      <ReportMetricsChart 
+        totalReports={totalReports}
+        pendingReports={pendingReports}
+        lateReports={lateReports}
+        onTimeReports={onTimeReports}
+        forRevision={forRevision}
+        incomplete={incomplete}
+        noSubmission={noSubmission}
+      />
+    </div>
+  </div>
+</div>
+
+
                     <div className="metrics-footer">
                         <button className="open-modal-btn" onClick={openModal}>View To-Do List</button>
                     </div>

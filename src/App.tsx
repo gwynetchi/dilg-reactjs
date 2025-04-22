@@ -64,6 +64,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
 
+
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
