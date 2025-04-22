@@ -13,6 +13,7 @@ const AuthForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Select Role");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -50,7 +51,7 @@ const AuthForm = () => {
     setSuccessMessage("");
   };
 
-  // Removed duplicate declaration of handleSignUp
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -59,6 +60,7 @@ const AuthForm = () => {
   
     // Role validation
     if (role === "Select Role" || role.trim() === "") {
+
       setError("❌ Please select a valid role.");
       setLoading(false);
       return;
@@ -83,6 +85,7 @@ const AuthForm = () => {
       setSuccessMessage("✅ Account Created Successfully! Please log in.");
       setLoading(false);
   
+
       setTimeout(() => {
         setIsActive(false); // Switch to login form
         resetForm(); // Clear input fields
@@ -106,6 +109,7 @@ const AuthForm = () => {
     }
   };
     
+
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +165,7 @@ const AuthForm = () => {
         setError("❌ Invalid credentials. Please check your email and password.");
       }
        else {
+
         setError("❌ Error logging in. Please try again.");
       }
   

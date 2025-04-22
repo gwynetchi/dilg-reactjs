@@ -17,7 +17,6 @@ const Dashboard = () => {
     const [error, setError] = useState<string | null>(null);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
     const [activeUsers, setActiveUsers] = useState(0);
     const [totalReports, setTotalReports] = useState(0);
     const [onTimeReports, setOnTimeReports] = useState(0);
@@ -30,14 +29,12 @@ const Dashboard = () => {
     const [selectedMonth, setSelectedMonth] = useState<string>("");
     const [selectedYear, setSelectedYear] = useState<string>("");
     const [filteredReports, setFilteredReports] = useState<any[]>([]);
-
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user || null);
         });
         return () => unsubscribe();
     }, []);
-
     useEffect(() => {
         if (currentUser) {
             const fetchTasks = async () => {
@@ -62,7 +59,6 @@ const Dashboard = () => {
             fetchTasks();
         }
     }, [currentUser]);
-
     useEffect(() => {
         const fetchRegisteredUsers = async () => {
             const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -123,8 +119,6 @@ const Dashboard = () => {
     
         return () => submitUnsubscribe();
     }, [selectedMonth, selectedYear]);
-        
-    
     const addTask = async () => {
         if (newTask.trim() && currentUser?.uid) {
             const newTaskObj = {
