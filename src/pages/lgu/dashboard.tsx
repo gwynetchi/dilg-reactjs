@@ -15,6 +15,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import "../../styles/components/dashboard.css";
 import ReportMetricsChart from "../../pages/ReportMetricsChart";
+import ResultsFramework from '../../components/framework/Outcomes';
 
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -233,6 +234,10 @@ const Dashboard = () => {
             </div>
           </div>
 
+          <main className="p-6">
+  <h2 className="mb-4">Updated DILG Results Framework</h2>
+  <ResultsFramework />
+</main>
           {/* Filters */}
           <div className="month-filter">
             <label htmlFor="month">Filter by Month:</label>
