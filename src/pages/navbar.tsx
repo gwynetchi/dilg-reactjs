@@ -63,6 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
       { name: "Message", icon: "bxs-chat", path: "/lgu/message" },
       { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
+      { name: "Programs", icon: "bxs-doughnut-chart", path: "/lgu/programs" },
 
     ],
     Admin: [
@@ -210,7 +211,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"} >
       <Link to="/dashboards" className="brand">
         <div className="navbar-logo">
-        <img src="/images/logo1.png" alt="Logo" className="brand-logo" />
+        <img src="/images/logo.png" alt="Logo" className="brand-logo" />
 
         </div>
       </Link>

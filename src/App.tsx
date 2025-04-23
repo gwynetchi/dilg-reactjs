@@ -6,6 +6,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
 
+import SendDueCommunications from "./pages/SendDuePrograms";
+import CheckFrequency from "./pages/CheckFrequency";
+
 
 // Import Dashboards
 import AdminDashboard from "./pages/admin/dashboard";
@@ -49,6 +52,8 @@ import UserManagement from "./pages/UserManagement";
 
 
 import EvaluatorPrograms from "./pages/managePrograms";
+import LGUPrograms from "./pages/Programs";
+import ProgramDetails from './pages/ProgramDetails'; // Adjust path as needed
 
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
@@ -94,6 +99,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
+    { path: "/lgu/programs", element: <LGUPrograms /> },
+    { path: "/lgu/programs/:programId", element: <ProgramDetails />}
 
   ],
   Viewer: [
@@ -115,7 +122,7 @@ const App: React.FC = () => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
-
+  const [duePrograms, setDuePrograms] = useState<any[]>([]);
   const auth = getAuth();
   const db = getFirestore();
 
@@ -146,6 +153,7 @@ const App: React.FC = () => {
       return (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="spinner-border text-primary" role="status">
+
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -168,6 +176,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+       
       <div className="app-container">
         {user && role && (
           <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
@@ -183,11 +192,12 @@ const App: React.FC = () => {
               roleRoutesConfig[role]?.map(({ path, element }) => (
                 <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
               ))}
-
+              
             {/* Catch-All Route */}
             <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
           </Routes>
-          
+          <CheckFrequency onDuePrograms={setDuePrograms} />
+          {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
         </div>
       </div>
     </Router>

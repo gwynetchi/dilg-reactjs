@@ -132,38 +132,8 @@ const MessageDetails: React.FC = () => {
     }
   };
 
-  const processLink = (url: string) => {
-    if (!url.trim()) {
-      setIframeSrc(null);
-      return;
-    }
 
-    let modifiedLink = "";
 
-    if (url.includes("docs.google.com/spreadsheets")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/document")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/forms")) {
-      modifiedLink = url;
-    } else if (url.includes("drive.google.com/file")) {
-      modifiedLink = url.replace("/view", "/preview");
-    } else if (url.includes("drive.google.com/drive/folders")) {
-      modifiedLink = url;
-    } else {
-      modifiedLink = "";
-    }
-
-    setIframeSrc(modifiedLink);
-  };
-
-  // Show modal with the iframe
-  const openPreviewModal = (link: string) => {
-    processLink(link);
-    if (iframeSrc) {
-      setShowModal(true);
-    }
-  };
 
   // Close modal
   const closeModal = () => {
@@ -229,15 +199,28 @@ const MessageDetails: React.FC = () => {
             </p>
             <p><strong>Content:</strong> {message.remarks || "No remarks/comments available"}</p>
             <p><strong>Additional Remarks:</strong> {remark || "No additional remarks available"}</p>
-            {message.link && (
-              <div>
-                <strong>Link:</strong> <a href={message.link} target="_blank" rel="noopener noreferrer">{message.link}</a>
-                <br></br>
-                <button onClick={() => openPreviewModal(message.link)} className="btn-preview">
-                  Preview
-                </button>
-              </div>
-            )}     
+            {message.submissionLink && (
+  <div>
+    <strong>Submission Link:</strong>{" "}
+    <a href={message.submissionLink} target="_blank" rel="noopener noreferrer">{message.submissionLink}</a>
+    <br />
+    {/*<button onClick={() => openPreviewModal(message.submissionLink)} className="btn-preview">
+      Preview
+    </button> */}
+  </div>
+)}
+
+{message.monitoringLink && (
+  <div style={{ marginTop: "10px" }}>
+    <strong>Monitoring Link:</strong>{" "}
+    <a href={message.monitoringLink} target="_blank" rel="noopener noreferrer">{message.monitoringLink}</a>
+    <br />
+{/*<button onClick={() => openPreviewModal(message.monitoringLink)} className="btn-preview">
+      Preview
+    </button>*/}
+  </div>
+)}
+
                   <br />
                   <p>
                     <strong>Deadline:</strong>{" "}
