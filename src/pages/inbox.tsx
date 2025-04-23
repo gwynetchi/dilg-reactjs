@@ -89,7 +89,7 @@ const Inbox: React.FC = () => {
           seenBy: data.seenBy || [],
           subject: data.subject || "No Subject",
           imageUrl: data.imageUrl || "",
-          source: "communications"
+          source: "communications" as "communications"
         };
       });
 
@@ -107,7 +107,7 @@ const Inbox: React.FC = () => {
           seenBy: data.seenBy || [],
           subject: data.subject || "No Subject",
           imageUrl: data.imageUrl || "",
-          source: "programcommunications"
+          source: "programcommunications" as "programcommunications"
         };
       });
 
