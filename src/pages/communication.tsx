@@ -94,36 +94,39 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+  
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "uploads"); // Replace with your actual upload preset
+    formData.append("upload_preset", "uploads"); // replace with your actual preset
+    formData.append("resource_type", "auto"); // this tells Cloudinary to detect the type
     const auth = getAuth();
     const user = auth.currentUser;
     formData.append("folder", `communications/${user?.uid}`);
-    
+  
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
         method: "POST",
         body: formData,
       });
+  
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Upload error:", errorData);
-        throw new Error("Image upload failed.");
+        throw new Error("File upload failed.");
       }
   
       const data = await response.json();
-      setImageUrl(data.secure_url); // ✅ Set image URL
-      showAlert("Image uploaded successfully!", "success");
+      setImageUrl(data.secure_url); // Save file URL
+      showAlert("File uploaded successfully!", "success");
     } catch (error) {
-      console.error("Error uploading image:", error);
-      showAlert("Image upload failed.", "error");
+      console.error("Error uploading file:", error);
+      showAlert("File upload failed.", "error");
     }
   };
+  
   
   const fetchSentCommunications = async () => {
     const auth = getAuth(); 
@@ -392,28 +395,33 @@ const handleDelete = async (id: string) => {
                   />
                 </div>
                 <div className="col-md-12 mb-3">
-  <label className="form-label">Upload Image (optional):</label>
-  <input type="file" className="form-control" onChange={handleImageUpload} />
-  {imageUrl && (
-    <div className="mt-2">
-      <img src={imageUrl} alt="Uploaded" style={{ maxWidth: "100%", maxHeight: "200px" }} />
-    </div>
-  )}
-</div>
+                <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
+                  <input 
+                    type="file" 
+                    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                    className="form-control" 
+                    onChange={handleFileUpload}
+                  />
+                  {imageUrl && (
+                    <div className="mt-2">
+                      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Uploaded File</a>
+                    </div>
+                  )}
+                </div>
 
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
                   <Select
-  options={groupedOptions}
-  isMulti
-  value={groupedOptions.flatMap(group => group.options).filter((option) =>
-    recipients.includes(option.value)
-  )}
-  onChange={handleRecipientChange}
-  className="basic-multi-select"
-  classNamePrefix="select"
-  placeholder="Select recipients by role..."
-/>
+                    options={groupedOptions}
+                    isMulti
+                    value={groupedOptions.flatMap(group => group.options).filter((option) =>
+                      recipients.includes(option.value)
+                    )}
+                    onChange={handleRecipientChange}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    placeholder="Select recipients by role..."
+                  />
 
                 </div>
                 <div className="col-md-6 mb-3">
@@ -426,27 +434,26 @@ const handleDelete = async (id: string) => {
                   />
                 </div>
                 <div className="col-md-12 mb-3">
-  <label>Submission Link (https only):</label>
-  <input
-    type="url"
-    className="form-control"
-    placeholder="https://example.com/submission"
-    value={submissionLink}
-    onChange={(e) => setSubmissionLink(e.target.value)}
-  />
-</div>
+                  <label>Submission Link (https only):</label>
+                  <input
+                    type="url"
+                    className="form-control"
+                    placeholder="https://example.com/submission"
+                    value={submissionLink}
+                    onChange={(e) => setSubmissionLink(e.target.value)}
+                  />
+                </div>
 
-<div className="col-md-12 mb-3">
-  <label>Monitoring Link (https only):</label>
-  <input
-    type="url"
-    className="form-control"
-    placeholder="https://example.com/monitoring"
-    value={monitoringLink}
-    onChange={(e) => setMonitoringLink(e.target.value)}
-  />
-</div>
-
+                <div className="col-md-12 mb-3">
+                  <label>Monitoring Link (https only):</label>
+                  <input
+                    type="url"
+                    className="form-control"
+                    placeholder="https://example.com/monitoring"
+                    value={monitoringLink}
+                    onChange={(e) => setMonitoringLink(e.target.value)}
+                  />
+                </div>
               </div>
   
               <div className="row">
@@ -496,14 +503,14 @@ const handleDelete = async (id: string) => {
                 <h4>Recipient Details</h4>
                   <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
           </div>
-          <div className="modal-body">
-          <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-          <p><strong>Email:</strong> {recipientDetails.email}</p>
-         </div>
-      </div>
-    </div>
-    )}
-    </div>
+                <div className="modal-body">
+                <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+                <p><strong>Email:</strong> {recipientDetails.email}</p>
+              </div>
+            </div>
+          </div>
+          )}
+          </div>
   
       <section id="content">
         <main>
