@@ -7,6 +7,8 @@ import ContactImg3 from "../../assets/img/contactimg/contactimg3.jpg";
 
 export default function Contact() {
 
+
+
   return (
     <Wrapper id="contact">
       <div className="lightBg">
