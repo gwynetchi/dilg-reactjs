@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import "../../../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
 
 interface Communication {
   id: string;
@@ -29,8 +30,10 @@ const MessageTable: React.FC<Props> = ({
   openMessage,
   handleDeleteRequest,
 }) => {
-  return (
+  const [showFileModal, setShowFileModal] = useState(false);
+  const [currentFileUrl, setCurrentFileUrl] = useState("");
 
+  return (
     <table className="table">
       <thead>
         <tr>
@@ -60,36 +63,86 @@ const MessageTable: React.FC<Props> = ({
               <td>
                 {msg.imageUrl ? (
                   <a
-                    href={msg.imageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation(); // Prevent row click when interacting with the attachment
+                      setCurrentFileUrl(msg.imageUrl);
+                      setShowFileModal(true);
+                    }}
+                    style={{ cursor: "pointer" }}
                   >
-                    <img
-                      src={msg.imageUrl}
-                      alt="attachment"
-                      style={{ width: "60px", borderRadius: "5px" }}
-                    />
+{msg.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+  <img
+    src={msg.imageUrl}
+    alt="attachment"
+    style={{
+      width: "80px",
+      height: "80px",
+      objectFit: "cover",
+      borderRadius: "5px"
+    }}
+  />
+) : (
+  <span>View Attachment</span>
+)}
+
                   </a>
                 ) : (
                   "—"
                 )}
               </td>
-              <td>{senderNames[msg.createdBy] || "Unknown"}</td>
               <td>{msg.subject || "No Subject"}</td>
+              <td>{senderNames[msg.createdBy] || "Unknown"}</td>
               <td>
-        {msg.source === "programcommunications" as string  ? (
-          <span className="program-label">Program Message</span>
-        ) : (
-          <span className="regular-label">Direct Message</span>
-        )}
-      </td>
+                {msg.source === "programcommunications" ? (
+                  <span className="program-label">Program Message</span>
+                ) : (
+                  <span className="regular-label">Direct Message</span>
+                )}
+              </td>
+              {showFileModal && (
+                <div className="overlay">
+                  <div className="modal-container" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
+                    <button
+                      className="close-btn"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click when closing the modal
+                        setShowFileModal(false);
+                      }}
+                    >
+                      ✖
+                    </button>
+                    <div className="modal-body" style={{ overflow: "auto" }}>
+                      {currentFileUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+                        <img
+                          src={currentFileUrl}
+                          alt="Attachment"
+                          style={{ maxWidth: "100%", maxHeight: "80vh" }}
+                        />
+                      ) : (
+                        <div>
+                          <p>This file type cannot be previewed. Please download it instead.</p>
+                          <a
+                            href={currentFileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary"
+                          >
+                            Download File
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               <td>{createdDate}</td>
               <td>
                 <button
                   className="delete-btn"
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Prevent row click when deleting the message
                     handleDeleteRequest(msg.id, msg.recipients, msg.source);
                   }}
                 >
