@@ -20,6 +20,10 @@ const Sentbox: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+const [filterType, setFilterType] = useState("all");
+const [sortOrder, setSortOrder] = useState("desc");
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -91,6 +95,43 @@ const Sentbox: React.FC = () => {
           </div>
           <div className="table-data">
             <div className="order">
+            <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+  {/* Search */}
+  <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
+  <input
+    id="searchInput"
+    type="text"
+    placeholder="Search subject..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="form-control w-auto"
+  />
+
+  {/* Filter */}
+  <label htmlFor="filterSelect" className="form-label mb-0">Filter:</label>
+  <select
+    id="filterSelect"
+    value={filterType}
+    onChange={(e) => setFilterType(e.target.value)}
+    className="form-select w-auto"
+  >
+    <option value="all">All</option>
+    {/* Extend with options like sent to specific roles, etc. */}
+  </select>
+
+  {/* Sort */}
+  <label htmlFor="sortSelect" className="form-label mb-0">Sort:</label>
+  <select
+    id="sortSelect"
+    value={sortOrder}
+    onChange={(e) => setSortOrder(e.target.value)}
+    className="form-select w-auto"
+  >
+    <option value="desc">Newest First</option>
+    <option value="asc">Oldest First</option>
+  </select>
+</div>
+
               <div className="inbox-container">
                 <h2>Sent Messages</h2>
                 {loading ? (
@@ -107,7 +148,23 @@ const Sentbox: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {communications.map((msg) => (
+                    {communications
+  .filter((msg) =>
+    msg.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  .filter((msg) => {
+    if (filterType === "all") return true;
+    return msg.recipients.includes(filterType); // example logic
+  })
+  
+  .sort((a, b) => {
+    if (!a.createdAt || !b.createdAt) return 0;
+    const timeA = a.createdAt.seconds;
+    const timeB = b.createdAt.seconds;
+    return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+  })
+  .map((msg) => (
+
                         <tr key={msg.id} onClick={() => openMessage(msg.id)} style={{ cursor: "pointer" }}>
                           <td>{msg.subject}</td>
                           <td>

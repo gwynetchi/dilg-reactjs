@@ -707,7 +707,7 @@ ol, ul {
 #content main .table-data .order table th {
 	padding-bottom: 12px;
 	font-size: 13px;
-	text-align: left;
+	text-align: center;
 	border: 3px solid var(--grey);
 }
 #content main .table-data .order table td {
@@ -1414,3 +1414,22 @@ tr {
 	justify-content: center;
 	align-items: center;
   }
+
+  .program-label {
+	background-color: #cde4f9;
+	color: #1d4ed8;
+	padding: 3px 6px;
+	border-radius: 4px;
+	font-size: 12px;
+  }
+  
+  .regular-label {
+	background-color: #e2e8f0;
+	color: #2d3748;
+	padding: 3px 6px;
+	border-radius: 4px;
+	font-size: 12px;
+  }
+  
+
+  

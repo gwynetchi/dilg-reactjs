@@ -23,7 +23,8 @@ const Communication: React.FC = () => {
   const [recipients, setRecipients] = useState<string[]>([]); // Store userIds
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
-  const [inputLink, setInputLink] = useState("");
+  const [submissionLink, setSubmissionLink] = useState("");
+  const [monitoringLink, setMonitoringLink] = useState("");  
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -33,6 +34,11 @@ const Communication: React.FC = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+const [sortField, setSortField] = useState("createdAt");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
+
   
   const fetchUsers = async () => {
     try {
@@ -133,6 +139,28 @@ const Communication: React.FC = () => {
       }
     }
   };
+  useEffect(() => {
+    let filtered = sentCommunications.filter((comm) =>
+      comm.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      comm.remarks.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  
+    filtered.sort((a, b) => {
+      const aField = a[sortField];
+      const bField = b[sortField];
+  
+      if (aField && bField) {
+        const aVal = aField instanceof Date ? aField.getTime() : aField;
+        const bVal = bField instanceof Date ? bField.getTime() : bField;
+  
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+  
+    setFilteredCommunications(filtered);
+  }, [searchTerm, sentCommunications, sortField, sortOrder]);
+  
   
   useEffect(() => {
     fetchUsers();
@@ -171,10 +199,14 @@ const Communication: React.FC = () => {
       return;
     }
   
-    if (inputLink && !inputLink.startsWith("https://")) {
-      showAlert("Only HTTPS links are allowed!");
+    if (
+      (submissionLink && !submissionLink.startsWith("https://")) ||
+      (monitoringLink && !monitoringLink.startsWith("https://"))
+    ) {
+      showAlert("Only HTTPS links are allowed for submission and monitoring!");
       return;
     }
+    
   
     setLoading(true);
     try {
@@ -196,9 +228,10 @@ const Communication: React.FC = () => {
           deadline: new Date(deadline),
           remarks,
           imageUrl,
-          link: inputLink,
-        }
-      );
+          submissionLink,
+          monitoringLink,
+        });
+        ;
       
         showAlert("Communication updated successfully!", "success");
       } else {
@@ -209,24 +242,28 @@ const Communication: React.FC = () => {
           recipients,
           deadline: new Date(deadline),
           remarks,
-          link: inputLink,
+          submissionLink,
+          monitoringLink,
           createdBy: user.uid,
           imageUrl,
           createdAt: serverTimestamp(),
           submitID: [],
         });
+        
         showAlert("Message Sent Successfully!", "success");
       }
-const newDoc: any = {
-  subject,
-  recipients,
-  deadline: new Date(deadline),
-  remarks,
-  link: inputLink,
-  createdBy: user.uid,
-  createdAt: serverTimestamp(),
-  submitID: [],
-};
+      const newDoc: any = {
+        subject,
+        recipients,
+        deadline: new Date(deadline),
+        remarks,
+        submissionLink, // use the actual variable name
+        monitoringLink, // use the actual variable name
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+        submitID: [],
+      };
+      
 
 if (imageUrl) {
   newDoc.imageUrl = imageUrl;
@@ -237,7 +274,9 @@ if (imageUrl) {
       setRecipients([]);
       setDeadline("");
       setRemarks("");
-      setInputLink("");
+      setSubmissionLink("");
+      setMonitoringLink("");
+      
       setIsEditing(false);
       setEditingId(null);
   
@@ -255,7 +294,8 @@ if (imageUrl) {
     setRecipients(comm.recipients);
     setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16)); // for datetime-local
     setRemarks(comm.remarks);
-    setInputLink(comm.link || "");
+    setSubmissionLink(comm.submissionLink || "");
+    setMonitoringLink(comm.monitoringLink || "");    
     setEditingId(comm.id);
     setIsEditing(true);
     setShowDetails(true);
@@ -365,16 +405,28 @@ const handleDelete = async (id: string) => {
                     onChange={(e) => setDeadline(e.target.value)}
                   />
                 </div>
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Attachment/Link:</label>
-                  <input
-                    type="text"
-                    placeholder="Paste Google Drive link"
-                    className="form-control form-control-sm"
-                    value={inputLink}
-                    onChange={(e) => setInputLink(e.target.value)}
-                  />
-                </div>
+                <div className="col-md-12 mb-3">
+  <label>Submission Link (https only):</label>
+  <input
+    type="url"
+    className="form-control"
+    placeholder="https://example.com/submission"
+    value={submissionLink}
+    onChange={(e) => setSubmissionLink(e.target.value)}
+  />
+</div>
+
+<div className="col-md-12 mb-3">
+  <label>Monitoring Link (https only):</label>
+  <input
+    type="url"
+    className="form-control"
+    placeholder="https://example.com/monitoring"
+    value={monitoringLink}
+    onChange={(e) => setMonitoringLink(e.target.value)}
+  />
+</div>
+
               </div>
   
               <div className="row">
@@ -458,7 +510,45 @@ const handleDelete = async (id: string) => {
               <span>{alert.message}</span>
             </div>
           )}
-  
+<div className="inbox-controls mb-3 d-flex align-items-center gap-3">
+  {/* Search Label */}
+  <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
+  <input
+    id="searchInput"
+    type="text"
+    placeholder="Search by subject or remarks..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="form-control w-50"
+  />
+
+  {/* Sort Label */}
+  <label htmlFor="sortSelect" className="form-label mb-0">Sort By:</label>
+  <select
+    id="sortSelect"
+    value={sortField}
+    onChange={(e) => setSortField(e.target.value)}
+    className="form-select w-auto"
+  >
+    <option value="createdAt">Created Date</option>
+    <option value="subject">Subject</option>
+    <option value="deadline">Deadline</option>
+  </select>
+
+  {/* Order Label */}
+  <label htmlFor="orderSelect" className="form-label mb-0">Order:</label>
+  <select
+    id="orderSelect"
+    value={sortOrder}
+    onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+    className="form-select w-auto"
+  >
+    <option value="asc">Ascending</option>
+    <option value="desc">Descending</option>
+  </select>
+</div>
+
+
           <h3>Sent Communications</h3>
           {sentCommunications.length === 0 ? (
             <p>No sent communications found.</p>
@@ -475,7 +565,7 @@ const handleDelete = async (id: string) => {
                 </tr>
               </thead>
               <tbody>
-                {sentCommunications.map((comm) => (
+                {filteredCommunications.map((comm) => (
                   <tr key={comm.id}>
                     <td>
                     {comm.imageUrl ? (
