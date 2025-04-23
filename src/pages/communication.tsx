@@ -611,31 +611,36 @@ const handleDelete = async (id: string) => {
               <tbody>
                 {filteredCommunications.map((comm) => (
                   <tr key={comm.id}>
-<td>
-  {comm.imageUrl ? (
-    <a 
-      href="#" 
-      onClick={(e) => {
-        e.preventDefault();
-        setCurrentFileUrl(comm.imageUrl);
-        setShowFileModal(true);
-      }}
-      style={{ cursor: "pointer" }}
-    >
-      {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
-        <img 
-          src={comm.imageUrl} 
-          alt="attachment" 
-          style={{ width: "80px", height: "auto" }}
-        />
-      ) : (
-        <span>View Attachment</span>
-      )}
-    </a>
-  ) : (
-    "—"
-  )}
-</td>      
+                    <td>
+                      {comm.imageUrl ? (
+                        <a 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentFileUrl(comm.imageUrl);
+                            setShowFileModal(true);
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+                            <img
+                              src={comm.imageUrl}
+                              alt="attachment"
+                              style={{
+                                width: "80px",
+                                height: "80px",
+                                objectFit: "cover",
+                                borderRadius: "5px"
+                              }}
+                            />
+                          ) : (
+                            <span>View Attachment</span>
+                          )}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>      
                     <td>{comm.subject}</td>
                     <td>
                       {comm.recipients.map((userId: string, idx: number) => {
