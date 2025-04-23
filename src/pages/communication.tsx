@@ -37,6 +37,9 @@ const Communication: React.FC = () => {
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFileModal, setShowFileModal] = useState(false);
+  const [currentFileUrl, setCurrentFileUrl] = useState("");
+
 const [sortField, setSortField] = useState("createdAt");
 const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
@@ -378,6 +381,36 @@ const handleDelete = async (id: string) => {
         <span className="text">{showDetails ? "Hide" : "Create New Communication"}</span>
       </button>
   
+      {showFileModal && (
+  <div className="overlay">
+    <div className="modal-container" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
+      <button className="close-btn" onClick={() => setShowFileModal(false)}>
+        ✖
+      </button>
+      <div className="modal-body" style={{ overflow: 'auto' }}>
+        {currentFileUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+          <img 
+            src={currentFileUrl} 
+            alt="Attachment" 
+            style={{ maxWidth: "100%", maxHeight: "80vh" }}
+          />
+        ) : (
+          <div>
+            <p>This file type cannot be previewed. Please download it instead.</p>
+            <a 
+              href={currentFileUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              Download File
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
       {/* Modal - Centered on the Screen */}
       {showDetails && (
         <div className="overlay">
@@ -594,15 +627,31 @@ const handleDelete = async (id: string) => {
               <tbody>
                 {filteredCommunications.map((comm) => (
                   <tr key={comm.id}>
-                    <td>
-                    {comm.imageUrl ? (
-                      <a href={comm.imageUrl} target="_blank" rel="noopener noreferrer">
-                        <img src={comm.imageUrl} alt="attachment" style={{ width: "80px" }} />
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                    </td>
+<td>
+  {comm.imageUrl ? (
+    <a 
+      href="#" 
+      onClick={(e) => {
+        e.preventDefault();
+        setCurrentFileUrl(comm.imageUrl);
+        setShowFileModal(true);
+      }}
+      style={{ cursor: "pointer" }}
+    >
+      {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+        <img 
+          src={comm.imageUrl} 
+          alt="attachment" 
+          style={{ width: "80px", height: "auto" }}
+        />
+      ) : (
+        <span>View File</span>
+      )}
+    </a>
+  ) : (
+    "—"
+  )}
+</td>
                     
                     <td>{comm.subject}</td>
                     <td>
