@@ -62,7 +62,6 @@ const logos = [
   { src: ClientLogo28, alt: "client logo", link: "https://example.com/logo28" },
 ];
 
-
 export default function ClientSlider() {
   const settings = {
     infinite: true,
@@ -139,4 +138,3 @@ const ImgStyle = styled.img`
     opacity: 0.85;
   }
 `;
-
