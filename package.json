@@ -2,9 +2,10 @@
   "name": "practice-reactjs",
   "private": true,
   "version": "0.0.0",
+  "proxy": "http://localhost:4000",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"nodemon index.js\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -53,6 +54,7 @@
     "@types/react-scroll": "^1.8.10",
     "@types/react-slick": "^0.23.13",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
     "eslint": "^9.19.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",

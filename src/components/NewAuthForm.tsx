@@ -50,12 +50,17 @@ const AuthForm = () => {
     setSuccessMessage("");
   };
 
-  // Removed duplicate declaration of handleSignUp
+
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccessMessage("");
+  
+    // Role validation
+    if (role === "Select Role" || role.trim() === "") {
+
   
     // Role validation
     if (role === "Select Role" || role.trim() === "") {
@@ -70,11 +75,12 @@ const AuthForm = () => {
   
       // Save user info to Firestore (avoid storing passwords in production!)
       await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
+        email,
         role,
         password, // Consider hashing or removing this in a real app
       });
   
+      console.log("✅ Account Created Successfully");
       console.log("✅ Account Created Successfully");
   
       // Sign out the user after registration
@@ -82,6 +88,8 @@ const AuthForm = () => {
   
       setSuccessMessage("✅ Account Created Successfully! Please log in.");
       setLoading(false);
+  
+
   
       setTimeout(() => {
         setIsActive(false); // Switch to login form
@@ -102,9 +110,23 @@ const AuthForm = () => {
         setError("❌ Error creating account. Please try again.");
       }
   
+  
+      // Firebase Auth specific error handling
+      if (err.code === "auth/email-already-in-use") {
+        setError("❌ This email is already in use. Please log in or use a different email.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("❌ Please enter a valid email address.");
+      } else if (err.code === "auth/weak-password") {
+        setError("❌ Password should be at least 6 characters.");
+      } else {
+        setError("❌ Error creating account. Please try again.");
+      }
+  
       setLoading(false);
     }
   };
+    
+
     
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -161,6 +183,7 @@ const AuthForm = () => {
         setError("❌ Invalid credentials. Please check your email and password.");
       }
        else {
+
         setError("❌ Error logging in. Please try again.");
       }
   
@@ -287,5 +310,5 @@ const AuthForm = () => {
     </div>
   );
 };
-
+}
 export default AuthForm;
