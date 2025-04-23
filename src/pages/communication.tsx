@@ -28,7 +28,9 @@ const Communication: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [users, setUsers] = useState<{
+    role: string; id: string; fullName: string; email: string 
+}[]>([]);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
@@ -40,6 +42,28 @@ const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
 
   
+  // Group users by roles
+  const groupedOptions = Object.entries(
+    users.reduce((groups, user) => {
+      const role = user.role || "No Role";
+      if (!groups[role]) groups[role] = [];
+      groups[role].push({ value: user.id, label: user.fullName });
+      return groups;
+    }, {} as Record<string, { value: string; label: string }[]>)
+  ).map(([role, options]) => ({
+    label: role.charAt(0).toUpperCase() + role.slice(1),
+    options: [
+      {
+        value: `select_all_${role}`,
+        label: `Select all ${role}`,
+        isSelectAll: true, // custom flag to detect this
+        role,
+      },
+      ...options,
+    ],
+  }));
+  
+
   const fetchUsers = async () => {
     try {
       console.log("Fetching users...");
@@ -60,7 +84,7 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
           fullName = data.email || "Unknown User"; // Default to email if full name is missing
         }
 
-        return { id: doc.id, fullName, email: data.email };
+        return { id: doc.id, fullName, email: data.email, role: data.role || "No Role"  };
       });
 
       setUsers(usersList);
@@ -166,11 +190,6 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
     fetchUsers();
     fetchSentCommunications(); // Fetch sent communications on mount
   }, []);
-
-  const options: { value: string; label: string }[] = users.map((user) => ({
-    value: user.id,
-    label: user.fullName,
-  }));
 
   const handleRecipientChange = (
     selectedOptions: MultiValue<{ value: string; label: string }>
@@ -385,16 +404,17 @@ const handleDelete = async (id: string) => {
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
                   <Select
-                    options={options}
-                    isMulti
-                    value={options.filter((option) =>
-                      recipients.includes(option.value)
-                    )}
-                    onChange={handleRecipientChange}
-                    className="basic-multi-select "
-                    classNamePrefix="select"
-                    placeholder="Select recipients..."
-                  />
+  options={groupedOptions}
+  isMulti
+  value={groupedOptions.flatMap(group => group.options).filter((option) =>
+    recipients.includes(option.value)
+  )}
+  onChange={handleRecipientChange}
+  className="basic-multi-select"
+  classNamePrefix="select"
+  placeholder="Select recipients by role..."
+/>
+
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Deadline:</label>
