@@ -109,21 +109,9 @@ const AuthForm = () => {
       } else {
         setError("❌ Error creating account. Please try again.");
       }
-  
-  
-      // Firebase Auth specific error handling
-      if (err.code === "auth/email-already-in-use") {
-        setError("❌ This email is already in use. Please log in or use a different email.");
-      } else if (err.code === "auth/invalid-email") {
-        setError("❌ Please enter a valid email address.");
-      } else if (err.code === "auth/weak-password") {
-        setError("❌ Password should be at least 6 characters.");
-      } else {
-        setError("❌ Error creating account. Please try again.");
-      }
-  
       setLoading(false);
-    }
+    };
+  };
   };
     
 
@@ -309,6 +297,5 @@ const AuthForm = () => {
       </AnimatePresence>
     </div>
   );
-};
 };
 export default AuthForm;
