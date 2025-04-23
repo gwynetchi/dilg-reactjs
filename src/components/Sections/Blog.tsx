@@ -7,6 +7,7 @@ import TestimonialSlider from "../Elements/TestimonialSlider";
 import OrgChartViewer from "../Elements/OrgChartViewer";
 
 
+
 // interface BlogPost {
 //   title: string;
 //   text: string;
@@ -243,7 +244,7 @@ export default function Blog() {
             
           </HeaderInfo>
           <OrgChartViewer imageUrl="/orgchart.png" />
-
+          
 
 
         </div>
