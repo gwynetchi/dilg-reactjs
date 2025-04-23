@@ -48,6 +48,7 @@ import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
 
 
+
 import EvaluatorPrograms from "./pages/managePrograms";
 
 
@@ -63,6 +64,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
+
 
   ],
   Evaluator: [

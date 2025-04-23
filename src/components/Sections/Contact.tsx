@@ -127,8 +127,7 @@ const Form = styled.form`
     @media (max-width: 991px) {
       margin: 0 auto;
     }
-  }
-`;
+  }`;
 const ButtonInput = styled.input`
   border: 1px solid #0B093B;
   background-color: #0B093B;
