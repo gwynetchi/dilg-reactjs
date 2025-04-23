@@ -39,10 +39,10 @@ const Communication: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFileModal, setShowFileModal] = useState(false);
   const [currentFileUrl, setCurrentFileUrl] = useState("");
-
-const [sortField, setSortField] = useState("createdAt");
-const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
 
   
   // Group users by roles
@@ -97,37 +97,10 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-  
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "uploads"); // replace with your actual preset
-    formData.append("resource_type", "auto"); // this tells Cloudinary to detect the type
-    const auth = getAuth();
-    const user = auth.currentUser;
-    formData.append("folder", `communications/${user?.uid}`);
-  
-    try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
-        method: "POST",
-        body: formData,
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Upload error:", errorData);
-        throw new Error("File upload failed.");
-      }
-  
-      const data = await response.json();
-      setImageUrl(data.secure_url); // Save file URL
-      showAlert("File uploaded successfully!", "success");
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      showAlert("File upload failed.", "error");
-    }
+    setSelectedFile(file || null);
+    setImageUrl(""); // Clear any previous image URL
   };
   
   
@@ -231,7 +204,6 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
       showAlert("Only HTTPS links are allowed for submission and monitoring!");
       return;
     }
-    
   
     setLoading(true);
     try {
@@ -244,6 +216,28 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
         return;
       }
   
+      // Upload file if one was selected
+      let uploadedFileUrl = imageUrl; // Use existing URL if editing
+      if (selectedFile && !isEditing) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("upload_preset", "uploads");
+        formData.append("resource_type", "auto");
+        formData.append("folder", `communications/${user.uid}`);
+  
+        const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
+          method: "POST",
+          body: formData,
+        });
+  
+        if (!response.ok) {
+          throw new Error("File upload failed.");
+        }
+  
+        const data = await response.json();
+        uploadedFileUrl = data.secure_url;
+      }
+  
       if (isEditing && editingId) {
         // Update existing communication
         const docRef = doc(db, "communications", editingId);
@@ -252,12 +246,11 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
           recipients,
           deadline: new Date(deadline),
           remarks,
-          imageUrl,
+          imageUrl: uploadedFileUrl,
           submissionLink,
           monitoringLink,
         });
-        ;
-      
+        
         showAlert("Communication updated successfully!", "success");
       } else {
         // Create new communication
@@ -270,29 +263,13 @@ const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
           submissionLink,
           monitoringLink,
           createdBy: user.uid,
-          imageUrl,
+          imageUrl: uploadedFileUrl,
           createdAt: serverTimestamp(),
           submitID: [],
         });
         
         showAlert("Message Sent Successfully!", "success");
       }
-      const newDoc: any = {
-        subject,
-        recipients,
-        deadline: new Date(deadline),
-        remarks,
-        submissionLink, // use the actual variable name
-        monitoringLink, // use the actual variable name
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        submitID: [],
-      };
-      
-
-if (imageUrl) {
-  newDoc.imageUrl = imageUrl;
-}
   
       // Reset form
       setSubject("");
@@ -301,6 +278,8 @@ if (imageUrl) {
       setRemarks("");
       setSubmissionLink("");
       setMonitoringLink("");
+      setSelectedFile(null);
+      setImageUrl("");
       
       setIsEditing(false);
       setEditingId(null);
@@ -317,16 +296,16 @@ if (imageUrl) {
   const handleEdit = (comm: any) => {
     setSubject(comm.subject);
     setRecipients(comm.recipients);
-    setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16)); // for datetime-local
+    setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16));
     setRemarks(comm.remarks);
     setSubmissionLink(comm.submissionLink || "");
-    setMonitoringLink(comm.monitoringLink || "");    
+    setMonitoringLink(comm.monitoringLink || "");
+    setImageUrl(comm.imageUrl || "");
+    setSelectedFile(null); // Clear any selected file
     setEditingId(comm.id);
     setIsEditing(true);
     setShowDetails(true);
   };
-
-  
   
 const handleDelete = async (id: string) => {
   const confirmed = window.confirm("Are you sure you want to delete this communication?");
@@ -428,19 +407,24 @@ const handleDelete = async (id: string) => {
                   />
                 </div>
                 <div className="col-md-12 mb-3">
-                <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
-                  <input 
-                    type="file" 
-                    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                    className="form-control" 
-                    onChange={handleFileUpload}
-                  />
-                  {imageUrl && (
-                    <div className="mt-2">
-                      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Uploaded File</a>
-                    </div>
-                  )}
-                </div>
+  <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
+  <input 
+    type="file" 
+    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+    className="form-control" 
+    onChange={handleFileChange}
+  />
+  {selectedFile && (
+    <div className="mt-2">
+      <span>Selected file: {selectedFile.name}</span>
+    </div>
+  )}
+  {imageUrl && (
+    <div className="mt-2">
+      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Current Attachment</a>
+    </div>
+  )}
+</div>
 
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
@@ -645,14 +629,13 @@ const handleDelete = async (id: string) => {
           style={{ width: "80px", height: "auto" }}
         />
       ) : (
-        <span>View File</span>
+        <span>View Attachment</span>
       )}
     </a>
   ) : (
     "—"
   )}
-</td>
-                    
+</td>      
                     <td>{comm.subject}</td>
                     <td>
                       {comm.recipients.map((userId: string, idx: number) => {
