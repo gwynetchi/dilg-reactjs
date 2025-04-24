@@ -73,6 +73,8 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
       { name: "Message", icon: "bxs-chat", path: "/admin/message" },
       { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
+      { name: "Deleted Users", icon: "bx bx-user-x", path: "/admin/DeletedUsers" },
+      { name: "Deleted Communication", icon: "bx bx-user-x", path: "/admin/DeletedCommunications" },
       { name: "User Management", icon: "bxs-user-plus", path: "/admin/userManagement" },
     ],
   };

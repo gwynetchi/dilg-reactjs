@@ -14,6 +14,7 @@ import {
   getDocs as firestoreGetDocs,
   updateDoc,
 } from "firebase/firestore";
+import { softDelete } from "./../pages/modules/inbox-modules/softDelete"; // <- Add this import
 
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
@@ -307,20 +308,30 @@ const Communication: React.FC = () => {
     setShowDetails(true);
   };
   
-const handleDelete = async (id: string) => {
-  const confirmed = window.confirm("Are you sure you want to delete this communication?");
-  if (!confirmed) return;
 
-  try {
-    await deleteDoc(doc(db, "communications", id));
-    showAlert("Communication deleted successfully!", "success");
-    fetchSentCommunications(); // Refresh the list
-  } catch (error) {
-    console.error("Error deleting communication:", error);
-    showAlert("Failed to delete communication. Please try again.", "error");
-  }
-};
-
+  const handleDelete = async (id: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this communication?");
+    if (!confirmed) return;
+  
+    try {
+      const commDoc = doc(db, "communications", id);
+      const snapshot = await getDoc(commDoc);
+      const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+  
+      if (data) {
+        await softDelete(data, "communications", "deleted_communications");
+        await deleteDoc(commDoc);
+        showAlert("Communication deleted and archived successfully!", "success");
+        fetchSentCommunications(); // Refresh the list
+      } else {
+        showAlert("Communication not found!", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting communication:", error);
+      showAlert("Failed to delete communication. Please try again.", "error");
+    }
+  };
+  
 
   const getIcon = (type: string) => {
     switch (type) {

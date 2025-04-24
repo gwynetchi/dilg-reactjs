@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { softDelete } from "./../pages/modules/inbox-modules/softDelete"; // <- Add this import
 
 type UserType = {
   id: string;
@@ -51,11 +52,20 @@ const UserManagement = () => {
   const handleDelete = async (id: string) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this user?");
     if (!confirmDelete) return;
-
+  
     try {
-      await deleteDoc(doc(db, "users", id));
-      setUsers((prev) => prev.filter((user) => user.id !== id));
-      alert("✅ User deleted successfully!");
+      const userDoc = doc(db, "users", id);
+      const snapshot = await getDoc(userDoc);
+      const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+  
+      if (data) {
+        await softDelete(data, "users", "deleted_users");
+        await deleteDoc(userDoc);
+        setUsers((prev) => prev.filter((user) => user.id !== id));
+        alert("✅ User deleted and archived successfully!");
+      } else {
+        alert("❌ User not found.");
+      }
     } catch (error) {
       console.error("Error deleting user:", error);
       alert("❌ Failed to delete user. Please check permissions or try again later.");
