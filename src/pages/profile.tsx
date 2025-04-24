@@ -40,15 +40,48 @@ const Profile = () => {
         setMiddleName(data.mname || "");
         setLastName(data.lname || "");
         setProfileImage(data.profileImage || "");
-        setRole(data.role || ""); // 👈 Add this
+        setRole(data.role || "");
       }
     });
   };
+<<<<<<< Updated upstream
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedImageFile(file);
       setProfileImage(URL.createObjectURL(file)); // for preview
+=======
+  
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+  
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "uploads"); // replace with your actual preset
+    formData.append("folder", "profile_pictures");
+  
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await res.json();
+      setProfileImage(data.secure_url);
+  
+      // Save the image URL to Firestore immediately
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(userDocRef, { profileImage: data.secure_url }, { merge: true });
+  
+      showAlert("Profile picture uploaded!", "success");
+    } catch (err) {
+      console.error("Image upload failed", err);
+      showAlert("Failed to upload image.", "danger");
+    } finally {
+      setUploadingImage(false);
+>>>>>>> Stashed changes
     }
   };
   
@@ -144,10 +177,11 @@ const Profile = () => {
           <div className="relative-container">
             <div className="table-data">
               <div className="order">
-                <div className="head">
-                  <h3>Information</h3>
-                  <div className="d-flex justify-content-between">
+                <div className="head d-flex justify-content-between align-items-center">
+                  <h3>Personal Information</h3>
+                  <div className="action-buttons">
                     {isEditing ? (
+<<<<<<< Updated upstream
                       <button
                         className="btn btn-primary btn-sm"
                         onClick={handleSubmit}
@@ -176,79 +210,182 @@ const Profile = () => {
                         }}
                       >
                         Cancel
+=======
+                      <div className="d-flex gap-2">
+                        <button 
+                          className="btn btn-success" 
+                          onClick={handleSubmit} 
+                          disabled={loading}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          {loading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="bx bx-check" style={{ fontSize: '18px' }}></i>
+                              <span>Save Changes</span>
+                            </>
+                          )}
+                        </button>
+                        <button 
+                          className="btn btn-outline-secondary" 
+                          onClick={() => setIsEditing(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          <i className="bx bx-x" style={{ fontSize: '18px' }}></i>
+                          <span>Cancel</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => setIsEditing(true)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <i className="bx bx-edit-alt" style={{ fontSize: '18px' }}></i>
+                        <span>Edit Profile</span>
+>>>>>>> Stashed changes
                       </button>
                     )}
                   </div>
                 </div>
 
-                <div className="container">
+                <div className="container mt-4">
                   <div className="row">
-                    {/* Profile Image */}
-                    <div className="col-md-4 mb-3">
-                      <label className="form-label">Profile Picture:</label>
-                      <div>
-                        {profileImage && (
-                          <img src={profileImage} alt="Profile" style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover" }} />
+                    {/* Left Column - Profile Image */}
+                    <div className="col-md-3">
+                      <div className="profile-image-container text-center mb-3">
+                        <label className="form-label fw-bold">Profile Picture</label>
+                        <div className="profile-image-wrapper my-3">
+                          {profileImage ? (
+                            <img 
+                              src={profileImage} 
+                              alt="Profile" 
+                              className="img-fluid rounded-circle shadow" 
+                              style={{ 
+                                width: 150, 
+                                height: 150, 
+                                objectFit: "cover",
+                                border: "4px solid #f8f9fa"
+                              }} 
+                            />
+                          ) : (
+                            <div className="placeholder-profile shadow" style={{ 
+                              width: 150, 
+                              height: 150, 
+                              backgroundColor: "#e9ecef", 
+                              borderRadius: "50%", 
+                              margin: "0 auto", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center",
+                              border: "4px solid #f8f9fa"
+                            }}>
+                              <i className="bx bx-user" style={{ fontSize: "48px", color: "#adb5bd" }}></i>
+                            </div>
+                          )}
+                        </div>
+                        {isEditing && (
+                          <div className="mt-2">
+                            <div className="custom-file-upload">
+                              <input
+                                id="file-upload"
+                                type="file"
+                                className="form-control"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                disabled={uploadingImage}
+                              />
+                              {uploadingImage && (
+                                <div className="text-center mt-2">
+                                  <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                  </div>
+                                  <small className="text-muted d-block mt-1">Uploading image...</small>
+                                </div>
+                              )}
+                            </div>
+                            
+                          </div>
                         )}
                       </div>
-                      {isEditing && (
-                        <input
-                          type="file"
-                          className="form-control form-control-sm mt-2"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploadingImage}
-                        />
-                      )}
                     </div>
 
-                    {/* First Name */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">First Name:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Enter first name"
-                        value={fname}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        disabled={!isEditing || loading}
-                      />
-                    </div>
+                    {/* Right Column - Form Fields */}
+                    <div className="col-md-9">
+                      <div className="card border-0 shadow-sm">
+                        <div className="card-body">
+                          <div className="row">
+                            {/* Role - First in the right column */}
+                            <div className="col-md-12 mb-3">
+                              <label className="form-label fw-bold">Role:</label>
+                              <input
+                                type="text"
+                                className="form-control bg-light"
+                                value={role}
+                                disabled
+                              />
+                            </div>
 
-                    {/* Middle Name */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">Middle Name:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Enter middle name"
-                        value={mname}
-                        onChange={(e) => setMiddleName(e.target.value)}
-                        disabled={!isEditing || loading}
-                      />
-                    </div>
+                            {/* First Name */}
+                            <div className="col-md-4 mb-3">
+                              <label className="form-label fw-bold">First Name:</label>
+                              <input
+                                type="text"
+                                className={`form-control ${isEditing ? '' : 'bg-light'}`}
+                                placeholder="Enter first name"
+                                value={fname}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                disabled={!isEditing || loading}
+                              />
+                            </div>
 
-                    {/* Last Name */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">Last Name:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Enter last name"
-                        value={lname}
-                        onChange={(e) => setLastName(e.target.value)}
-                        disabled={!isEditing || loading}
-                      />
-                    </div>
-                    {/* Role */}
-                    <div className="col-md-4 mb-2">
-                      <label className="form-label">Role:</label>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        value={role}
-                        disabled
-                      />
+                            {/* Middle Name */}
+                            <div className="col-md-4 mb-3">
+                              <label className="form-label fw-bold">Middle Name:</label>
+                              <input
+                                type="text"
+                                className={`form-control ${isEditing ? '' : 'bg-light'}`}
+                                placeholder="Enter middle name"
+                                value={mname}
+                                onChange={(e) => setMiddleName(e.target.value)}
+                                disabled={!isEditing || loading}
+                              />
+                            </div>
+
+                            {/* Last Name */}
+                            <div className="col-md-4 mb-3">
+                              <label className="form-label fw-bold">Last Name:</label>
+                              <input
+                                type="text"
+                                className={`form-control ${isEditing ? '' : 'bg-light'}`}
+                                placeholder="Enter last name"
+                                value={lname}
+                                onChange={(e) => setLastName(e.target.value)}
+                                disabled={!isEditing || loading}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1010,12 +1010,12 @@ tr {
   }
   
   .content-layout.expanded {
-	margin-top: 100px;
+	margin-top: 70px;
     margin-left: 220px; /* Adjust as needed */
     transition: margin .3s ease-in-out;
 }
   .content-layout.collapsed {
-	margin-top: 100px;
+	margin-top: 70px;
     margin-left: 80px; /* Adjust as needed */
     transition: margin .3s ease-in-out;
 }
