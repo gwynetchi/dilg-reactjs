@@ -16,8 +16,13 @@ const DeletedCommunications = () => {
     setLoading(true);
     try {
       const snapshot = await getDocs(collection(db, "deleted_communications"));
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCommunications(items);
+      const items = snapshot.docs.map(doc => {
+        const commData = doc.data();
+        // Ensure deletedBy is populated correctly (as name or email)
+        const deletedByName = commData.deletedBy || "N/A"; // Fallback to "N/A" if deletedBy is not found
+        return { id: doc.id, ...commData, deletedBy: deletedByName };
+      });
+      setCommunications(items); // Update the state with the fetched data
     } catch (err) {
       console.error("Error fetching deleted communications:", err);
     } finally {
@@ -27,14 +32,17 @@ const DeletedCommunications = () => {
 
   const handleRestore = async (comm: any) => {
     try {
+      // Restore the communication by moving it back to the communications collection
       await setDoc(doc(db, "communications", comm.id), {
         ...comm,
         restoredAt: new Date(),
       });
 
+      // Remove it from the deleted_communications collection
       await deleteDoc(doc(db, "deleted_communications", comm.id));
 
-      setCommunications(prev => prev.filter(c => c.id !== comm.id));
+      // Refresh the list by removing the restored item
+      setCommunications((prev) => prev.filter((c) => c.id !== comm.id));
     } catch (error) {
       console.error("Failed to restore communication:", error);
     }
@@ -42,7 +50,7 @@ const DeletedCommunications = () => {
 
   useEffect(() => {
     fetchDeleted();
-  }, []);
+  }, []); // Fetch deleted communications on component mount
 
   return (
     <div className="dashboard-container">
@@ -57,12 +65,12 @@ const DeletedCommunications = () => {
               <th>Remarks</th>
               <th>Deadline</th>
               <th>Deleted At</th>
-              <th>Deleted By</th> {/* 🆕 Column for deleter */}
+              <th>Deleted By</th> {/* Column for showing who deleted the communication */}
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {communications.map(comm => (
+            {communications.map((comm) => (
               <tr key={comm.id}>
                 <td>{comm.subject}</td>
                 <td>{comm.remarks}</td>
@@ -74,7 +82,7 @@ const DeletedCommunications = () => {
                   {comm.deletedAt?.seconds &&
                     new Date(comm.deletedAt.seconds * 1000).toLocaleString()}
                 </td>
-                <td>{comm.deletedBy || "N/A"}</td> {/* Display the deletedBy field */}
+                <td>{comm.deletedBy || "N/A"}</td> {/* Display deletedBy field */}
                 <td>
                   <button
                     className="btn btn-success"
