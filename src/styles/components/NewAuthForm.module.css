@@ -249,7 +249,21 @@ p.error {
     color:#1E4E92
 }
 
+.p.successMessage {
+    font-size: 14px;
+    color: green;
+}
+.p.success {
+    font-size: 14px;
+    color: green;
+    text-align: center;
+}
 
+.successMessage {
+    font-size: 14px;
+    color: green;
+    text-align: center;
+    margin: 10px 0;}
 
 .toggle-box{
     position: absolute;

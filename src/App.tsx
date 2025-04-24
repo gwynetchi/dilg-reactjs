@@ -8,6 +8,7 @@ import "./styles/components/pages.css";
 
 import SendDueCommunications from "./pages/SendDuePrograms";
 import CheckFrequency from "./pages/CheckFrequency";
+import DeletedCommunications from "./pages/DeletedCommunications";
 
 
 // Import Dashboards
@@ -22,6 +23,8 @@ import EvaluatorMessageDetails from "./pages/messagedetails";
 import LGUMessageDetails from "./pages/messagedetails";
 import ViewerMessageDetails from "./pages/messagedetails";
 import AdminMessageDetails from "./pages/messagedetails";
+
+// Import Deleted Communications
 
 // Import Sent communications
 import EvaluatorSent from "./pages/sentCommunications";
@@ -49,7 +52,7 @@ import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
-
+import DeletedUsers from "./pages/admin/DeletedUsers";
 
 
 import EvaluatorPrograms from "./pages/managePrograms";
@@ -69,8 +72,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
-
-
+    { path: "/admin/DeletedUsers", element: <DeletedUsers />}, // ← Added here
+    { path: "/admin/DeletedCommunications", element: <DeletedCommunications />}, // ← Added here
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -80,6 +83,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/sentbox", element: <Sentbox /> },
     { path: "/evaluator/communication", element: <EvaluatorCommunication /> },
     { path: "/evaluator/sentCommunications/:id", element: <EvaluatorSent /> }, // Added this line
+    { path: "/evaluator/DeletedCommunications", element: <DeletedCommunications />}, // ← Added here
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/evaluator/analytics", element: <Analytics /> },
@@ -97,6 +101,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/inbox/:id", element: <LGUMessageDetails /> },
     { path: "/lgu/communication", element: <LGUCommunication /> },
     { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
+    { path: "/lgu/DeletedCommunications", element: <DeletedCommunications />}, // ← Added here
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
@@ -111,6 +116,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/inbox/:id", element: <ViewerMessageDetails /> },
     { path: "/viewer/communication", element: <ViewerCommunication /> },
     { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
+    { path: "/viewer/DeletedCommunications", element: <DeletedCommunications />}, // ← Added here
+
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/viewer/scoreBoard", element: <Scoreboard /> },
@@ -122,28 +129,47 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
-  const [duePrograms, setDuePrograms] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth > 576;
+    }
+    return true;
+  });
+    const [duePrograms, setDuePrograms] = useState<any[]>([]);
   const auth = getAuth();
   const db = getFirestore();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    if (currentUser) {
+      // Check if this UID is in deleted_users
+      const deletedRef = doc(db, "deleted_users", currentUser.uid);
+      const deletedSnap = await getDoc(deletedRef);
 
-        setRole(userDoc.exists() ? userDoc.data().role : null);
-      } else {
+      if (deletedSnap.exists()) {
+        console.warn("This account is marked as deleted. Signing out...");
+        await auth.signOut();
         setUser(null);
         setRole(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
-  }, []);
+      setUser(currentUser);
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      setRole(userDoc.exists() ? userDoc.data().role : null);
+    } else {
+      setUser(null);
+      setRole(null);
+    }
+    setLoading(false);
+  });
+
+  return () => unsubscribe();
+}, []);
+
   
   const getDashboardPath = () => {
     return role && roleRoutesConfig[role] ? roleRoutesConfig[role][0].path : "/login";
@@ -177,12 +203,11 @@ const App: React.FC = () => {
 
   return (
     <Router>
-       
-      <div className="app-container">
         {user && role && (
           <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
-        <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
-          <Routes>
+                <div className="app-container">
+    <div className={`content-layout ${isSidebarOpen ? "expanded" : "collapsed"}`}>
+    <Routes>
             {/* Public Routes */}
             <Route path="/dashboard" element={<Landing />} />
             <Route path="/login" element={<AuthForm />} />
@@ -200,7 +225,8 @@ const App: React.FC = () => {
           <CheckFrequency onDuePrograms={setDuePrograms} />
           {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
         </div>
-      </div>
+        </div>
+
     </Router>
   );
 };
