@@ -402,8 +402,8 @@ const Communication: React.FC = () => {
 )}
       {/* Modal - Centered on the Screen */}
       {showDetails && (
-        <div className="overlay">
-          <div className="modal-container">
+        <div className="overlay" >
+          <div className="modal-container" style={{overflow: 'auto'}}>
             <div className="container">
               <div className="row">
                 <div className="col-md-12 mb-3">
