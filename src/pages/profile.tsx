@@ -11,11 +11,12 @@ const Profile = () => {
   const [lname, setLastName] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [role, setRole] = useState("");
-
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [originalProfileImage, setOriginalProfileImage] = useState("");
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -43,68 +44,66 @@ const Profile = () => {
       }
     });
   };
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
-  
-    setUploadingImage(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "uploads"); // replace with your actual preset
-    formData.append("folder", "profile_pictures");
-  
-    try {
-      const res = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
-        method: "POST",
-        body: formData,
-      });
-  
-      const data = await res.json();
-      setProfileImage(data.secure_url);
-  
-      // 🔥 Save the image URL to Firestore immediately
-      const userDocRef = doc(db, "users", user.uid);
-      await setDoc(userDocRef, { profileImage: data.secure_url }, { merge: true });
-  
-      showAlert("Profile picture uploaded!", "success");
-    } catch (err) {
-      console.error("Image upload failed", err);
-      showAlert("Failed to upload image.", "danger");
-    } finally {
-      setUploadingImage(false);
+    if (file) {
+      setSelectedImageFile(file);
+      setProfileImage(URL.createObjectURL(file)); // for preview
     }
   };
   
-
   const handleSubmit = async () => {
     if (!user) {
       showAlert("You must be logged in to update your profile", "danger");
       return;
     }
-
+  
     if (!fname.trim() || !lname.trim()) {
       showAlert("First name and last name are required!", "warning");
       return;
     }
-
+  
     setLoading(true);
+    setUploadingImage(true);
+  
     try {
+      let uploadedImageUrl = profileImage;
+  
+      // 🔼 Upload image to Cloudinary only if a new one was selected
+      if (selectedImageFile) {
+        const formData = new FormData();
+        formData.append("file", selectedImageFile);
+        formData.append("upload_preset", "uploads");
+        formData.append("folder", "profile_pictures");
+  
+        const res = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
+          method: "POST",
+          body: formData,
+        });
+  
+        const data = await res.json();
+        uploadedImageUrl = data.secure_url;
+      }
+  
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(
         userDocRef,
-        { fname, mname: mname || "", lname, profileImage },
+        { fname, mname: mname || "", lname, profileImage: uploadedImageUrl },
         { merge: true }
       );
-
+  
       showAlert("Profile Updated Successfully!", "success");
+      setSelectedImageFile(null);
       setIsEditing(false);
     } catch (error) {
       console.error("Error Saving Profile Information:", error);
       showAlert("Could not save profile. Please try again!", "danger");
     } finally {
       setLoading(false);
+      setUploadingImage(false);
     }
   };
+  
 
   const showAlert = (message: string, type: string) => {
     setAlert({ message, type });
@@ -149,17 +148,33 @@ const Profile = () => {
                   <h3>Information</h3>
                   <div className="d-flex justify-content-between">
                     {isEditing ? (
-                      <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={loading}>
-                        {loading ? "Saving..." : "Save Profile"}
-                      </button>
-                    ) : (
-                      <button className="btn btn-secondary btn-sm" onClick={() => setIsEditing(true)}>
-                        Edit
-                      </button>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleSubmit}
+                        disabled={loading || uploadingImage}
+                      >
+                        {uploadingImage ? "Uploading..." : loading ? "Saving..." : "Save Profile"}
+                      </button>) : (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => {
+                            setOriginalProfileImage(profileImage); // Save the current image
+                            setIsEditing(true);
+                          }}
+                        >
+                          Edit
+                        </button>
                     )}
 
                     {isEditing && (
-                      <button className="btn btn-light btn-sm" onClick={() => setIsEditing(false)}>
+                      <button
+                        className="btn btn-light btn-sm"
+                        onClick={() => {
+                          setProfileImage(originalProfileImage); // Revert to original
+                          setSelectedImageFile(null); // Clear selected file
+                          setIsEditing(false);
+                        }}
+                      >
                         Cancel
                       </button>
                     )}
