@@ -319,7 +319,7 @@ const Communication: React.FC = () => {
       const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
   
       if (data) {
-        await softDelete(data, "communications", "deleted_communications");
+        await softDelete(data, "communications", "deleted_communications", "deletedBy");
         await deleteDoc(commDoc);
         showAlert("Communication deleted and archived successfully!", "success");
         fetchSentCommunications(); // Refresh the list

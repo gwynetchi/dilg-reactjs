@@ -27,16 +27,13 @@ const DeletedCommunications = () => {
 
   const handleRestore = async (comm: any) => {
     try {
-      // Move to communications
       await setDoc(doc(db, "communications", comm.id), {
         ...comm,
         restoredAt: new Date(),
       });
 
-      // Delete from deleted_communications
       await deleteDoc(doc(db, "deleted_communications", comm.id));
 
-      // Refresh list
       setCommunications(prev => prev.filter(c => c.id !== comm.id));
     } catch (error) {
       console.error("Failed to restore communication:", error);
@@ -60,6 +57,7 @@ const DeletedCommunications = () => {
               <th>Remarks</th>
               <th>Deadline</th>
               <th>Deleted At</th>
+              <th>Deleted By</th> {/* 🆕 Column for deleter */}
               <th>Actions</th>
             </tr>
           </thead>
@@ -76,6 +74,7 @@ const DeletedCommunications = () => {
                   {comm.deletedAt?.seconds &&
                     new Date(comm.deletedAt.seconds * 1000).toLocaleString()}
                 </td>
+                <td>{comm.deletedBy || "N/A"}</td> {/* Display the deletedBy field */}
                 <td>
                   <button
                     className="btn btn-success"
