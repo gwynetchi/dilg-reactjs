@@ -208,8 +208,17 @@ const Dashboard = () => {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  if (loading) return <div>Loading...</div>;
-  if (!currentUser) return <div>Please log in to view your tasks.</div>;
+    if (loading) {
+        return (
+          <div className="spinner-overlay">
+            <div className="spinner"></div>
+          </div>
+        );
+      }
+      
+      if (!currentUser) {
+        return <div>Please log in to view your tasks.</div>;
+      }      
 
   return (
     <div className="dashboard-container">
@@ -235,9 +244,9 @@ const Dashboard = () => {
           </div>
 
           <main className="p-6">
-  <h2 className="mb-4">Updated DILG Results Framework</h2>
-  <ResultsFramework />
-</main>
+    <h2 className="mb-4">Updated DILG Results Framework</h2>
+    <ResultsFramework />
+    </main>
           {/* Filters */}
           <div className="month-filter">
             <label htmlFor="month">Filter by Month:</label>
