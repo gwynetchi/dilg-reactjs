@@ -3,6 +3,7 @@ import {
   collection,
   getDocs,
   doc,
+  getDoc,
   deleteDoc,
   setDoc,
 } from "firebase/firestore";
@@ -16,7 +17,23 @@ const DeletedUsers = () => {
     setLoading(true);
     try {
       const snapshot = await getDocs(collection(db, "deleted_users"));
-      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const users = await Promise.all(
+        snapshot.docs.map(async (document) => {
+          const userData = document.data();
+          const deletedByUID = userData.deletedBy;
+          let deletedByName = deletedByUID;
+
+          // Fetch user data to get the deletedBy name
+          const userDocRef = doc(db, "users", deletedByUID);
+          const userSnapshot = await getDoc(userDocRef);
+          if (userSnapshot.exists()) {
+            const user = userSnapshot.data();
+            deletedByName = `${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim() || user.email || deletedByUID;
+          }
+
+          return { id: document.id, ...userData, deletedByName };
+        })
+      );
       setDeletedUsers(users);
     } catch (err) {
       console.error("Error fetching deleted users:", err);
@@ -59,6 +76,7 @@ const DeletedUsers = () => {
               <th>Role</th>
               <th>Password</th>
               <th>Deleted At</th>
+              <th>Deleted By</th> {/* Added column for deletedBy */}
               <th>Actions</th>
             </tr>
           </thead>
@@ -73,6 +91,7 @@ const DeletedUsers = () => {
                   {user.deletedAt?.seconds &&
                     new Date(user.deletedAt.seconds * 1000).toLocaleString()}
                 </td>
+                <td>{user.deletedByName || "N/A"}</td> {/* Display deletedBy */}
                 <td>
                   <button
                     className="btn btn-success"

@@ -332,7 +332,6 @@ const Communication: React.FC = () => {
     }
   };
   
-
   const getIcon = (type: string) => {
     switch (type) {
       case "success":
