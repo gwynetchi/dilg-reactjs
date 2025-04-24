@@ -144,42 +144,54 @@ const Profile = () => {
           <div className="relative-container">
             <div className="table-data">
               <div className="order">
-                <div className="head d-flex justify-content-between align-items-center">
-                  <h3>Personal Information</h3>
-                  <div className="action-buttons">
-                    {isEditing ? (
+              <div className="head d-flex justify-content-between align-items-center">
+                <h3>Personal Information</h3>
+                <div className="action-buttons d-flex gap-2">
+                  {isEditing ? (
+                    <>
                       <button
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
                         onClick={handleSubmit}
                         disabled={loading || uploadingImage}
                       >
-                        {uploadingImage ? "Uploading..." : loading ? "Saving..." : "Save Profile"}
-                      </button>) : (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => {
-                            setOriginalProfileImage(profileImage); // Save the current image
-                            setIsEditing(true);
-                          }}
-                        >
-                          Edit
-                        </button>
-                    )}
-
-                    {isEditing && (
+                        {uploadingImage || loading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>{uploadingImage ? "Uploading..." : "Saving..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="bx bx-save"></i>
+                            <span>Save Changes</span>
+                          </>
+                        )}
+                      </button>
                       <button
-                        className="btn btn-light btn-sm"
+                        className="btn btn-light btn-sm d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
                         onClick={() => {
-                          setProfileImage(originalProfileImage); // Revert to original
-                          setSelectedImageFile(null); // Clear selected file
+                          setProfileImage(originalProfileImage);
+                          setSelectedImageFile(null);
                           setIsEditing(false);
                         }}
                       >
-                        Cancel
+                        <i className="bx bx-x"></i>
+                        <span>Cancel</span>
                       </button>
-                    )}
-                  </div>
+                    </>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
+                      onClick={() => {
+                        setOriginalProfileImage(profileImage);
+                        setIsEditing(true);
+                      }}
+                    >
+                      <i className="bx bx-edit-alt"></i>
+                      <span>Edit Profile</span>
+                    </button>
+                  )}
                 </div>
+              </div>
 
                 <div className="container mt-4">
                   <div className="row">
