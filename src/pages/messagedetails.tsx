@@ -141,7 +141,11 @@ const MessageDetails: React.FC = () => {
     setIframeSrc(null); // Clear iframe source when modal closes
   };
 
-  if (loading) return <p>Loading message details...</p>;
+  if (loading) return (
+    <div className="spinner-overlay">
+      <div className="spinner"></div>
+    </div>
+  );
   if (!message) return <p>Message not found.</p>;
 
   const inboxPath = role ? `/${role.toLowerCase()}/inbox` : "/";

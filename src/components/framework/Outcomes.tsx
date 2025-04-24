@@ -13,7 +13,7 @@ interface Outcome {
 
 const outcomes: Outcome[] = [
   {
-    title: "Excellence in local governance upheld",
+    title: "Excellence in Local Governance Upheld",
     colorClass: "bg-warning text-dark",
     goals: [
       { text: "Sustain Accountable, Transparent and People-Centric Local Governments" },
@@ -21,7 +21,7 @@ const outcomes: Outcome[] = [
     ]
   },
   {
-    title: "Peaceful, orderly, and safe communities strengthened",
+    title: "Peaceful, Orderly, and Safe Communities Strengthened",
     colorClass: "bg-primary text-white",
     goals: [
       { text: "Bolster Peace and Order Security in Communities" },
@@ -30,7 +30,7 @@ const outcomes: Outcome[] = [
     ]
   },
   {
-    title: "Resilient communities reinforced",
+    title: "Resilient Communities Reinforced",
     colorClass: "bg-success text-white",
     goals: [
       { text: "Intensify Adaptive Capacities of LGUs and Communities to Disasters" }
@@ -49,28 +49,28 @@ const outcomes: Outcome[] = [
 
 const ResultsFramework: React.FC = () => {
   return (
-    <div className="container mt-4">
-      <div className="row g-4">
-        {outcomes.map((outcome, index) => (
-          <div
-            key={index}
-            className={outcome.fullWidth ? 'col-12' : 'col-md-3'}
-          >
-            <div className={`card ${outcome.colorClass} h-100`}>
-              <div className="card-body">
-                <h5 className="card-title fw-bold">{outcome.title}</h5>
-                <ul className="mt-3">
-                  {outcome.goals.map((goal, i) => (
-                    <li key={i}>{goal.text}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+<div className="container mt-4">
+  <div className="row g-4">
+    {outcomes.map((outcome, index) => (
+      <div
+        key={index}
+        className={`${outcome.fullWidth === true? 'col-12' : 'col-md-3'} d-flex`}
+      >
+        <div className={`card ${outcome.colorClass} w-100`}>
+          <div className="card-body d-flex flex-column">
+            <h5 className="card-title fw-bold">{outcome.title}</h5>
+            <ul className="mt-3">
+              {outcome.goals.map((goal, i) => (
+                <li key={i}>{goal.text}</li>
+              ))}
+            </ul>
           </div>
+        </div>
+      </div>
         ))}
       </div>
     </div>
-  );
+  );  
 };
 
 export default ResultsFramework;
