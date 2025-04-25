@@ -5,6 +5,8 @@ import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, getDocs, getDoc, collection, query, where } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
+// Replace with the correct relative path to softDelete.ts
+import { softDelete, checkIfDeletedUser } from "../pages/modules/inbox-modules/softDelete";
 
 const AuthForm = () => {
   const [isActive, setIsActive] = useState(false);
@@ -49,74 +51,85 @@ const AuthForm = () => {
     setSuccessMessage("");
   };
 
-const handleSignUp = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-  setSuccessMessage("");
-
-  if (role === "Select Role" || role.trim() === "") {
-    setError("❌ Please select a valid role.");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    // 🔍 Check if email exists in deleted_users
-    const q = query(
-      collection(db, "deleted_users"),
-      where("email", "==", email.toLowerCase())
-    );
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      setError("❌ This email belongs to a deleted account. Please contact an administrator.");
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccessMessage("");
+  
+    if (role === "Select Role" || role.trim() === "") {
+      setError("❌ Please select a valid role.");
       setLoading(false);
       return;
     }
-
-    // ✅ Create user
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // 👤 Save user profile in Firestore
-    await setDoc(doc(db, "users", user.uid), {
-      email: email.toLowerCase(),
-      role,
-      password,
-      createdAt: new Date()
-    });
-
-    console.log("✅ Account Created Successfully");
-
-    // 🔐 Sign out after registration
-    await auth.signOut();
-
-    setSuccessMessage("✅ Account Created Successfully! Please log in.");
-    setLoading(false);
-
-    setTimeout(() => {
-      setIsActive(false); // Switch to login form
-      resetForm(); // Clear input fields
-    }, 500);
-
-  } catch (err: any) {
-    console.error(err);
-
-    if (err.code === "auth/email-already-in-use") {
-      setError("❌ This email is already in use. Please log in or use a different email.");
-    } else if (err.code === "auth/invalid-email") {
-      setError("❌ Please enter a valid email address.");
-    } else if (err.code === "auth/weak-password") {
-      setError("❌ Password should be at least 6 characters.");
-    } else {
-      setError("❌ Error creating account. Please try again.");
+  
+    try {
+      // 🔍 Check if email exists in deleted_users
+      const isDeleted = await checkIfDeletedUser(email.toLowerCase());
+      if (isDeleted) {
+        setError("❌ This email belongs to a deleted account. Please contact an administrator.");
+        setLoading(false);
+        return;
+      }
+  
+      // 🔁 Check if email is in 'users' collection (could be orphaned or active)
+      const q = query(collection(db, "users"), where("email", "==", email.toLowerCase()));
+      const userSnapshot = await getDocs(q);
+  
+      if (!userSnapshot.empty) {
+        // Soft delete any existing user data to avoid conflict
+        const existingUserDoc = userSnapshot.docs[0];
+        const existingUserData = { ...existingUserDoc.data(), id: existingUserDoc.id };
+        
+        // Archive to deleted_users collection
+        await softDelete(existingUserData, "users", "deleted_users", "System");
+  
+        // Delete original if needed (optional cleanup)
+        // await deleteDoc(doc(db, "users", existingUserDoc.id));
+      }
+  
+      // ✅ Create new Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      // 🗂 Save to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        email: email.toLowerCase(),
+        role,
+        password,
+        createdAt: new Date()
+      });
+  
+      console.log("✅ Account Created Successfully");
+  
+      // 🔐 Sign out after registration
+      await auth.signOut();
+  
+      setSuccessMessage("✅ Account Created Successfully! Please log in.");
+      setLoading(false);
+  
+      setTimeout(() => {
+        setIsActive(false); // Switch to login form
+        resetForm(); // Clear input fields
+      }, 500);
+  
+    } catch (err: any) {
+      console.error(err);
+  
+      if (err.code === "auth/email-already-in-use") {
+        setError("❌ This email is already in use. Please log in or use a different email.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("❌ Please enter a valid email address.");
+      } else if (err.code === "auth/weak-password") {
+        setError("❌ Password should be at least 6 characters.");
+      } else {
+        setError("❌ Error creating account. Please try again.");
+      }
+  
+      setLoading(false);
     }
-
-    setLoading(false);
-  }
-};
-
+  };
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -124,19 +137,18 @@ const handleSignUp = async (e: React.FormEvent) => {
     setSuccessMessage("");
   
     try {
-          // 🔍 Check if email exists in deleted_users
       const q = query(
         collection(db, "deleted_users"),
         where("email", "==", email.toLowerCase())
       );
       const querySnapshot = await getDocs(q);
-
+      
       if (!querySnapshot.empty) {
         setError("❌ This email belongs to a deleted account. Please contact an administrator.");
         setLoading(false);
         return;
       }
-
+                
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
   

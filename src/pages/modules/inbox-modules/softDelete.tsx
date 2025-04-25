@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
 
 /**
@@ -15,29 +15,50 @@ export const softDelete = async (
   deletedBy: string
 ) => {
   try {
-    // Fetch the user who deleted the document (to get their full name or email)
     const userDocRef = doc(db, "users", deletedBy);
     const userSnapshot = await getDoc(userDocRef);
-    let deletedByName = deletedBy; // Fallback to UID if no name found
+    let deletedByName = deletedBy;
 
     if (userSnapshot.exists()) {
       const userData = userSnapshot.data();
-      // Construct the deletedBy name (first, middle, last name or email if no names are available)
-      deletedByName = `${userData.fname || ""} ${userData.mname || ""} ${userData.lname || ""}`.trim() || userData.email || deletedBy;
+      deletedByName =
+        `${userData.fname || ""} ${userData.mname || ""} ${userData.lname || ""}`.trim() ||
+        userData.email ||
+        deletedBy;
     }
 
-    // Reference to the deleted document in the archive collection
     const deletedRef = doc(db, deletedCollection, originalData.id);
-    // Save the document in the deleted collection along with who deleted it
     await setDoc(deletedRef, {
       ...originalData,
       deletedAt: new Date(),
-      deletedBy: deletedByName, // Store the name or email of the user who deleted it
+      deletedBy: deletedByName,
       originalCollection,
     });
   } catch (err) {
     console.error("Error archiving deleted document:", err);
   }
+};
+
+/**
+ * Check if a user email exists in the deleted_users collection.
+ * @param email - The email to check.
+ * @returns True if the email exists in deleted_users, otherwise false.
+ */
+export const checkIfDeletedUser = async (email: string): Promise<boolean> => {
+  const q = query(collection(db, "deleted_users"), where("email", "==", email.toLowerCase()));
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
+};
+
+/**
+ * Check if a communication ID exists in the deleted_communications collection.
+ * @param id - The document ID to check.
+ * @returns True if the communication is in deleted_communications, otherwise false.
+ */
+export const checkIfDeletedCommunication = async (id: string): Promise<boolean> => {
+  const docRef = doc(db, "deleted_communications", id);
+  const docSnap = await getDoc(docRef);
+  return docSnap.exists();
 };
 
 export default softDelete;
