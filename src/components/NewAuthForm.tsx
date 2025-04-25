@@ -6,7 +6,6 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "fire
 import { setDoc, doc, getDocs, getDoc, collection, query, where } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
-
 const AuthForm = () => {
   const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -147,7 +146,6 @@ const handleSignUp = async (e: React.FormEvent) => {
         return;
       }
   
-
       // ✅ User is valid, now get their role
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
