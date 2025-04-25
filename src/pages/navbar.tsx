@@ -80,17 +80,20 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserId(user.uid);
   
-        // Fetch user role and profile picture from Firestore
         const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          setUserRole(userSnap.data().role);
-          setUserProfilePic(userSnap.data().profileImage || "https://res.cloudinary.com/your-cloud-name/image/upload/v1645027603/person.svg"); // Default profile image if none available
-        }
+        const unsubscribeUserDoc = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            setUserRole(userData.role);
+            setUserProfilePic(userData.profileImage || "https://res.cloudinary.com/your-cloud-name/image/upload/v1645027603/person.svg");
+          }
+        });
+  
+        return unsubscribeUserDoc; // Clean up Firestore listener on logout or user switch
       } else {
         setUserId(null);
         setUserRole(null);
@@ -100,7 +103,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     return () => unsubscribe();
   }, []);
   
-
   useEffect(() => {
     console.log("Current User ID:", userId);
   }, [userId]);
