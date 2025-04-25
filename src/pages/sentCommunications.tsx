@@ -10,7 +10,7 @@ const SentCommunications: React.FC = () => {
 
   useEffect(() => {
     const fetchCommunication = async () => {
-      if (!id) return; 
+      if (!id) return;
 
       setLoading(true);
       try {
@@ -35,6 +35,10 @@ const SentCommunications: React.FC = () => {
   if (loading) return <p>Loading communication details...</p>;
   if (!communication) return <p>No communication found.</p>;
 
+  const isImage = (url: string) => {
+    return /\.(jpeg|jpg|gif|png|webp)$/i.test(url);
+  };
+
   return (
     <div>
       <h1>Communication Details</h1>
@@ -42,9 +46,41 @@ const SentCommunications: React.FC = () => {
       <p><strong>Recipients:</strong> {communication.recipients.join(", ")}</p>
       <p><strong>Deadline:</strong> {new Date(communication.deadline.seconds * 1000).toLocaleString()}</p>
       <p><strong>Remarks:</strong> {communication.remarks}</p>
-      <p><strong>Link:</strong> <a href={communication.link} target="_blank" rel="noopener noreferrer">{communication.link}</a></p>
+      {communication.link && (
+        <p>
+          <strong>Link:</strong>{" "}
+          <a href={communication.link} target="_blank" rel="noopener noreferrer">
+            {communication.link}
+          </a>
+        </p>
+      )}
+      {communication.attachment && (
+        <div>
+          <strong>Attachment:</strong>
+          {isImage(communication.attachment) ? (
+            <div>
+              <img
+                src={communication.attachment}
+                alt="Attachment"
+                style={{ maxWidth: "100%", marginTop: "10px" }}
+              />
+            </div>
+          ) : (
+            <p>
+              <a
+                href={communication.attachment}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View Attachment
+              </a>
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 export default SentCommunications;
+  

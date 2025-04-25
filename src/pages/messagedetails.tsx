@@ -15,7 +15,7 @@ const MessageDetails: React.FC = () => {
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [remark, setRemark] = useState<string | null>(null); // State for storing the added remark
-  
+  const [evaluatorRemark, setEvaluatorRemark] = useState<string | null>(null);
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
@@ -40,7 +40,7 @@ const MessageDetails: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-
+  
     const fetchMessage = async () => {
       setLoading(true);
       try {
@@ -49,7 +49,7 @@ const MessageDetails: React.FC = () => {
         if (msgSnap.exists()) {
           const msgData = msgSnap.data();
           let senderName = "Unknown";
-        
+  
           if (msgData.createdBy) {
             const senderRef = doc(db, "users", msgData.createdBy);
             const senderSnap = await getDoc(senderRef);
@@ -58,23 +58,21 @@ const MessageDetails: React.FC = () => {
               senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
             }
           }
-        
+  
           setMessage({ ...msgData, senderName });
-        
-          // 👇 NEW: Set imageUrl from communications document
           setImageUrl(msgData.imageUrl || null);
-        
+  
           if (currentUser) {
             const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
             const submissionSnap = await getDoc(submissionRef);
             if (submissionSnap.exists()) {
               const submissionData = submissionSnap.data();
               setSubmissionStatus(submissionData);
-              setRemark(submissionData.remark || null); // Set the remark
+              setRemark(submissionData.remark || null); // User's remark
+              setEvaluatorRemark(submissionData.evaluatorRemark || null); // Evaluator's remark
             }
           }
-        }
-        else {
+        } else {
           console.error("Message not found");
         }
       } catch (error) {
@@ -83,7 +81,7 @@ const MessageDetails: React.FC = () => {
         setLoading(false);
       }
     };
-
+  
     fetchMessage();
   }, [id, currentUser]);
 
@@ -131,47 +129,17 @@ const MessageDetails: React.FC = () => {
       alert("Failed to mark as submitted.");
     }
   };
-
-  const processLink = (url: string) => {
-    if (!url.trim()) {
-      setIframeSrc(null);
-      return;
-    }
-
-    let modifiedLink = "";
-
-    if (url.includes("docs.google.com/spreadsheets")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/document")) {
-      modifiedLink = url.replace("/edit", "/preview");
-    } else if (url.includes("docs.google.com/forms")) {
-      modifiedLink = url;
-    } else if (url.includes("drive.google.com/file")) {
-      modifiedLink = url.replace("/view", "/preview");
-    } else if (url.includes("drive.google.com/drive/folders")) {
-      modifiedLink = url;
-    } else {
-      modifiedLink = "";
-    }
-
-    setIframeSrc(modifiedLink);
-  };
-
-  // Show modal with the iframe
-  const openPreviewModal = (link: string) => {
-    processLink(link);
-    if (iframeSrc) {
-      setShowModal(true);
-    }
-  };
-
   // Close modal
   const closeModal = () => {
     setShowModal(false);
     setIframeSrc(null); // Clear iframe source when modal closes
   };
 
-  if (loading) return <p>Loading message details...</p>;
+  if (loading) return (
+    <div className="spinner-overlay">
+      <div className="spinner"></div>
+    </div>
+  );
   if (!message) return <p>Message not found.</p>;
 
   const inboxPath = role ? `/${role.toLowerCase()}/inbox` : "/";
@@ -182,9 +150,9 @@ const MessageDetails: React.FC = () => {
         <main>
           <div className="head-title">
             <div className="left">
-              <h2>Message Details</h2>
-              <br />
-              <ul className="breadcrumb">
+              <h2 className="mb-3">Message Details</h2>
+              
+              <ul className="breadcrumb mb-0">
                 <li><Link to="#" className="active">Home</Link></li>
                 <li><i className="bx bx-chevron-right"></i></li>
                 <li><Link to={inboxPath} className="active">Inbox</Link></li>
@@ -195,85 +163,238 @@ const MessageDetails: React.FC = () => {
           </div>
 
           <div className="message-details-container">
-          {imageUrl && (
-            <div className="submitted-image-preview">
-              <strong>Submitted Image:</strong>
-              <br />
-              <img
-                src={imageUrl}
-                alt="Submitted"
-                style={{ maxWidth: "100%", maxHeight: "400px", borderRadius: "10px", marginTop: "10px" }}
-              />
-            </div>
-          )}
-            <h2><strong>Subject:</strong> {message.subject}</h2>
-            <p><strong>From:</strong> {message.senderName}</p>
-            <p>
-              <strong>Sent:</strong>{" "}
-              {message.createdAt?.seconds
-                ? (() => {
-                    const created = new Date(message.createdAt.seconds * 1000);
-                    const date = created.toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    }); // e.g., April 7, 2025
-                    const time = created.toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    }); // e.g., 2:32 PM
-                    return `${date} ${time}`;
-                  })()
-                : "Unknown"}
-            </p>
-            <p><strong>Content:</strong> {message.remarks || "No remarks/comments available"}</p>
-            <p><strong>Additional Remarks:</strong> {remark || "No additional remarks available"}</p>
-            {message.link && (
-              <div>
-                <strong>Link:</strong> <a href={message.link} target="_blank" rel="noopener noreferrer">{message.link}</a>
-                <br></br>
-                <button onClick={() => openPreviewModal(message.link)} className="btn-preview">
-                  Preview
-                </button>
+            <form className="mx-3">
+              {/* Deadline */}
+              <div className="form-group row justify-content-end mb-4">
+                <label className="col-auto col-form-label fw-bold">Deadline:</label>
+                <div className="col-auto">
+                  <input
+                    type="text"
+                    className="form-control fw-bold text-center"
+                    readOnly
+                    style={{
+                      backgroundColor: "#f28b82", // soft red (you can tweak this)
+                      color: "white",
+                      border: "none",
+                    }}
+                    value={
+                      message.deadline?.seconds
+                        ? (() => {
+                            const date = new Date(message.deadline.seconds * 1000);
+                            const options: Intl.DateTimeFormatOptions = {
+                              month: "long",
+                              day: "2-digit",
+                              year: "numeric",
+                            };
+                            const datePart = new Intl.DateTimeFormat("en-US", options).format(date);
+                            const timePart = date.toLocaleTimeString("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
+                            return `${datePart} ${timePart}`;
+                          })()
+                        : "No deadline specified"
+                    }
+                  />
+                </div>
               </div>
-            )}     
-                  <br />
-                  <p>
-                    <strong>Deadline:</strong>{" "}
-                    {message.deadline?.seconds
-                      ? (() => {
-                          const date = new Date(message.deadline.seconds * 1000);
-                          const options: Intl.DateTimeFormatOptions = {
-                            month: "long",
-                            day: "2-digit",
+              {/* Sent date & time */}
+              <div className="form-group row mb-2">
+                    <label className="col-sm-1 col-form-label fw-bold">Sent:</label>
+                    <div className="col-sm-11 form-control-plaintext fw-bold">
+                      {message.createdAt?.seconds
+                        ? (() => {
+                            const created = new Date(message.createdAt.seconds * 1000);
+                            const date = created.toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            });
+                            const time = created.toLocaleTimeString("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
+                            return `${date} ${time}`;
+                          })()
+                        : "Unknown"}
+                    </div>
+              </div>
+              {/* from */}
+              <div className="form-group row mb-2">
+                <label className="col-sm-2 col-form-label fw-bold">From:</label>
+                <div className="col-sm-10">
+                  <input
+                      type="text"
+                      className="form-control"
+                      readOnly
+                      value= {message.senderName}
+                    />
+                </div>
+              </div>
+              {/* subject */}
+              <div className="form-group row mb-4">
+                <label className="col-sm-2 col-form-label fw-bold">Subject:</label>
+                <div className="col-sm-10">
+                  <input
+                      type="text"
+                      className="form-control"
+                      readOnly
+                      value= {message.subject}
+                    />
+                </div>
+              </div>
+              {/* links and submitted image */}
+              <div className="form-group row mb-4">
+                <div className="col-sm-7 col-form-label fw-bold px-0">
+                  {/* submission link */}
+                  <label className="col-sm-7 col-form-label fw-bold">Submission Link:</label>
+                  <div className="col-sm-12">
+                    {message.submissionLink ? (
+                      <div className="form-control" style={{ overflowY: "auto" }}>
+                        <a
+                          href={message.submissionLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="d-block text-break"
+                        >
+                          {message.submissionLink}
+                        </a>
+                        {/* Optional: Preview button */}
+                        {/*
+                        <button
+                          onClick={() => openPreviewModal(message.submissionLink)}
+                          className="btn btn-sm btn-outline-primary mt-2"
+                        >
+                          Preview
+                        </button>
+                        */}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-control text-muted"
+                        readOnly
+                        value="No submission link provided."
+                      />
+                    )}
+                  </div>
+                  {/* monitoring link */}
+                  <label className="col-sm-7 col-form-label fw-bold">Monitoring Link:</label>
+                  <div className="col-sm-12">
+                    {message.monitoringLink ? (
+                      <div className="form-control" style={{ overflowY: "auto" }}>
+                        <a
+                          href={message.monitoringLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="d-block text-break"
+                        >
+                          {message.monitoringLink}
+                        </a>
+                        {/* Optional preview button */}
+                        {/*
+                        <button
+                          onClick={() => openPreviewModal(message.monitoringLink)}
+                          className="btn btn-sm btn-outline-primary mt-2"
+                        >
+                          Preview
+                        </button>
+                        */}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-control text-muted"
+                        readOnly
+                        value="No monitoring link provided."
+                      />
+                    )}
+                  </div>
+
+                </div>
+                <div className="col-sm-5 col-form-label fw-bold px-0">
+                  <label className="col-sm-10 col-form-label fw-bold">Submitted Image:</label>
+                  
+                  {imageUrl ? (
+                    <div className="col-sm-12">
+                      <img
+                        src={imageUrl}
+                        alt="Submitted"
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "400px",
+                          borderRadius: "10px",
+                          marginTop: "0px",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="col-sm-12 text-muted" style={{ marginTop: "10px" }}>
+                      No image submitted.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+              {/* Comments (called content before) */}
+              <div className="form-group row mb-2">
+                <label className="col-sm-2 col-form-label fw-bold">Evaluator's Remarks:</label>
+                <div className="col-sm-10">
+                  <input
+                    type="text"
+                    className="form-control"
+                    readOnly
+                    value={evaluatorRemark || "No evaluator remarks yet"}
+                  />
+                </div>
+              </div>
+              {/* remarks */}
+              <div className="form-group row mb-2">
+                  <label className="col-sm-2 col-form-label fw-bold">Remarks:</label>
+                  <div className="col-sm-10">
+                    <input
+                        type="text"
+                        className="form-control"
+                        readOnly
+                        value={remark || "No additional remarks available"}
+                        />
+                  </div>
+              </div>
+              {/* Sent and status button */}
+              <div className="form-group row mb-2">
+                <div className=" align-items-center px-3 mt-5">
+                  {/* Right side: Submission status */}
+                  <div className="text-center">
+                    {submissionStatus ? (
+                      <p className="form-control-plaintext mb-0">
+                        <span className="fw-bold text-success">
+                          {submissionStatus.status} on{" "}
+                          {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString("en-US", {
                             year: "numeric",
-                          };
-                          const datePart = new Intl.DateTimeFormat("en-US", options).format(date);
-                          const timePart = date.toLocaleTimeString("en-US", {
+                            month: "long",
+                            day: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                            hour12: true,
-                          });
-                          return `${datePart} ${timePart}`;
-                        })()
-                      : "No deadline specified"}
-                  </p>
-      
-            {submissionStatus ? (
-              <p><strong>Status:</strong> {submissionStatus.status} on {new Date(submissionStatus.submittedAt?.seconds * 1000).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-            ) : (
-              message.recipients?.includes(currentUser?.uid) && (
-                <button onClick={handleMarkAsSubmitted} className="btn-submit bx bx-check btn btn-success btn-md w-20">
-                  Mark Submitted/Acknowledged
-                </button>
-              )
-            )}
-
-            <br/>
-            <p><strong>Additional Remarks:</strong> <span className="additional-remarks">{submissionStatus?.remark || "No additional remarks available"}</span></p>
-
-        
+                          })}
+                        </span>
+                      </p>
+                    ) : (
+                      message.recipients?.includes(currentUser?.uid) && (
+                        <button
+                          onClick={handleMarkAsSubmitted}
+                          className="btn btn-success btn-md mt-1"
+                        >
+                          <i className="bx bx-check me-1"></i>
+                          Mark as Submitted / Acknowledged
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
         </main>
       </section>

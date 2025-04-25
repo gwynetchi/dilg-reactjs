@@ -190,9 +190,11 @@ const Scoreboard = () => {
     }
   };
 
-  if (loading) {
-    return <div>Loading scoreboard...</div>;
-  }
+  if (loading) return (
+    <div className="spinner-overlay">
+      <div className="spinner"></div>
+    </div>
+  );
 
   return (
     <main>

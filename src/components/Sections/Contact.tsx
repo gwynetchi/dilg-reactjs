@@ -7,10 +7,7 @@ import ContactImg3 from "../../assets/img/contactimg/contactimg3.jpg";
 
 export default function Contact() {
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert("Message Sent Successfully!");
-  };
+
 
   return (
     <Wrapper id="contact">
@@ -26,19 +23,44 @@ export default function Contact() {
           </HeaderInfo>
           <div className="row" style={{ paddingBottom: "30px" }}>
             <div className="col-xs-12 col-sm-12 col-md-6 col-lg-6">
-              <Form onSubmit={handleSubmit}>
-                <label htmlFor="fname" className="font13">First name:</label>
-                <input type="text" id="fname" name="fname" className="font20 extraBold" />
-                <label htmlFor="email" className="font13">Email:</label>
-                <input type="email" id="email" name="email" className="font20 extraBold" />
-                <label htmlFor="subject" className="font13">Subject:</label>
-                <input type="text" id="subject" name="subject" className="font20 extraBold" />
-                <label htmlFor="message" className="font13">Message:</label>
-                <textarea rows={4} cols={50} id="message" name="message" className="font20 extraBold" />
+              <Form method="POST" action="https://api.web3forms.com/submit"> {/* Register the receiving email here for free */}
+                  <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE" /> {/* Replace the value with the access key sent to the email you provide on web3forms */}
+                  
+                  <label htmlFor="fname" className="font13">Full name:</label>
+                  <input type="text" id="fname" name="fname" className="font20 extraBold" required />
+
+                  <label htmlFor="email" className="font13">Email:</label>
+                  <input type="email" id="email" name="email" className="font20 extraBold" required />
+
+                  <label htmlFor="subject" className="font13">Subject:</label>
+                  <input type="text" id="subject" name="subject" className="font20 extraBold" required />
+
+                  <label htmlFor="message" className="font13">Message:</label>
+                  <textarea rows={4} cols={50} id="message" name="message" className="font20 extraBold" required />
+                  
+                  <SubmitWrapper className="flex">
+                    <ButtonInput 
+                      type="submit" 
+                      value="Send Message" 
+                      className="pointer animate radius8 buttonInput" 
+                      style={{
+                        maxWidth: "220px",
+                        border: "1px solid #0B093B",
+                        backgroundColor: "#0B093B",
+                        width: "100%",
+                        height: "50px",
+                        padding: "15px",
+                        outline: "none",
+                        color: "#fff",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease",
+                        
+                      }} 
+                    />
+                  </SubmitWrapper>
+                
               </Form>
-              <SubmitWrapper className="flex">
-                <ButtonInput type="submit" value="Send Message" className="pointer animate radius8" style={{ maxWidth: "220px" }} />
-              </SubmitWrapper>
+              
             </div>
             <div className="col-xs-12 col-sm-12 col-md-6 col-lg-6 flex">
               <div style={{ width: "50%" }} className="flexNullCenter flexColumn">
@@ -72,8 +94,8 @@ const HeaderInfo = styled.div`
   }
 `;
 const Form = styled.form`
-  padding: 70px 0 30px 0;
-  input,
+  padding: 0px 0 30px 0;
+  input:not([type="submit"]),
   textarea {
     width: 100%;
     background-color: transparent;
@@ -90,7 +112,22 @@ const Form = styled.form`
   @media (max-width: 860px) {
     padding: 30px 0;
   }
-`;
+  .buttonInput {
+    border: 1px solid #0B093B;
+    background-color: #0B093B;
+    width: 100%;
+    padding: 15px;
+    outline: none;
+    color: #fff;
+    &:hover {
+      background-color:rgb(231, 171, 4);
+      border: 1px solid #F2B300;
+      color: #fff;
+    }
+    @media (max-width: 991px) {
+      margin: 0 auto;
+    }
+  }`;
 const ButtonInput = styled.input`
   border: 1px solid #0B093B;
   background-color: #0B093B;
@@ -106,7 +143,7 @@ const ButtonInput = styled.input`
   @media (max-width: 991px) {
     margin: 0 auto;
   }
-`;
+ `;
 const ContactImgBox = styled.div`
   max-width: 180px; 
   align-self: flex-end; 

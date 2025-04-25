@@ -1,34 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, doc, onSnapshot, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+  arrayUnion,
+  deleteDoc
+} from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { updateDoc, arrayUnion, deleteDoc } from "firebase/firestore";
+import InboxControls from "./modules/inbox-modules/inboxcontrols";
+import DeleteMessageModal from "./modules/inbox-modules/deletemodal";
+import MessageTable from "./modules/inbox-modules/messagetable";
 
 const Inbox: React.FC = () => {
   interface Communication {
-    imageUrl: any;
-    recipients: string[];
-    seenBy: any;
     id: string;
     createdBy: string;
+    recipients: string[];
+    seenBy: any;
+    imageUrl: any;
     subject?: string;
+    source: "communications" | "programcommunications";
     createdAt?: {
       seconds: number;
-      nanoseconds?: number; // Optional for Firestore compatibility
+      nanoseconds?: number;
     } | null;
   }
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "communications" | "programcommunications">("all");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
-  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<{ id: string; recipients: string[] } | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<{
+    id: string;
+    recipients: string[];
+    source: "communications" | "programcommunications";
+  } | null>(null);
+  const navigate = useNavigate();
 
-  // Track authenticated user and fetch role
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -48,70 +67,105 @@ const Inbox: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch messages in real-time
   useEffect(() => {
     if (!userId) return;
 
     const commRef = collection(db, "communications");
-    const q = query(commRef, where("recipients", "array-contains", userId));
+    const progCommRef = collection(db, "programcommunications");
 
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      setLoading(true);
-      const messages = querySnapshot.docs.map((docSnapshot) => {
+    const q1 = query(commRef, where("recipients", "array-contains", userId));
+    const q2 = query(progCommRef, where("recipients", "array-contains", userId));
+
+    setLoading(true);
+
+    const unsub1 = onSnapshot(q1, (snap1) => {
+      const commMessages = snap1.docs.map((docSnapshot) => {
         const data = docSnapshot.data();
         return {
           id: docSnapshot.id,
           createdBy: data.createdBy,
-          recipients: data.recipients as string[], // Explicitly type recipients as string[]
-          createdAt: data.createdAt || serverTimestamp(), // Ensure timestamp exists
-          seenBy: data.seenBy || [], // Add default empty array for seenBy
-          subject: data.subject || "No Subject", // Make sure subject is included, default to "No Subject" if missing
-          imageUrl: data.imageUrl || "", // ✅ include this
+          recipients: data.recipients || [],
+          createdAt: data.createdAt || serverTimestamp(),
+          seenBy: data.seenBy || [],
+          subject: data.subject || "No Subject",
+          imageUrl: data.imageUrl || "",
+          source: "communications" as "communications"
         };
       });
 
-      setCommunications(messages);
-      setLoading(false);
+      updateMessages(commMessages, "communications");
+    });
 
-      // Fetch sender names in real-time (limit to unique senders)
-      const uniqueSenders = Array.from(new Set(messages.map((msg) => msg.createdBy)));
-      uniqueSenders.forEach((senderId) => {
-        if (!senderNames[senderId]) {
-          listenToSenderProfile(senderId);
-        }
+    const unsub2 = onSnapshot(q2, (snap2) => {
+      const progCommMessages = snap2.docs.map((docSnapshot) => {
+        const data = docSnapshot.data();
+        return {
+          id: docSnapshot.id,
+          createdBy: data.createdBy,
+          recipients: data.recipients || [],
+          createdAt: data.createdAt || serverTimestamp(),
+          seenBy: data.seenBy || [],
+          subject: data.subject || "No Subject",
+          imageUrl: data.imageUrl || "",
+          source: "programcommunications" as "programcommunications"
+        };
+      });
+
+      updateMessages(progCommMessages, "programcommunications");
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
+  }, [userId]);
+
+  const updateMessages = (newMessages: Communication[], source: string) => {
+    setCommunications((prevMessages) => {
+      const filteredPrev = prevMessages.filter((msg) => msg.source !== source);
+      const combined = [...filteredPrev, ...newMessages];
+      return combined.sort((a, b) => {
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+        return bTime - aTime;
       });
     });
 
-    return () => unsubscribe();
-  }, [userId]);
+    newMessages.forEach((msg) => {
+      if (!senderNames[msg.createdBy]) {
+        listenToSenderProfile(msg.createdBy);
+      }
+    });
 
-  // Function to delete a message
+    setLoading(false);
+  };
+
   const deleteMessage = async () => {
-    if (!selectedMessage) return;
-    const { id, recipients } = selectedMessage;
-  
+    if (!selectedMessage || !userId) return;
+    const { id, recipients, source } = selectedMessage;
+
     try {
       const updatedRecipients = recipients.filter((recipient) => recipient !== userId);
-  
+      const messageRef = doc(db, source, id);
+
       if (updatedRecipients.length === 0) {
-        await deleteDoc(doc(db, "communications", id));
-        console.log("Message deleted successfully!");
+        await deleteDoc(messageRef);
       } else {
-        await updateDoc(doc(db, "communications", id), {
-          recipients: updatedRecipients,
+        await updateDoc(messageRef, {
+          recipients: updatedRecipients
         });
-        console.log("Message removed for this user.");
       }
-  
-      setCommunications((prev) => prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0));
+
+      setCommunications((prev) =>
+        prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0)
+      );
     } catch (error) {
       console.error("Error deleting message:", error);
     }
-  
+
     setShowModal(false);
-  };  
-  
-  // Listen for sender name updates in real-time
+  };
+
   const listenToSenderProfile = (senderId: string) => {
     const senderRef = doc(db, "users", senderId);
     const unsubscribeSender = onSnapshot(senderRef, (senderSnap) => {
@@ -119,16 +173,14 @@ const Inbox: React.FC = () => {
         const senderData = senderSnap.data();
         const { fname, mname, lname, email } = senderData;
 
-        // Check if at least one name field is set
         const hasName = fname || mname || lname;
         const senderDisplayName = hasName
           ? `${fname || ""} ${mname ? mname + " " : ""}${lname || ""}`.trim()
-          : email || "Unknown Email"; // Use email if name is missing
+          : email || "Unknown Email";
 
-        // Update senderNames state
         setSenderNames((prev) => ({
           ...prev,
-          [senderId]: senderDisplayName,
+          [senderId]: senderDisplayName
         }));
       }
     });
@@ -136,25 +188,21 @@ const Inbox: React.FC = () => {
     return () => unsubscribeSender();
   };
 
-  // Function to open message based on role
   const openMessage = async (id: string) => {
-    if (!userRole || !userId) {
-      console.error("User role or ID not found.");
-      return;
-    }
+    if (!userRole || !userId) return;
 
     const rolePaths: { [key: string]: string } = {
       Evaluator: "evaluator",
       Viewer: "viewer",
       LGU: "lgu",
-      Admin: "admin",
+      Admin: "admin"
     };
 
     const messageRef = doc(db, "communications", id);
 
     try {
       await updateDoc(messageRef, {
-        seenBy: arrayUnion(userId), // Add the user ID to "seenBy"
+        seenBy: arrayUnion(userId)
       });
     } catch (error) {
       console.error("Error marking message as seen:", error);
@@ -163,11 +211,29 @@ const Inbox: React.FC = () => {
     navigate(`/${rolePaths[userRole] || "viewer"}/inbox/${id}`);
   };
 
-  const handleDeleteRequest = (id: string, recipients: string[]) => {
-    setSelectedMessage({ id, recipients });
+  const handleDeleteRequest = (
+    id: string,
+    recipients: string[],
+    source: "communications" | "programcommunications"
+  ) => {
+    setSelectedMessage({ id, recipients, source });
     setShowModal(true);
   };
-  
+
+  const filteredCommunications = communications
+    .filter((msg) => {
+      const term = searchTerm.toLowerCase();
+      return (
+        msg.subject?.toLowerCase().includes(term) ||
+        senderNames[msg.createdBy]?.toLowerCase().includes(term)
+      );
+    })
+    .filter((msg) => filterType === "all" || msg.source === filterType)
+    .sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+    });
 
   return (
     <div className="dashboard-container">
@@ -191,98 +257,38 @@ const Inbox: React.FC = () => {
           </div>
           <div className="table-data">
             <div className="order">
+              <InboxControls
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                filterType={filterType}
+                setFilterType={setFilterType}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
+              />
               <div className="inbox-container">
                 {loading ? (
                   <p>Loading messages...</p>
                 ) : communications.length === 0 ? (
                   <p>No messages found.</p>
                 ) : (
-                  <table className="inbox-table">
-                    <thead>
-                      <tr>
-                        <th>Attachment</th>
-                        <th>Sender</th>
-                        <th>Subject</th>
-                        <th>Date</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {communications.map((msg) => (
-                        <tr
-                          key={msg.id}
-                          onClick={() => openMessage(msg.id)}
-                          style={{
-                            cursor: "pointer",
-                            fontWeight: msg.seenBy?.includes(userId) ? "normal" : "bold",
-                            backgroundColor: msg.seenBy?.includes(userId) ? "transparent" : "#f5f5f5",
-                          }}
-                        >
-                          <td>
-                            {msg.imageUrl ? (
-                              <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
-                                <img
-                                  src={msg.imageUrl}
-                                  alt="attachment"
-                                  style={{ width: "60px", borderRadius: "5px" }}
-                                  onClick={(e) => e.stopPropagation()} // prevent triggering row click
-                                />
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-
-                          <td>{senderNames[msg.createdBy] || "Loading..."}</td>
-                          <td>{msg.subject}</td>
-                          <td>
-                            {msg.createdAt && typeof msg.createdAt.seconds === "number" ? (
-                              new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                second: "2-digit",
-                                hour12: true,
-                              })
-                            ) : (
-                              <span style={{ color: "red" }}>No Timestamp</span>
-                            )}
-                          </td>
-                          <td>
-                          <button
-                            className="delete-btn"
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent row click event
-                              handleDeleteRequest(msg.id, msg.recipients);
-                            }}
-                          >
-                            Delete
-                          </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <MessageTable
+                    messages={filteredCommunications}
+                    userId={userId}
+                    senderNames={senderNames}
+                    openMessage={openMessage}
+                    handleDeleteRequest={handleDeleteRequest}
+                  />
                 )}
               </div>
             </div>
           </div>
         </main>
       </section>
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <p>Are you sure you want to delete this message?</p>
-            <div className="modal-buttons">
-              <button onClick={() => setShowModal(false)} className="cancel-btn">Cancel</button>
-              <button onClick={deleteMessage} className="confirm-btn">Confirm</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <DeleteMessageModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onDelete={deleteMessage}
+      />
     </div>
   );
 };

@@ -69,7 +69,11 @@ const Calendar: React.FC = () => {
               messageId: docSnapshot.id,
               senderName,
               subject: data.subject,
-              time: new Date(data.deadline.toDate()).toLocaleTimeString(), // Format time
+              time: new Date(data.deadline.toDate()).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              }),              
             },
           };
         })
@@ -111,7 +115,7 @@ const Calendar: React.FC = () => {
               <h1>Deadlines</h1>
               <ul className="breadcrumb">
                 <li>
-                  <a href="/dashboads" className="active">Home</a>
+                  <a href="/dashboards" className="active">Home</a>
                 </li>
                 <li>
                   <i className="bx bx-chevron-right"></i>
@@ -122,35 +126,39 @@ const Calendar: React.FC = () => {
               </ul>
             </div>
           </div>
-      <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={events}
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        }}
-        height="80vh"
-        eventClick={handleEventClick}
-        eventContent={(eventInfo) => (
-          <div style={{
-            wordWrap: "break-word",
-            overflowWrap: "break-word",
-            whiteSpace: "normal",
-            maxWidth: "100%",
-            padding: "2px",
-            fontSize: "0.8em",
-          }}>
-            <b>{eventInfo.event.extendedProps.subject}</b>
-            <br />
-            <small>{eventInfo.event.extendedProps.senderName}</small>
-            <br />
-            <small>{eventInfo.event.extendedProps.time}</small>
-          </div>
-        )}
-        
-      />
+
+          <div className="full-calendar-container"></div>
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={events}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
+            height="auto"
+            expandRows={true}          // ✅ Allows full row height to show all events
+            dayMaxEventRows={3}     // ✅ Let it expand the number of visible rows
+            dayMaxEvents={true}
+            eventClick={handleEventClick}
+            eventContent={(eventInfo) => (
+              <div style={{
+                wordWrap: "break-word",
+                overflowWrap: "break-word",
+                whiteSpace: "normal",
+                maxWidth: "100%",
+                padding: "2px",
+                fontSize: "0.8em",
+              }}>
+                <b>{eventInfo.event.extendedProps.subject}</b>
+                <br />
+                <small>{eventInfo.event.extendedProps.senderName}</small>
+                <br />
+                <small>{eventInfo.event.extendedProps.time}</small>
+              </div>
+            )}
+          />
 
       </section>
     </div>

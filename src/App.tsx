@@ -6,6 +6,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
 
+import SendDueCommunications from "./pages/SendDuePrograms";
+import CheckFrequency from "./pages/CheckFrequency";
+import DeletedCommunications from "./pages/DeletedCommunications";
 
 // Import Dashboards
 import AdminDashboard from "./pages/admin/dashboard";
@@ -45,8 +48,13 @@ import UserAnalytics from "./pages/user-analytics";
 import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
+import UserManagement from "./pages/UserManagement";
+import DeletedUsers from "./pages/admin/DeletedUsers";
+
 
 import EvaluatorPrograms from "./pages/managePrograms";
+import LGUPrograms from "./pages/Programs";
+import ProgramDetails from './pages/ProgramDetails'; // Adjust path as needed
 
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
@@ -60,7 +68,9 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
-
+    { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
+    { path: "/admin/DeletedUsers", element: <DeletedUsers />},
+    { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>}
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -90,6 +100,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
+    { path: "/lgu/programs", element: <LGUPrograms /> },
+    { path: "/lgu/programs/:programId", element: <ProgramDetails />}
 
   ],
   Viewer: [
@@ -111,17 +123,30 @@ const App: React.FC = () => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
-
+  const [duePrograms, setDuePrograms] = useState<any[]>([]);
   const auth = getAuth();
   const db = getFirestore();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        // Check if this UID is in deleted_users
+        const deletedRef = doc(db, "deleted_users", currentUser.uid);
+        const deletedSnap = await getDoc(deletedRef);
+  
+        if (deletedSnap.exists()) {
+          console.warn("This account is marked as deleted. Signing out...");
+          await auth.signOut();
+          setUser(null);
+          setRole(null);
+          setLoading(false);
+          return;
+        }
+  
         setUser(currentUser);
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userDocRef);
-
+  
         setRole(userDoc.exists() ? userDoc.data().role : null);
       } else {
         setUser(null);
@@ -129,7 +154,7 @@ const App: React.FC = () => {
       }
       setLoading(false);
     });
-
+  
     return () => unsubscribe();
   }, []);
   
@@ -142,6 +167,7 @@ const App: React.FC = () => {
       return (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="spinner-border text-primary" role="status">
+
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -164,6 +190,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+       
       <div className="app-container">
         {user && role && (
           <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
@@ -179,11 +206,12 @@ const App: React.FC = () => {
               roleRoutesConfig[role]?.map(({ path, element }) => (
                 <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
               ))}
-
+              
             {/* Catch-All Route */}
             <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
           </Routes>
-          
+          <CheckFrequency onDuePrograms={setDuePrograms} />
+          {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
         </div>
       </div>
     </Router>

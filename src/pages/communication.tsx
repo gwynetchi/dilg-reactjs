@@ -14,6 +14,7 @@ import {
   getDocs as firestoreGetDocs,
   updateDoc,
 } from "firebase/firestore";
+import { softDelete } from "./../pages/modules/inbox-modules/softDelete"; // <- Add this import
 
 import { db } from "../firebase"; // Ensure correct Firebase import
 import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
@@ -23,17 +24,50 @@ const Communication: React.FC = () => {
   const [recipients, setRecipients] = useState<string[]>([]); // Store userIds
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
-  const [inputLink, setInputLink] = useState("");
+  const [submissionLink, setSubmissionLink] = useState("");
+  const [monitoringLink, setMonitoringLink] = useState("");  
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [users, setUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [users, setUsers] = useState<{
+    role: string; id: string; fullName: string; email: string 
+}[]>([]);
   const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFileModal, setShowFileModal] = useState(false);
+  const [currentFileUrl, setCurrentFileUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
+
   
+  // Group users by roles
+  const groupedOptions = Object.entries(
+    users.reduce((groups, user) => {
+      const role = user.role || "No Role";
+      if (!groups[role]) groups[role] = [];
+      groups[role].push({ value: user.id, label: user.fullName });
+      return groups;
+    }, {} as Record<string, { value: string; label: string }[]>)
+  ).map(([role, options]) => ({
+    label: role.charAt(0).toUpperCase() + role.slice(1),
+    options: [
+      {
+        value: `select_all_${role}`,
+        label: `Select all ${role}`,
+        isSelectAll: true, // custom flag to detect this
+        role,
+      },
+      ...options,
+    ],
+  }));
+  
+
   const fetchUsers = async () => {
     try {
       console.log("Fetching users...");
@@ -54,7 +88,7 @@ const Communication: React.FC = () => {
           fullName = data.email || "Unknown User"; // Default to email if full name is missing
         }
 
-        return { id: doc.id, fullName, email: data.email };
+        return { id: doc.id, fullName, email: data.email, role: data.role || "No Role"  };
       });
 
       setUsers(usersList);
@@ -64,36 +98,12 @@ const Communication: React.FC = () => {
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-    
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "uploads"); // Replace with your actual upload preset
-    const auth = getAuth();
-    const user = auth.currentUser;
-    formData.append("folder", `communications/${user?.uid}`);
-    
-    try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Upload error:", errorData);
-        throw new Error("Image upload failed.");
-      }
-  
-      const data = await response.json();
-      setImageUrl(data.secure_url); // ✅ Set image URL
-      showAlert("Image uploaded successfully!", "success");
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      showAlert("Image upload failed.", "error");
-    }
+    setSelectedFile(file || null);
+    setImageUrl(""); // Clear any previous image URL
   };
+  
   
   const fetchSentCommunications = async () => {
     const auth = getAuth(); 
@@ -133,16 +143,33 @@ const Communication: React.FC = () => {
       }
     }
   };
+  useEffect(() => {
+    let filtered = sentCommunications.filter((comm) =>
+      comm.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      comm.remarks.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  
+    filtered.sort((a, b) => {
+      const aField = a[sortField];
+      const bField = b[sortField];
+  
+      if (aField && bField) {
+        const aVal = aField instanceof Date ? aField.getTime() : aField;
+        const bVal = bField instanceof Date ? bField.getTime() : bField;
+  
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+  
+    setFilteredCommunications(filtered);
+  }, [searchTerm, sentCommunications, sortField, sortOrder]);
+  
   
   useEffect(() => {
     fetchUsers();
     fetchSentCommunications(); // Fetch sent communications on mount
   }, []);
-
-  const options: { value: string; label: string }[] = users.map((user) => ({
-    value: user.id,
-    label: user.fullName,
-  }));
 
   const handleRecipientChange = (
     selectedOptions: MultiValue<{ value: string; label: string }>
@@ -171,8 +198,11 @@ const Communication: React.FC = () => {
       return;
     }
   
-    if (inputLink && !inputLink.startsWith("https://")) {
-      showAlert("Only HTTPS links are allowed!");
+    if (
+      (submissionLink && !submissionLink.startsWith("https://")) ||
+      (monitoringLink && !monitoringLink.startsWith("https://"))
+    ) {
+      showAlert("Only HTTPS links are allowed for submission and monitoring!");
       return;
     }
   
@@ -187,6 +217,28 @@ const Communication: React.FC = () => {
         return;
       }
   
+      // Upload file if one was selected
+      let uploadedFileUrl = imageUrl; // Use existing URL if editing
+      if (selectedFile && !isEditing) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("upload_preset", "uploads");
+        formData.append("resource_type", "auto");
+        formData.append("folder", `communications/${user.uid}`);
+  
+        const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
+          method: "POST",
+          body: formData,
+        });
+  
+        if (!response.ok) {
+          throw new Error("File upload failed.");
+        }
+  
+        const data = await response.json();
+        uploadedFileUrl = data.secure_url;
+      }
+  
       if (isEditing && editingId) {
         // Update existing communication
         const docRef = doc(db, "communications", editingId);
@@ -195,11 +247,11 @@ const Communication: React.FC = () => {
           recipients,
           deadline: new Date(deadline),
           remarks,
-          imageUrl,
-          link: inputLink,
-        }
-      );
-      
+          imageUrl: uploadedFileUrl,
+          submissionLink,
+          monitoringLink,
+        });
+        
         showAlert("Communication updated successfully!", "success");
       } else {
         // Create new communication
@@ -209,35 +261,27 @@ const Communication: React.FC = () => {
           recipients,
           deadline: new Date(deadline),
           remarks,
-          link: inputLink,
+          submissionLink,
+          monitoringLink,
           createdBy: user.uid,
-          imageUrl,
+          imageUrl: uploadedFileUrl,
           createdAt: serverTimestamp(),
           submitID: [],
         });
+        
         showAlert("Message Sent Successfully!", "success");
       }
-const newDoc: any = {
-  subject,
-  recipients,
-  deadline: new Date(deadline),
-  remarks,
-  link: inputLink,
-  createdBy: user.uid,
-  createdAt: serverTimestamp(),
-  submitID: [],
-};
-
-if (imageUrl) {
-  newDoc.imageUrl = imageUrl;
-}
   
       // Reset form
       setSubject("");
       setRecipients([]);
       setDeadline("");
       setRemarks("");
-      setInputLink("");
+      setSubmissionLink("");
+      setMonitoringLink("");
+      setSelectedFile(null);
+      setImageUrl("");
+      
       setIsEditing(false);
       setEditingId(null);
   
@@ -253,31 +297,41 @@ if (imageUrl) {
   const handleEdit = (comm: any) => {
     setSubject(comm.subject);
     setRecipients(comm.recipients);
-    setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16)); // for datetime-local
+    setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16));
     setRemarks(comm.remarks);
-    setInputLink(comm.link || "");
+    setSubmissionLink(comm.submissionLink || "");
+    setMonitoringLink(comm.monitoringLink || "");
+    setImageUrl(comm.imageUrl || "");
+    setSelectedFile(null); // Clear any selected file
     setEditingId(comm.id);
     setIsEditing(true);
     setShowDetails(true);
   };
-
   
+
+  const handleDelete = async (id: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this communication?");
+    if (!confirmed) return;
   
-const handleDelete = async (id: string) => {
-  const confirmed = window.confirm("Are you sure you want to delete this communication?");
-  if (!confirmed) return;
-
-  try {
-    await deleteDoc(doc(db, "communications", id));
-    showAlert("Communication deleted successfully!", "success");
-    fetchSentCommunications(); // Refresh the list
-  } catch (error) {
-    console.error("Error deleting communication:", error);
-    showAlert("Failed to delete communication. Please try again.", "error");
-  }
-};
-
-
+    try {
+      const commDoc = doc(db, "communications", id);
+      const snapshot = await getDoc(commDoc);
+      const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+  
+      if (data) {
+        await softDelete(data, "communications", "deleted_communications", "deletedBy");
+        await deleteDoc(commDoc);
+        showAlert("Communication deleted and archived successfully!", "success");
+        fetchSentCommunications(); // Refresh the list
+      } else {
+        showAlert("Communication not found!", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting communication:", error);
+      showAlert("Failed to delete communication. Please try again.", "error");
+    }
+  };
+  
   const getIcon = (type: string) => {
     switch (type) {
       case "success":
@@ -316,10 +370,40 @@ const handleDelete = async (id: string) => {
         <span className="text">{showDetails ? "Hide" : "Create New Communication"}</span>
       </button>
   
+      {showFileModal && (
+  <div className="overlay">
+    <div className="modal-container" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
+      <button className="close-btn" onClick={() => setShowFileModal(false)}>
+        ✖
+      </button>
+      <div className="modal-body" style={{ overflow: 'auto' }}>
+        {currentFileUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+          <img 
+            src={currentFileUrl} 
+            alt="Attachment" 
+            style={{ maxWidth: "100%", maxHeight: "80vh" }}
+          />
+        ) : (
+          <div>
+            <p>This file type cannot be previewed. Please download it instead.</p>
+            <a 
+              href={currentFileUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              Download File
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
       {/* Modal - Centered on the Screen */}
       {showDetails && (
-        <div className="overlay">
-          <div className="modal-container">
+        <div className="overlay" >
+          <div className="modal-container" style={{overflow: 'auto'}}>
             <div className="container">
               <div className="row">
                 <div className="col-md-12 mb-3">
@@ -333,11 +417,21 @@ const handleDelete = async (id: string) => {
                   />
                 </div>
                 <div className="col-md-12 mb-3">
-  <label className="form-label">Upload Image (optional):</label>
-  <input type="file" className="form-control" onChange={handleImageUpload} />
+  <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
+  <input 
+    type="file" 
+    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+    className="form-control" 
+    onChange={handleFileChange}
+  />
+  {selectedFile && (
+    <div className="mt-2">
+      <span>Selected file: {selectedFile.name}</span>
+    </div>
+  )}
   {imageUrl && (
     <div className="mt-2">
-      <img src={imageUrl} alt="Uploaded" style={{ maxWidth: "100%", maxHeight: "200px" }} />
+      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Current Attachment</a>
     </div>
   )}
 </div>
@@ -345,16 +439,17 @@ const handleDelete = async (id: string) => {
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Recipients:</label>
                   <Select
-                    options={options}
+                    options={groupedOptions}
                     isMulti
-                    value={options.filter((option) =>
+                    value={groupedOptions.flatMap(group => group.options).filter((option) =>
                       recipients.includes(option.value)
                     )}
                     onChange={handleRecipientChange}
-                    className="basic-multi-select "
+                    className="basic-multi-select"
                     classNamePrefix="select"
-                    placeholder="Select recipients..."
+                    placeholder="Select recipients by role..."
                   />
+
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Deadline:</label>
@@ -365,14 +460,25 @@ const handleDelete = async (id: string) => {
                     onChange={(e) => setDeadline(e.target.value)}
                   />
                 </div>
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">Attachment/Link:</label>
+                <div className="col-md-12 mb-3">
+                  <label>Submission Link (https only):</label>
                   <input
-                    type="text"
-                    placeholder="Paste Google Drive link"
-                    className="form-control form-control-sm"
-                    value={inputLink}
-                    onChange={(e) => setInputLink(e.target.value)}
+                    type="url"
+                    className="form-control"
+                    placeholder="https://example.com/submission"
+                    value={submissionLink}
+                    onChange={(e) => setSubmissionLink(e.target.value)}
+                  />
+                </div>
+
+                <div className="col-md-12 mb-3">
+                  <label>Monitoring Link (https only):</label>
+                  <input
+                    type="url"
+                    className="form-control"
+                    placeholder="https://example.com/monitoring"
+                    value={monitoringLink}
+                    onChange={(e) => setMonitoringLink(e.target.value)}
                   />
                 </div>
               </div>
@@ -424,14 +530,14 @@ const handleDelete = async (id: string) => {
                 <h4>Recipient Details</h4>
                   <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
           </div>
-          <div className="modal-body">
-          <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-          <p><strong>Email:</strong> {recipientDetails.email}</p>
-         </div>
-      </div>
-    </div>
-    )}
-    </div>
+                <div className="modal-body">
+                <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+                <p><strong>Email:</strong> {recipientDetails.email}</p>
+              </div>
+            </div>
+          </div>
+          )}
+          </div>
   
       <section id="content">
         <main>
@@ -458,7 +564,45 @@ const handleDelete = async (id: string) => {
               <span>{alert.message}</span>
             </div>
           )}
-  
+<div className="inbox-controls mb-3 d-flex align-items-center gap-3">
+  {/* Search Label */}
+  <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
+  <input
+    id="searchInput"
+    type="text"
+    placeholder="Search by subject or remarks..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="form-control w-50"
+  />
+
+  {/* Sort Label */}
+  <label htmlFor="sortSelect" className="form-label mb-0">Sort By:</label>
+  <select
+    id="sortSelect"
+    value={sortField}
+    onChange={(e) => setSortField(e.target.value)}
+    className="form-select w-auto"
+  >
+    <option value="createdAt">Created Date</option>
+    <option value="subject">Subject</option>
+    <option value="deadline">Deadline</option>
+  </select>
+
+  {/* Order Label */}
+  <label htmlFor="orderSelect" className="form-label mb-0">Order:</label>
+  <select
+    id="orderSelect"
+    value={sortOrder}
+    onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+    className="form-select w-auto"
+  >
+    <option value="asc">Ascending</option>
+    <option value="desc">Descending</option>
+  </select>
+</div>
+
+
           <h3>Sent Communications</h3>
           {sentCommunications.length === 0 ? (
             <p>No sent communications found.</p>
@@ -475,18 +619,38 @@ const handleDelete = async (id: string) => {
                 </tr>
               </thead>
               <tbody>
-                {sentCommunications.map((comm) => (
+                {filteredCommunications.map((comm) => (
                   <tr key={comm.id}>
                     <td>
-                    {comm.imageUrl ? (
-                      <a href={comm.imageUrl} target="_blank" rel="noopener noreferrer">
-                        <img src={comm.imageUrl} alt="attachment" style={{ width: "80px" }} />
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                    </td>
-                    
+                      {comm.imageUrl ? (
+                        <a 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentFileUrl(comm.imageUrl);
+                            setShowFileModal(true);
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+                            <img
+                              src={comm.imageUrl}
+                              alt="attachment"
+                              style={{
+                                width: "80px",
+                                height: "80px",
+                                objectFit: "cover",
+                                borderRadius: "5px"
+                              }}
+                            />
+                          ) : (
+                            <span>View Attachment</span>
+                          )}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>      
                     <td>{comm.subject}</td>
                     <td>
                       {comm.recipients.map((userId: string, idx: number) => {

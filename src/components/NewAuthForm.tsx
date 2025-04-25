@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { setDoc, doc, getDoc } from "firebase/firestore";
+import { setDoc, doc, getDocs, getDoc, collection, query, where } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Ensure this file exists
 
 
@@ -12,7 +12,7 @@ const AuthForm = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState("Select Role");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -50,45 +50,74 @@ const AuthForm = () => {
     setSuccessMessage("");
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccessMessage("");
-    if (role === "Select Role" || role === "") {
-      setError("❌ Please select a valid role.");
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setSuccessMessage("");
+
+  if (role === "Select Role" || role.trim() === "") {
+    setError("❌ Please select a valid role.");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    // 🔍 Check if email exists in deleted_users
+    const q = query(
+      collection(db, "deleted_users"),
+      where("email", "==", email.toLowerCase())
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      setError("❌ This email belongs to a deleted account. Please contact an administrator.");
       setLoading(false);
       return;
     }
-  
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-  
-      // Store user details in Firestore (without saving password)
-      await setDoc(doc(db, "users", user.uid), { email: user.email, role, password });
-  
-      console.log("Account Created Successfully");
-  
-      // Sign out user immediately to prevent auto-login
-      await auth.signOut();
-  
-      // Show success message and switch back to login form
-      setSuccessMessage("✅ Account Created Successfully! Please log in.");
-      setLoading(false);
 
-      setTimeout(() => {
-        setIsActive(false); // Switch to login form
-        resetForm(); // Clear input fields
-      }, 500);
-  
-    } catch (err) {
-      console.error(err);
-      setError("❌ Error creating account. Try again.");
-      setLoading(false);
+    // ✅ Create user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // 👤 Save user profile in Firestore
+    await setDoc(doc(db, "users", user.uid), {
+      email: email.toLowerCase(),
+      role,
+      password,
+      createdAt: new Date()
+    });
+
+    console.log("✅ Account Created Successfully");
+
+    // 🔐 Sign out after registration
+    await auth.signOut();
+
+    setSuccessMessage("✅ Account Created Successfully! Please log in.");
+    setLoading(false);
+
+    setTimeout(() => {
+      setIsActive(false); // Switch to login form
+      resetForm(); // Clear input fields
+    }, 500);
+
+  } catch (err: any) {
+    console.error(err);
+
+    if (err.code === "auth/email-already-in-use") {
+      setError("❌ This email is already in use. Please log in or use a different email.");
+    } else if (err.code === "auth/invalid-email") {
+      setError("❌ Please enter a valid email address.");
+    } else if (err.code === "auth/weak-password") {
+      setError("❌ Password should be at least 6 characters.");
+    } else {
+      setError("❌ Error creating account. Please try again.");
     }
-  };
-  
+
+    setLoading(false);
+  }
+};
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -96,10 +125,20 @@ const AuthForm = () => {
     setSuccessMessage("");
   
     try {
+          // 🔍 Check if email exists in deleted_users
+      const q = query(
+        collection(db, "deleted_users"),
+        where("email", "==", email.toLowerCase())
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        setError("❌ This email belongs to a deleted account. Please contact an administrator.");
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log("Logged in successfully");
-  
-      // Get user info from userCredential instead of auth.currentUser
       const user = userCredential.user;
   
       if (!user) {
@@ -108,7 +147,8 @@ const AuthForm = () => {
         return;
       }
   
-      // Fetch user role from Firestore
+
+      // ✅ User is valid, now get their role
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
   
@@ -117,28 +157,29 @@ const AuthForm = () => {
         console.log(`User role: ${userRole}`);
   
         setSuccessMessage("✅ Logged in successfully!");
-        setLoading(false); // Move this here before navigation
-
+        setLoading(false);
+  
         setTimeout(() => {
           resetForm();
-          setLoading(false); // Ensure this runs before navigating
+          setLoading(false);
           navigate(`/${userRole.toLowerCase()}/dashboard`);
         }, 1000);
       } else {
         setError("❌ User data not found.");
-        await auth.signOut(); // Sign out if no role is found
+        await auth.signOut();
         setLoading(false);
       }
     } catch (err: any) {
       console.error(err);
   
-      // More specific error handling
       if (err.code === "auth/user-not-found") {
         setError("❌ No account found with this email.");
       } else if (err.code === "auth/wrong-password") {
         setError("❌ Incorrect password.");
       } else if (err.code === "auth/invalid-email") {
         setError("❌ Invalid email format.");
+      } else if (err.code === "auth/invalid-credential") {
+        setError("❌ Invalid credentials. Please check your email and password.");
       } else {
         setError("❌ Error logging in. Please try again.");
       }
@@ -146,7 +187,7 @@ const AuthForm = () => {
       setLoading(false);
     }
   };
-  
+    
   return (
     <div className={styles.authWrapper}>
       <AnimatePresence>
@@ -225,6 +266,14 @@ const AuthForm = () => {
                 >
                   Register
                 </motion.button>
+
+                {/* Back to Home Page Link */}
+                <button
+                  className={styles.backLink}
+                  onClick={() => navigate("/")}
+                >
+                  ← Back to Home
+                </button>
               </div>
 
               <div className={`${styles.togglePanel} ${styles.toggleRight}`}>
@@ -242,6 +291,14 @@ const AuthForm = () => {
                 >
                   Login
                 </motion.button>
+
+                {/* Back to Home Page Link */}
+                <button
+                  className={styles.backLink}
+                  onClick={() => navigate("/")}
+                >
+                  ← Back to Home
+                </button>
               </div>
             </div>
           </motion.div>
@@ -250,5 +307,4 @@ const AuthForm = () => {
     </div>
   );
 };
-
 export default AuthForm;

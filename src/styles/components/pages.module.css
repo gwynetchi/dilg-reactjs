@@ -241,7 +241,7 @@
   left: 50%;
   transform: translateX(-50%);
   background-color: rgb(226, 120, 120); /* Red for errors */
-  color: white;
+  color: orangered;
   padding: 10px 20px;
   border-radius: 5px;
   font-size: 14px;

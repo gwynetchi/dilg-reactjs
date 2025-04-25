@@ -113,10 +113,30 @@
     .container p{
         font-size: 14.5px;
         margin: 15px 0;
+        color: white
     }
 
 form{ width: 100%; }
 
+.error-message {
+    background-color: #ffe0e0;
+    color: orangered;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+}
+
+p.error-message {
+    margin: 0;
+    font-size: 14px;
+    color: orangered;
+}
+p.error {
+    font-size: 14px;
+    color: orangered;
+    text-align: center;
+}
 .form-box{
     position: absolute;
     right: 0;
@@ -229,7 +249,21 @@ form{ width: 100%; }
     color:#1E4E92
 }
 
+.p.successMessage {
+    font-size: 14px;
+    color: green;
+}
+.p.success {
+    font-size: 14px;
+    color: green;
+    text-align: center;
+}
 
+.successMessage {
+    font-size: 14px;
+    color: green;
+    text-align: center;
+    margin: 10px 0;}
 
 .toggle-box{
     position: absolute;
@@ -349,3 +383,19 @@ form{ width: 100%; }
 
     .toggle-panel h1{font-size: 30px; }
 }
+
+
+.backLink {
+    margin-top: 1rem;
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
+  .backLink:hover {
+    color: #ffce1b;
+  }
+  
