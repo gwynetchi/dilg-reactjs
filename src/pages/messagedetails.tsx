@@ -15,7 +15,7 @@ const MessageDetails: React.FC = () => {
   const [submissionStatus, setSubmissionStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [remark, setRemark] = useState<string | null>(null); // State for storing the added remark
-  
+  const [evaluatorRemark, setEvaluatorRemark] = useState<string | null>(null);
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
@@ -40,7 +40,7 @@ const MessageDetails: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-
+  
     const fetchMessage = async () => {
       setLoading(true);
       try {
@@ -49,7 +49,7 @@ const MessageDetails: React.FC = () => {
         if (msgSnap.exists()) {
           const msgData = msgSnap.data();
           let senderName = "Unknown";
-        
+  
           if (msgData.createdBy) {
             const senderRef = doc(db, "users", msgData.createdBy);
             const senderSnap = await getDoc(senderRef);
@@ -58,23 +58,21 @@ const MessageDetails: React.FC = () => {
               senderName = `${senderData.fname} ${senderData.mname ? senderData.mname + " " : ""}${senderData.lname}`.trim();
             }
           }
-        
+  
           setMessage({ ...msgData, senderName });
-        
-          // 👇 NEW: Set imageUrl from communications document
           setImageUrl(msgData.imageUrl || null);
-        
+  
           if (currentUser) {
             const submissionRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
             const submissionSnap = await getDoc(submissionRef);
             if (submissionSnap.exists()) {
               const submissionData = submissionSnap.data();
               setSubmissionStatus(submissionData);
-              setRemark(submissionData.remark || null); // Set the remark
+              setRemark(submissionData.remark || null); // User's remark
+              setEvaluatorRemark(submissionData.evaluatorRemark || null); // Evaluator's remark
             }
           }
-        }
-        else {
+        } else {
           console.error("Message not found");
         }
       } catch (error) {
@@ -83,7 +81,7 @@ const MessageDetails: React.FC = () => {
         setLoading(false);
       }
     };
-
+  
     fetchMessage();
   }, [id, currentUser]);
 
@@ -131,10 +129,6 @@ const MessageDetails: React.FC = () => {
       alert("Failed to mark as submitted.");
     }
   };
-
-
-
-
   // Close modal
   const closeModal = () => {
     setShowModal(false);
@@ -346,15 +340,15 @@ const MessageDetails: React.FC = () => {
               </div>
               {/* Comments (called content before) */}
               <div className="form-group row mb-2">
-                  <label className="col-sm-2 col-form-label fw-bold">Comment:</label>
-                  <div className="col-sm-10">
-                    <input
-                        type="text"
-                        className="form-control"
-                        readOnly
-                        value= {message.remarks || "No remarks/comments available"}
-                      />
-                  </div>
+                <label className="col-sm-2 col-form-label fw-bold">Evaluator's Remarks:</label>
+                <div className="col-sm-10">
+                  <input
+                    type="text"
+                    className="form-control"
+                    readOnly
+                    value={evaluatorRemark || "No evaluator remarks yet"}
+                  />
+                </div>
               </div>
               {/* remarks */}
               <div className="form-group row mb-2">
@@ -364,8 +358,8 @@ const MessageDetails: React.FC = () => {
                         type="text"
                         className="form-control"
                         readOnly
-                        value= {submissionStatus?. remark || "No additional remarks available"}
-                      />
+                        value={remark || "No additional remarks available"}
+                        />
                   </div>
               </div>
               {/* Sent and status button */}
