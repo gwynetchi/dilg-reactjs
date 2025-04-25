@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -16,53 +16,73 @@ import {
 import { useLocation } from "react-router-dom";
 import DOMPurify from "dompurify";
 
+interface Message {
+  sender: string;
+  text: string;
+  timestamp: number;
+  imageUrl: string | null;
+}
+
 const Messaging = ({
   setUnreadMessages,
 }: {
   setUnreadMessages: React.Dispatch<React.SetStateAction<number>>;
 }) => {
-  const [messages, setMessages] = useState<
-    {
-      imageUrl: any;
-      sender: string;
-      text: string;
-      timestamp: number;
-    }[]
-  >([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const auth = getAuth();
   const db = getFirestore();
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const location = useLocation();
-  const isMessagingPage = location.pathname.includes("/message");
+  const { pathname } = useLocation();
+  const isMessagingPage = pathname.includes("/message");
 
-  const deleteOldMessages = async () => {
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const deleteOldMessages = useCallback(async () => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const messagesRef = collection(db, "messages");
     const oldMessagesQuery = query(
-      messagesRef,
+      collection(db, "messages"),
       where("timestamp", "<", thirtyDaysAgo)
     );
 
     const snapshot = await getDocs(oldMessagesQuery);
-    snapshot.forEach(async (docSnap) => {
-      await deleteDoc(doc(db, "messages", docSnap.id));
-    });
-  };
+    const deletePromises = snapshot.docs.map((docSnap) =>
+      deleteDoc(doc(db, "messages", docSnap.id))
+    );
+    await Promise.all(deletePromises);
+  }, [db]);
+
+  const fetchUserFullName = useCallback(
+    async (uid: string) => {
+      try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+          const { fname, mname, lname, email } = userDoc.data();
+          return fname && lname
+            ? `${fname} ${mname ? mname + " " : ""}${lname}`
+            : email || "Anonymous";
+        }
+      } catch (err) {
+        console.error("Error fetching user name:", err);
+      }
+      return auth.currentUser?.email || "Anonymous";
+    },
+    [auth, db]
+  );
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-    }
+    if (file) setSelectedImage(file);
   };
 
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString("en-US", {
+  const formatTimestamp = (timestamp: number) =>
+    new Date(timestamp).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -70,77 +90,16 @@ const Messaging = ({
       minute: "2-digit",
       hour12: true,
     });
-  };
-
-  useEffect(() => {
-    deleteOldMessages();
-
-    const messagesRef = collection(db, "messages");
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      async (snapshot) => {
-        const messagesData = await Promise.all(
-          snapshot.docs.map(async (docSnap) => {
-            const data = docSnap.data();
-            return {
-              sender: data.sender,
-              text: data.text,
-              timestamp: data.timestamp,
-              imageUrl: data.imageUrl || null,
-            };
-          })
-        );
-
-        setMessages(messagesData);
-
-        if (!isMessagingPage) {
-          setUnreadMessages((prev) => prev + snapshot.docs.length);
-        }
-      },
-      (error) => {
-        console.error("Error fetching messages:", error);
-        setError("Failed to load messages. Please try again later.");
-      }
-    );
-
-    return () => unsubscribe();
-  }, [isMessagingPage, setUnreadMessages]);
-
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-
-  const fetchUserFullName = async (uid: string) => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        const fullName =
-          data.fname && data.lname
-            ? `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`
-            : data.email || "Anonymous";
-        return fullName;
-      }
-    } catch (error) {
-      console.error("Error fetching user full name:", error);
-    }
-    return auth.currentUser?.email || "Anonymous";
-  };
 
   const sendMessage = async () => {
-    if (newMessage.trim() === "" && !selectedImage) return;
+    if (!newMessage.trim() && !selectedImage) return;
 
-    setIsLoading(true); // Start loading
-
+    setIsLoading(true);
     try {
       const user = auth.currentUser;
       if (!user) {
         setError("You must be logged in to send a message.");
-        setIsLoading(false); // Stop loading on error
+        setIsLoading(false);
         return;
       }
 
@@ -155,10 +114,7 @@ const Messaging = ({
 
         const res = await fetch(
           "https://api.cloudinary.com/v1_1/dr5c99td8/image/upload",
-          {
-            method: "POST",
-            body: formData,
-          }
+          { method: "POST", body: formData }
         );
 
         const data = await res.json();
@@ -175,30 +131,66 @@ const Messaging = ({
       setNewMessage("");
       setSelectedImage(null);
       setError(null);
-
-      if (!isMessagingPage) {
-        setUnreadMessages((prev) => prev + 1);
-      }
-
-      setIsLoading(false); // Stop loading after message is sent
+      if (!isMessagingPage) setUnreadMessages((prev) => prev + 1);
     } catch (error) {
       console.error("Error sending message:", error);
       setError("Failed to send message. Please try again.");
-      setIsLoading(false); // Stop loading on error
+      setIsLoading(false); // ✅ Still stop loading on error
     }
   };
 
-  const formatMessage = (text: string) => {
-    return DOMPurify.sanitize(text);
-  };
+useEffect(() => {
+  deleteOldMessages();
+
+  const messagesRef = collection(db, "messages");
+  const q = query(messagesRef, orderBy("timestamp", "asc"));
+
+  const unsubscribe = onSnapshot(
+    q,
+    async (snapshot) => {
+      const messagesData = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          return {
+            sender: data.sender,
+            text: data.text,
+            timestamp: data.timestamp,
+            imageUrl: data.imageUrl || null,
+          };
+        })
+      );
+
+      setMessages(messagesData);
+      scrollToBottom();
+      setIsLoading(false); // ✅ Stop spinner after messages are displayed
+
+      if (!isMessagingPage) {
+        setUnreadMessages((prev) => prev + snapshot.docs.length);
+      }
+    },
+    (error) => {
+      console.error("Error fetching messages:", error);
+      setError("Failed to load messages. Please try again later.");
+      setIsLoading(false);
+    }
+  );
+
+  return () => unsubscribe();
+}, [deleteOldMessages, isMessagingPage, setUnreadMessages]);
+
+
+  useEffect(scrollToBottom, [messages]);
+
+  const formatMessage = (text: string) => DOMPurify.sanitize(text);
 
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
       {error && <div className="error-message">{error}</div>}
+
       <div className="chat-box">
-        {messages.map((msg, index) => (
-          <div key={index} className="chat-message">
+        {messages.map((msg, i) => (
+          <div key={i} className="chat-message">
             <strong>{msg.sender}:</strong>
             <p
               style={{ whiteSpace: "pre-wrap" }}
@@ -229,8 +221,6 @@ const Messaging = ({
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               sendMessage();
-            } else if (e.key === "Enter" && e.shiftKey) {
-              setNewMessage((prev) => prev + "\n");
             }
           }}
         />
@@ -246,11 +236,7 @@ const Messaging = ({
           </div>
         )}
         <button onClick={sendMessage} disabled={isLoading}>
-          {isLoading ? (
-            <div className="spinner"></div> // Simple loading spinner
-          ) : (
-            "Send"
-          )}
+          {isLoading ? <div className="spinner" /> : "Send"}
         </button>
       </div>
     </div>
