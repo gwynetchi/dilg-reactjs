@@ -75,7 +75,6 @@ const ROLE_PATHS = {
 const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   // State management
   const [unreadCount, setUnreadCount] = useState(0);
-  const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<keyof typeof MENU_ITEMS | null>(null);
   const [userProfilePic, setUserProfilePic] = useState<string>("");
   const [activeMenu, setActiveMenu] = useState("Dashboard");
@@ -92,7 +91,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setUserId(user.uid);
         const userRef = doc(db, "users", user.uid);
         
         const unsubscribeUserDoc = onSnapshot(userRef, (docSnap) => {
@@ -105,8 +103,6 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   
         return unsubscribeUserDoc;
       } else {
-        setUserId(null);
-        console.log("Authenticated user ID:", userId);
         setUserRole(null);
       }
     });
