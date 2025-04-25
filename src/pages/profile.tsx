@@ -74,7 +74,7 @@ const Profile = () => {
         const formData = new FormData();
         formData.append("file", selectedImageFile);
         formData.append("upload_preset", "uploads");
-        formData.append("folder", "profile_pictures");
+        formData.append("folder", `profilePictures/${user.uid}`);
   
         const res = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
           method: "POST",

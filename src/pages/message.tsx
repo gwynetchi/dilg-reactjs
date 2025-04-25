@@ -156,7 +156,7 @@ const Messaging = ({
         const formData = new FormData();
         formData.append("file", selectedImage);
         formData.append("upload_preset", "uploads");
-        formData.append("folder", "messageImages");
+        formData.append("folder", `messageImages/${user.uid}`);
 
         const xhr = new XMLHttpRequest();
         xhr.upload.onprogress = (e) => {
