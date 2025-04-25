@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -28,21 +28,21 @@ const Messaging = ({
 }: {
   setUnreadMessages: React.Dispatch<React.SetStateAction<number>>;
 }) => {
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const lastSentTime = useRef<number>(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Unified state for both sending and loading
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const auth = getAuth();
   const db = getFirestore();
   const { pathname } = useLocation();
   const isMessagingPage = pathname.includes("/message");
-
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   const deleteOldMessages = useCallback(async () => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -76,12 +76,39 @@ const Messaging = ({
     [auth, db]
   );
 
+  const MAX_MESSAGE_LENGTH = 1000;
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
+  const MAX_IMAGE_SIZE_MB = 5;
+  const DEBOUNCE_DELAY_MS = 1000; // 1 SECOND COOLDOWN
+  
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setSelectedImage(file);
+    if (!file) return;
+
+    setSelectedImage(null);
+    setError(null);
+
+    // Validate image type
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError('Only JPG, PNG, or GIF images are allowed');
+      return;
+    }
+
+    // Validate image size
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      setError(`Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB`);
+      return;
+    }
+
+    setSelectedImage(file);
   };
 
-  const formatTimestamp = (timestamp: number) =>
+  const cancelImageUpload = () => {
+    setSelectedImage(null);
+    setUploadProgress(null);
+  };
+
+  const formatTimestamp = useCallback((timestamp: number) => 
     new Date(timestamp).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
@@ -89,17 +116,36 @@ const Messaging = ({
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-    });
+    }), []);
+
+  const formattedMessages = useMemo(() => 
+    messages.map(msg => ({
+      ...msg,
+      formattedText: DOMPurify.sanitize(msg.text),
+      formattedTime: formatTimestamp(msg.timestamp)
+    })), [messages, formatTimestamp]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() && !selectedImage) return;
+    const now = Date.now();
+    if ((!newMessage.trim() && !selectedImage) || 
+        isProcessing || // Use unified isProcessing state
+        now - lastSentTime.current < DEBOUNCE_DELAY_MS) {
+      return;
+    }
 
-    setIsLoading(true);
+    if (newMessage.length > MAX_MESSAGE_LENGTH) {
+      setError(`Message must be shorter than ${MAX_MESSAGE_LENGTH} characters`);
+      return;
+    }
+
+    setIsProcessing(true); // Set unified processing state
+    lastSentTime.current = now;
+
     try {
       const user = auth.currentUser;
       if (!user) {
         setError("You must be logged in to send a message.");
-        setIsLoading(false);
+        setIsProcessing(false);
         return;
       }
 
@@ -112,133 +158,182 @@ const Messaging = ({
         formData.append("upload_preset", "uploads");
         formData.append("folder", "messageImages");
 
-        const res = await fetch(
-          "https://api.cloudinary.com/v1_1/dr5c99td8/image/upload",
-          { method: "POST", body: formData }
-        );
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
 
-        const data = await res.json();
-        imageUrl = data.secure_url;
+        imageUrl = await new Promise<string>((resolve, reject) => {
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const data = JSON.parse(xhr.responseText);
+              resolve(data.secure_url);
+            } else {
+              reject(new Error('Image upload failed'));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Image upload failed'));
+          xhr.open('POST', 'https://api.cloudinary.com/v1_1/dr5c99td8/image/upload');
+          xhr.send(formData);
+        });
       }
 
       await addDoc(collection(db, "messages"), {
         sender: fullName,
-        text: newMessage,
+        text: newMessage.substring(0, MAX_MESSAGE_LENGTH),
         timestamp: Date.now(),
         imageUrl,
       });
 
       setNewMessage("");
       setSelectedImage(null);
+      setUploadProgress(null);
       setError(null);
       if (!isMessagingPage) setUnreadMessages((prev) => prev + 1);
     } catch (error) {
       console.error("Error sending message:", error);
       setError("Failed to send message. Please try again.");
-      setIsLoading(false); // ✅ Still stop loading on error
+    } finally {
+      setIsProcessing(false); // Reset processing state after completion
     }
   };
 
-useEffect(() => {
-  deleteOldMessages();
+  useEffect(() => {
+    deleteOldMessages();
+    setIsProcessing(true); // Set processing state for initial load
+    const messagesRef = collection(db, "messages");
+    const q = query(messagesRef, orderBy("timestamp", "asc"));
+    const unsubscribe = onSnapshot(
+      q,
+      async (snapshot) => {
+        const messagesData = await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data();
+            return {
+              sender: data.sender,
+              text: data.text,
+              timestamp: data.timestamp,
+              imageUrl: data.imageUrl || null,
+            };
+          })
+        );
 
-  const messagesRef = collection(db, "messages");
-  const q = query(messagesRef, orderBy("timestamp", "asc"));
+        setMessages(messagesData);
+        scrollToBottom();
+        setIsProcessing(false); // Stop processing spinner after loading messages
 
-  const unsubscribe = onSnapshot(
-    q,
-    async (snapshot) => {
-      const messagesData = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const data = docSnap.data();
-          return {
-            sender: data.sender,
-            text: data.text,
-            timestamp: data.timestamp,
-            imageUrl: data.imageUrl || null,
-          };
-        })
-      );
-
-      setMessages(messagesData);
-      scrollToBottom();
-      setIsLoading(false); // ✅ Stop spinner after messages are displayed
-
-      if (!isMessagingPage) {
-        setUnreadMessages((prev) => prev + snapshot.docs.length);
+        if (!isMessagingPage) {
+          setUnreadMessages((prev) => prev + snapshot.docs.length);
+        }
+      },
+      (error) => {
+        console.error("Error fetching messages:", error);
+        setError("Failed to load messages. Please try again later.");
+        setIsProcessing(false);
       }
-    },
-    (error) => {
-      console.error("Error fetching messages:", error);
-      setError("Failed to load messages. Please try again later.");
-      setIsLoading(false);
-    }
-  );
+    );
 
-  return () => unsubscribe();
-}, [deleteOldMessages, isMessagingPage, setUnreadMessages]);
-
+    return () => unsubscribe();
+  }, [deleteOldMessages, isMessagingPage, setUnreadMessages]);
 
   useEffect(scrollToBottom, [messages]);
-
-  const formatMessage = (text: string) => DOMPurify.sanitize(text);
 
   return (
     <div className="chat-container">
       <h2>Messaging</h2>
       {error && <div className="error-message">{error}</div>}
 
-      <div className="chat-box">
-        {messages.map((msg, i) => (
-          <div key={i} className="chat-message">
-            <strong>{msg.sender}:</strong>
-            <p
-              style={{ whiteSpace: "pre-wrap" }}
-              dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
-            />
-            {msg.imageUrl && (
-              <div className="uploaded-image">
-                <img
-                  src={msg.imageUrl}
-                  alt="Uploaded"
-                  style={{ maxWidth: "100%", marginTop: "10px" }}
+      {isProcessing ? (
+        <div className="loading-overlay">
+          <div className="spinner"></div>
+          <p>Loading messages...</p>
+        </div>
+      ) : (
+        <>
+          <div className="chat-box">
+            {formattedMessages.map((msg, i) => (
+              <div key={i} className="chat-message">
+                <strong>{msg.sender}:</strong>
+                <p
+                  style={{ whiteSpace: "pre-wrap" }}
+                  dangerouslySetInnerHTML={{ __html: msg.formattedText }}
                 />
+                {msg.imageUrl && (
+                  <div className="uploaded-image">
+                    <img
+                      src={msg.imageUrl}
+                      alt="Uploaded content"
+                      style={{ maxWidth: "100%", marginTop: "10px" }}
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+                <div className="timestamp">{msg.formattedTime}</div>
               </div>
-            )}
-            <div className="timestamp">{formatTimestamp(msg.timestamp)}</div>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
 
-      <div className="chat-input">
-        <textarea
-          className="message-input"
-          placeholder="Type a message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
-        />
-        <input type="file" accept="image/*" onChange={handleFileUpload} />
-        {selectedImage && (
-          <div className="preview-image">
-            <p>Selected image:</p>
-            <img
-              src={URL.createObjectURL(selectedImage)}
-              alt="Preview"
-              style={{ maxWidth: "100%", maxHeight: "200px" }}
+          <div className="chat-input">
+            <textarea
+              className="message-input"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              maxLength={MAX_MESSAGE_LENGTH}
+              disabled={isProcessing}
             />
+            <div className="file-upload-container">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                id="message-image-upload"
+                style={{ display: 'none' }}
+              />
+              <label htmlFor="message-image-upload" className="upload-button">
+                📎 Attach Image
+              </label>
+              {selectedImage && (
+                <div className="preview-image">
+                  <p>Selected image: {selectedImage.name}</p>
+                  <img
+                    src={URL.createObjectURL(selectedImage)}
+                    alt="Preview"
+                    style={{ maxWidth: "100%", maxHeight: "200px" }}
+                  />
+                  <button onClick={cancelImageUpload} className="cancel-button">
+                    × Remove
+                  </button>
+                  {uploadProgress !== null && (
+                    <div className="upload-progress">
+                      <progress value={uploadProgress} max="100" />
+                      <span>{uploadProgress}%</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="message-counter">
+              {newMessage.length}/{MAX_MESSAGE_LENGTH}
+            </div>
+            <button 
+              onClick={sendMessage} 
+              disabled={isProcessing || (!newMessage.trim() && !selectedImage)}
+            >
+              {isProcessing ? <div className="spinner" /> : "Send"}
+            </button>
           </div>
-        )}
-        <button onClick={sendMessage} disabled={isLoading}>
-          {isLoading ? <div className="spinner" /> : "Send"}
-        </button>
-      </div>
+        </>
+      )}
     </div>
   );
 };

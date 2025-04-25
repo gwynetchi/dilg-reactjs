@@ -253,3 +253,66 @@
 .error-popup-message.hidden {
   opacity: 0;
 }
+
+/* Add these styles to your existing CSS */
+.file-upload-container {
+  margin: 10px 0;
+}
+
+.upload-button {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+.upload-button:hover {
+  background: #e0e0e0;
+}
+
+.preview-image {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  position: relative;
+}
+
+.cancel-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.upload-progress {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-progress progress {
+  flex-grow: 1;
+}
+
+.message-counter {
+  text-align: right;
+  font-size: 0.8em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+/* Style for disabled send button when in cooldown */
+button:disabled:not(.spinner) {
+  background-color: #cccccc !important;
+  cursor: not-allowed;
+}
