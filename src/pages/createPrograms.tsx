@@ -15,8 +15,6 @@ const CreatePrograms: React.FC = () => {
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
   const [showDetails, setShowDetails] = useState(false);
-
-
   const [participants, setParticipants] = useState<string[]>([]);
   const [duration, setDuration] = useState({ from: "", to: "" });
   const [loading, setLoading] = useState(false);
@@ -32,10 +30,6 @@ const CreatePrograms: React.FC = () => {
   const [frequency, setFrequency] = useState("");
   const [, setFrequencyDetails] = useState({});
 
-  
-
-
-  
   // Fetch users for participant selection
   const fetchUsers = async () => {
     try {
