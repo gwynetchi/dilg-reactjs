@@ -11,7 +11,8 @@ import {
   query, 
   where, 
   onSnapshot, 
-  updateDoc 
+  updateDoc, 
+  getDocs
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
@@ -122,29 +123,75 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   }, [location.pathname, userRole]);
   
   useEffect(() => {
-    if (!userRole) return;
+    if (!userRole || !auth.currentUser?.uid) return;
+  
+    const userId = auth.currentUser.uid;
+    
+    interface Message {
+      id: string;
+      seenBy?: string[];
+      [key: string]: any; // Allow additional properties
+    }
 
-    const fetchUnreadMessages = () => {
-      const messagesRef = collection(db, "communications");
-      const q = query(messagesRef, where("recipients", "array-contains", auth.currentUser?.uid));
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const newUnseenMessages = querySnapshot.docs
-          .filter(doc => !doc.data().seenBy?.includes(auth.currentUser?.uid))
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
+    const fetchUnreadMessages = async () => {
+      try {
+        // Create queries for both collections
+        const messagesQuery = query(
+          collection(db, "communications"),
+          where("recipients", "array-contains", userId)
+        );
+        
+        const programMessagesQuery = query(
+          collection(db, "programs"),
+          where("participants", "array-contains", userId)
+        );
+  
+        // Use Promise.all to execute both queries in parallel
+        const [messagesSnapshot, programMessagesSnapshot] = await Promise.all([
+          getDocs(messagesQuery),
+          getDocs(programMessagesQuery)
+        ]);
+  
+        // Combine and filter results
+        const allMessages: Message[] = [
+          ...messagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+          ...programMessagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        ];
+  
+        const newUnseenMessages = allMessages.filter(
+          (message: Message) => !message.seenBy?.includes(userId)
+        );
+  
         setUnreadCount(newUnseenMessages.length);
         setUnreadMessages(newUnseenMessages);
-      });
-
-      return () => unsubscribe();
+        
+      } catch (error) {
+        console.error("Error fetching unread messages:", error);
+        // Consider adding error state handling here
+      }
     };
-
+  
+    // Initial fetch
     fetchUnreadMessages();
-  }, [userRole]);
+  
+    // Real-time listeners (if needed)
+    const messagesUnsubscribe = onSnapshot(
+      query(collection(db, "communications"), 
+      where("recipients", "array-contains", userId)),
+      () => fetchUnreadMessages() // Refetch when changes occur
+    );
+  
+    const programMessagesUnsubscribe = onSnapshot(
+      query(collection(db, "programs"), 
+      where("participants", "array-contains", userId)),
+      () => fetchUnreadMessages() // Refetch when changes occur
+    );
+  
+    return () => {
+      messagesUnsubscribe();
+      programMessagesUnsubscribe();
+    };
+  }, [userRole, auth.currentUser?.uid]);
 
   // Handlers
   const handleLogout = async () => {
@@ -159,20 +206,40 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const handleEventClick = async (clickInfo: any) => {
     const messageId = clickInfo.event.extendedProps.messageId;
     if (!userRole) return;
-
-    const rolePath = ROLE_PATHS[userRole] || "viewer";
-    navigate(`/${rolePath}/inbox/${messageId}`);
-
+  
     try {
-      const messageRef = doc(db, "communications", messageId);
-      const messageDoc = await getDoc(messageRef);
+      // First try to find in communications
+      const commRef = doc(db, "communications", messageId);
+      const commDoc = await getDoc(commRef);
       
-      if (messageDoc.exists()) {
-        const data = messageDoc.data();
+      if (commDoc.exists()) {
+        const rolePath = ROLE_PATHS[userRole] || "viewer";
+        navigate(`/${rolePath}/inbox/${messageId}`);
+        
+        const data = commDoc.data();
         const seenBy = data?.seenBy || [];
   
         if (!seenBy.includes(auth.currentUser?.uid)) {
-          await updateDoc(messageRef, {
+          await updateDoc(commRef, {
+            seenBy: [...seenBy, auth.currentUser?.uid],
+          });
+        }
+        return;
+      }
+  
+      // If not found in communications, try programs
+      const programRef = doc(db, "programs", messageId);
+      const programDoc = await getDoc(programRef);
+      
+      if (programDoc.exists()) {
+        const rolePath = ROLE_PATHS[userRole] || "viewer";
+        navigate(`/${rolePath}/programs/${messageId}`);
+        
+        const data = programDoc.data();
+        const seenBy = data?.seenBy || [];
+  
+        if (!seenBy.includes(auth.currentUser?.uid)) {
+          await updateDoc(programRef, {
             seenBy: [...seenBy, auth.currentUser?.uid],
           });
         }
@@ -233,41 +300,75 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
               </button>
 
               {isNotificationOpen && unreadMessages.length > 0 && (
-                <div className="notification-dropdown">
-                  <ul>
-                    {unreadMessages.map((message) => (
-                      <li key={message.id}>
-                        <Link
-                          to={`/inbox/${message.id}`}
-                          className="notification-item"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleEventClick({
-                              event: { extendedProps: { messageId: message.id } },
-                            });
-                          }}
-                        >
-                          <div>
-                            <strong>{message.sender}</strong>
-                            <p><strong>Subject:</strong> {message.subject}</p>
-                            <p>{message.content}</p>
-                            <p><strong>Deadline:</strong> {message.deadline?.toDate ? 
-                              new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}
-                            </p>
-                            <span>
-                              <strong>Sent: </strong> 
-                              {message.createdAt?.seconds ? 
-                                new Date(message.createdAt.seconds * 1000).toLocaleString() : 
-                                "No Timestamp"}
-                            </span>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+  <div className="notification-dropdown">
+    <ul>
+      {unreadMessages.map((message) => {
+        // Determine if it's a communication or program
+        const isCommunication = message.hasOwnProperty('subject');
+        const isProgram = message.hasOwnProperty('programName');
+        
+        return (
+          <li key={message.id}>
+            <Link
+              to={isCommunication ? `/inbox/${message.id}` : `/programs/${message.id}`}
+              className="notification-item"
+              onClick={(e) => {
+                e.preventDefault();
+                handleEventClick({
+                  event: { extendedProps: { messageId: message.id } },
+                });
+              }}
+            >
+              <div>
+                {isCommunication && (
+                  <>
+                    <strong>New Communication</strong>
+                    <p><strong>Subject:</strong> {message.subject}</p>
+                    <p>{message.content?.substring(0, 100)}...</p>
+                    {message.deadline && (
+                      <p>
+                        <strong>Deadline:</strong> {message.deadline?.toDate ? 
+                          new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}
+                      </p>
+                    )}
+                    <span>
+                      <strong>Sent: </strong> 
+                      {message.createdAt?.seconds ? 
+                        new Date(message.createdAt.seconds * 1000).toLocaleString() : 
+                        "No Timestamp"}
+                    </span>
+                  </>
+                )}
+                
+                {isProgram && (
+                  <>
+                    <strong>New Program Notification</strong>
+                    <p><strong>Program:</strong> {message.programName}</p>
+                    <p><strong>Description:</strong> {message.description?.substring(0, 100)}...</p>
+                    {message.frequency && (
+                      <p><strong>Frequency:</strong> {message.frequency}</p>
+                    )}
+                    {message.duration && (
+                      <p>
+                        <strong>Duration:</strong> {message.duration.from} to {message.duration.to}
+                      </p>
+                    )}
+                    <span>
+                      <strong>Created: </strong>
+                      {message.createdAt?.seconds ? 
+                        new Date(message.createdAt.seconds * 1000).toLocaleString() : 
+                        "No Timestamp"}
+                    </span>
+                  </>
+                )}
+              </div>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+)}            </div>
             
             <div className="position-relative" ref={profileMenuRef}>
               <button
