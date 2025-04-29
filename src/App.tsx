@@ -1,7 +1,7 @@
 import React, { useState, useEffect, JSX } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
@@ -128,35 +128,42 @@ const App: React.FC = () => {
   const db = getFirestore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        // Check if this UID is in deleted_users
-        const deletedRef = doc(db, "deleted_users", currentUser.uid);
-        const deletedSnap = await getDoc(deletedRef);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
   
+      const uid = currentUser.uid;
+      setUser(currentUser);
+  
+      // Set up real-time listener for user deletion
+      const deletedRef = doc(db, "deleted_users", uid);
+      const unsubscribeDeleted = onSnapshot(deletedRef, async (deletedSnap) => {
         if (deletedSnap.exists()) {
           console.warn("This account is marked as deleted. Signing out...");
           await auth.signOut();
           setUser(null);
           setRole(null);
           setLoading(false);
-          return;
         }
+      });
   
-        setUser(currentUser);
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-  
-        setRole(userDoc.exists() ? userDoc.data().role : null);
-      } else {
-        setUser(null);
-        setRole(null);
-      }
+      // Fetch role from users collection
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      setRole(userDoc.exists() ? userDoc.data().role : null);
       setLoading(false);
+  
+      // Cleanup Firestore listener on unmount or auth change
+      return () => unsubscribeDeleted();
     });
   
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
+  
   
   const getDashboardPath = () => {
     return role && roleRoutesConfig[role] ? roleRoutesConfig[role][0].path : "/login";
