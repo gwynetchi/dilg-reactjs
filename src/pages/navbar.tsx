@@ -292,7 +292,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         <ul className="side-menu bottom">
           <li className={activeMenu === "Logout" ? "active" : ""}>
             <Link to="/" onClick={(e) => { e.preventDefault(); handleLogout(); }}>
-              <i className="bx bx-power-off bx-sm bx-burst-hover"></i>
+              <i className="bx bx-log-out bx-sm bx-burst-hover"></i>
               <span className="text">Logout</span>
             </Link>
           </li>
