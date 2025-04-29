@@ -19,6 +19,7 @@ import DOMPurify from "dompurify";
 interface Message {
   id: string;
   sender: string;
+  senderUid: string; // <--- ADD THIS
   text: string;
   timestamp: number;
   imageUrl: string | null;
@@ -169,11 +170,13 @@ const Messaging = ({
 
       await addDoc(collection(db, "chats"), {
         sender: fullName,
+        senderUid: user.uid,  // <--- ADD THIS LINE
         text: newMessage.substring(0, MAX_MESSAGE_LENGTH),
         timestamp: now,
         imageUrl,
         seenBy: [user.uid],
       });
+      
 
       setNewMessage("");
       setSelectedImage(null);
@@ -201,19 +204,23 @@ const Messaging = ({
       const fetchedMessages: Message[] = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         sender: docSnap.data().sender,
+        senderUid: docSnap.data().senderUid, // <--- ADD THIS
         text: docSnap.data().text,
         timestamp: docSnap.data().timestamp,
         imageUrl: docSnap.data().imageUrl || null,
         seenBy: docSnap.data().seenBy || [],
       }));
+      
 
       setMessages(fetchedMessages);
       scrollToBottom();
       setIsProcessing(false);
 
-      const unseenMessages = fetchedMessages.filter(msg => !msg.seenBy.includes(user.uid));
+      const unseenMessages = fetchedMessages.filter(msg => 
+        msg.senderUid !== user.uid && !msg.seenBy.includes(user.uid)
+      );
       setUnreadMessages(unseenMessages.length);
-
+      
       const batchUpdates = unseenMessages.map(msg =>
         updateDoc(doc(db, "chats", msg.id), {
           seenBy: [...msg.seenBy, user.uid],
