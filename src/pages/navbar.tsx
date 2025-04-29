@@ -75,8 +75,10 @@ const ROLE_PATHS = {
 
 const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   // State management
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [userRole, setUserRole] = useState<keyof typeof MENU_ITEMS | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState({
+    inbox: 0,
+    programs: 0
+  });  const [userRole, setUserRole] = useState<keyof typeof MENU_ITEMS | null>(null);
   const [userProfilePic, setUserProfilePic] = useState<string>("");
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
@@ -126,51 +128,63 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     if (!userRole || !auth.currentUser?.uid) return;
   
     const userId = auth.currentUser.uid;
-    
-    interface Message {
-      id: string;
-      seenBy?: string[];
-      [key: string]: any; // Allow additional properties
-    }
 
     const fetchUnreadMessages = async () => {
       try {
-        // Create queries for both collections
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+    
+        // Query for communications (inbox)
         const messagesQuery = query(
           collection(db, "communications"),
           where("recipients", "array-contains", userId)
         );
         
+        // Query for programs
         const programMessagesQuery = query(
           collection(db, "programs"),
           where("participants", "array-contains", userId)
         );
-  
-        // Use Promise.all to execute both queries in parallel
+    
         const [messagesSnapshot, programMessagesSnapshot] = await Promise.all([
           getDocs(messagesQuery),
           getDocs(programMessagesQuery)
         ]);
-  
-        // Combine and filter results
-        const allMessages: Message[] = [
-          ...messagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-          ...programMessagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-        ];
-  
-        const newUnseenMessages = allMessages.filter(
-          (message: Message) => !message.seenBy?.includes(userId)
-        );
-  
-        setUnreadCount(newUnseenMessages.length);
-        setUnreadMessages(newUnseenMessages);
-        
+    
+        // Calculate unread counts for each category
+        const inboxUnread = messagesSnapshot.docs.filter(
+          doc => !doc.data().seenBy?.includes(userId)
+        ).length;
+    
+        const programsUnread = programMessagesSnapshot.docs.filter(
+          doc => !doc.data().seenBy?.includes(userId)
+        ).length;
+    
+        setUnreadCounts({
+          inbox: inboxUnread,
+          programs: programsUnread
+        });
+    
+        // Combine all unread messages for notifications
+        const allUnreadMessages = [
+          ...messagesSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...(doc.data() as { seenBy?: string[] }), // Explicitly type the data
+            type: 'communication' 
+          })),
+          ...programMessagesSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...(doc.data() as { seenBy?: string[] }), // Explicitly type the data
+            type: 'program' 
+          }))
+        ].filter(item => !item.seenBy?.includes(userId));
+    
+        setUnreadMessages(allUnreadMessages);
+    
       } catch (error) {
         console.error("Error fetching unread messages:", error);
-        // Consider adding error state handling here
       }
-    };
-  
+    };  
     // Initial fetch
     fetchUnreadMessages();
   
@@ -259,14 +273,20 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         </Link>
 
         <ul className="side-menu top">
-          {userRole && MENU_ITEMS[userRole].map(({ name, icon, path }) => (
-            <li key={name} className={activeMenu === name ? "active" : ""}>
-              <Link to={path} onClick={() => setActiveMenu(name)}>
-                <i className={`bx ${icon} bx-sm`}></i>
-                <span className="text">{name}</span>
-              </Link>
-            </li>
-          ))}
+        {userRole && MENU_ITEMS[userRole].map(({ name, icon, path }) => (
+  <li key={name} className={activeMenu === name ? "active" : ""}>
+    <Link to={path} onClick={() => setActiveMenu(name)}>
+      <i className={`bx ${icon} bx-sm`}></i>
+      <span className="text">{name}</span>
+      {name === "Inbox" && unreadCounts.inbox > 0 && (
+        <span className="menu-badge">{unreadCounts.inbox}</span>
+      )}
+      {name === "Programs" && unreadCounts.programs > 0 && (
+        <span className="menu-badge">{unreadCounts.programs}</span>
+      )}
+    </Link>
+  </li>
+))}
         </ul>
         
         <ul className="side-menu bottom">
@@ -290,14 +310,16 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           
           <div className="d-flex justify-content-end align-items-center">
             <div className="position-relative" ref={notificationMenuRef}>
-              <button 
-                className="btn notification" 
-                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                aria-label="Notifications"
-              >
-                <i className="bx bx-md bx-bell bx-tada-hover"></i>
-                {unreadCount > 0 && <span className="num">{unreadCount}</span>}
-              </button>
+            <button 
+  className="btn notification" 
+  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+  aria-label="Notifications"
+>
+  <i className="bx bx-md bx-bell bx-tada-hover"></i>
+  {unreadCounts.inbox + unreadCounts.programs > 0 && (
+    <span className="num">{unreadCounts.inbox + unreadCounts.programs}</span>
+  )}
+</button>
 
               {isNotificationOpen && unreadMessages.length > 0 && (
   <div className="notification-dropdown">
