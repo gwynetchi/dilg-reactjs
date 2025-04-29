@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, doc, onSnapshot, serverTimestamp, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+  arrayUnion,
+  deleteDoc
+} from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -16,19 +26,26 @@ const Inbox: React.FC = () => {
     imageUrl: any;
     subject?: string;
     source: "communications" | "programcommunications";
-    createdAt?: { seconds: number; nanoseconds?: number } | null;
+    createdAt?: {
+      seconds: number;
+      nanoseconds?: number;
+    } | null;
   }
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "communications" | "programcommunications">("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [communications, setCommunications] = useState<Communication[]>([]);
-  const [sentPrograms, setSentPrograms] = useState<Communication[]>([]); // State for sent programs
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const [showModal, setShowModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<{
+    id: string;
+    recipients: string[];
+    source: "communications" | "programcommunications";
+  } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,89 +69,57 @@ const Inbox: React.FC = () => {
 
   useEffect(() => {
     if (!userId) return;
-  
+
     const commRef = collection(db, "communications");
     const progCommRef = collection(db, "programcommunications");
-  
+
     const q1 = query(commRef, where("recipients", "array-contains", userId));
     const q2 = query(progCommRef, where("recipients", "array-contains", userId));
-    const q3 = query(progCommRef, where("createdBy", "==", userId)); // Query for sent programs
-  
-    const fetchData = () => {
-      setLoading(true);
-  
-      // Re-fetch communications
-      const unsub1 = onSnapshot(q1, (snap1) => {
-        const commMessages = snap1.docs.map((docSnapshot) => {
-          const data = docSnapshot.data();
-          return {
-            id: docSnapshot.id,
-            createdBy: data.createdBy,
-            recipients: data.recipients || [],
-            createdAt: data.createdAt || serverTimestamp(),
-            seenBy: data.seenBy || [],
-            subject: data.subject || "No Subject",
-            imageUrl: data.imageUrl || "",
-            source: "communications" as "communications"
-          };
-        });
-        updateMessages(commMessages, "communications");
+
+    setLoading(true);
+
+    const unsub1 = onSnapshot(q1, (snap1) => {
+      const commMessages = snap1.docs.map((docSnapshot) => {
+        const data = docSnapshot.data();
+        return {
+          id: docSnapshot.id,
+          createdBy: data.createdBy,
+          recipients: data.recipients || [],
+          createdAt: data.createdAt || serverTimestamp(),
+          seenBy: data.seenBy || [],
+          subject: data.subject || "No Subject",
+          imageUrl: data.imageUrl || "",
+          source: "communications" as "communications"
+        };
       });
-  
-      // Re-fetch program communications
-      const unsub2 = onSnapshot(q2, (snap2) => {
-        const progCommMessages = snap2.docs.map((docSnapshot) => {
-          const data = docSnapshot.data();
-          return {
-            id: docSnapshot.id,
-            createdBy: data.createdBy,
-            recipients: data.recipients || [],
-            createdAt: data.createdAt || serverTimestamp(),
-            seenBy: data.seenBy || [],
-            subject: data.subject || "No Subject",
-            imageUrl: data.imageUrl || "",
-            source: "programcommunications" as "programcommunications"
-          };
-        });
-        updateMessages(progCommMessages, "programcommunications");
+
+      updateMessages(commMessages, "communications");
+    });
+
+    const unsub2 = onSnapshot(q2, (snap2) => {
+      const progCommMessages = snap2.docs.map((docSnapshot) => {
+        const data = docSnapshot.data();
+        return {
+          id: docSnapshot.id,
+          createdBy: data.createdBy,
+          recipients: data.recipients || [],
+          createdAt: data.createdAt || serverTimestamp(),
+          seenBy: data.seenBy || [],
+          subject: data.subject || "No Subject",
+          imageUrl: data.imageUrl || "",
+          source: "programcommunications" as "programcommunications"
+        };
       });
-  
-      // Re-fetch sent program communications
-      const unsub3 = onSnapshot(q3, (snap3) => {
-        const sentProgramMessages = snap3.docs.map((docSnapshot) => {
-          const data = docSnapshot.data();
-          return {
-            id: docSnapshot.id,
-            createdBy: data.createdBy,
-            recipients: data.recipients || [],
-            createdAt: data.createdAt || serverTimestamp(),
-            seenBy: data.seenBy || [],
-            subject: data.subject || "No Subject",
-            imageUrl: data.imageUrl || "",
-            source: "programcommunications" as "programcommunications"
-          };
-        });
-        setSentPrograms(sentProgramMessages);
-        setLoading(false); // Set loading to false once data is fetched
-      });
-  
-      return () => {
-        unsub1();
-        unsub2();
-        unsub3();
-      };
+
+      updateMessages(progCommMessages, "programcommunications");
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
     };
-  
-    // Initial data fetch
-    fetchData();
-  
-    // Set interval to re-fetch data every 10 seconds
-    const interval = setInterval(fetchData, 10000); // 10 seconds
-  
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
-  }, [userId]);  // Make sure this effect depends on userId
-  
+  }, [userId]);
+
   const updateMessages = (newMessages: Communication[], source: string) => {
     setCommunications((prevMessages) => {
       const filteredPrev = prevMessages.filter((msg) => msg.source !== source);
@@ -153,6 +138,32 @@ const Inbox: React.FC = () => {
     });
 
     setLoading(false);
+  };
+
+  const deleteMessage = async () => {
+    if (!selectedMessage || !userId) return;
+    const { id, recipients, source } = selectedMessage;
+
+    try {
+      const updatedRecipients = recipients.filter((recipient) => recipient !== userId);
+      const messageRef = doc(db, source, id);
+
+      if (updatedRecipients.length === 0) {
+        await deleteDoc(messageRef);
+      } else {
+        await updateDoc(messageRef, {
+          recipients: updatedRecipients
+        });
+      }
+
+      setCommunications((prev) =>
+        prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0)
+      );
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+
+    setShowModal(false);
   };
 
   const listenToSenderProfile = (senderId: string) => {
@@ -179,27 +190,35 @@ const Inbox: React.FC = () => {
 
   const openMessage = async (id: string) => {
     if (!userRole || !userId) return;
-  
+
     const rolePaths: { [key: string]: string } = {
       Evaluator: "evaluator",
       Viewer: "viewer",
       LGU: "lgu",
       Admin: "admin"
     };
-  
+
     const messageRef = doc(db, "communications", id);
-  
+
     try {
       await updateDoc(messageRef, {
-        seenBy: arrayUnion(userId) // Mark message as seen by the current user
+        seenBy: arrayUnion(userId)
       });
     } catch (error) {
       console.error("Error marking message as seen:", error);
     }
-  
+
     navigate(`/${rolePaths[userRole] || "viewer"}/inbox/${id}`);
   };
-  
+
+  const handleDeleteRequest = (
+    id: string,
+    recipients: string[],
+    source: "communications" | "programcommunications"
+  ) => {
+    setSelectedMessage({ id, recipients, source });
+    setShowModal(true);
+  };
 
   const filteredCommunications = communications
     .filter((msg) => {
@@ -215,16 +234,6 @@ const Inbox: React.FC = () => {
       const bTime = b.createdAt?.seconds || 0;
       return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
     });
-    const deleteMessage = async (messageId: string, source: "communications" | "programcommunications") => {
-      try {
-        const messageRef = doc(db, source, messageId);
-        await updateDoc(messageRef, { deleted: true }); // Mark message as deleted (or delete it)
-        setShowModal(false);
-      } catch (error) {
-        console.error("Error deleting message:", error);
-      }
-    };
-    
 
   return (
     <div className="dashboard-container">
@@ -259,27 +268,16 @@ const Inbox: React.FC = () => {
               <div className="inbox-container">
                 {loading ? (
                   <p>Loading messages...</p>
-                ) : communications.length === 0 && sentPrograms.length === 0 ? (
+                ) : communications.length === 0 ? (
                   <p>No messages found.</p>
                 ) : (
-                  <>
-                    <h2>Received Communications</h2>
-                    <MessageTable
-                          messages={filteredCommunications}
-                          userId={userId}
-                          senderNames={senderNames}
-                          openMessage={openMessage} handleDeleteRequest={function (_id: string, _recipients: string[], _source: "communications" | "programcommunications"): void {
-                            throw new Error("Function not implemented.");
-                          } }                    />
-                    <h2>Sent Programs</h2>
-                    <MessageTable
-                          messages={sentPrograms}
-                          userId={userId}
-                          senderNames={senderNames}
-                          openMessage={openMessage} handleDeleteRequest={function (_id: string, _recipients: string[], _source: "communications" | "programcommunications"): void {
-                            throw new Error("Function not implemented.");
-                          } }                    />
-                  </>
+                  <MessageTable
+                    messages={filteredCommunications}
+                    userId={userId}
+                    senderNames={senderNames}
+                    openMessage={openMessage}
+                    handleDeleteRequest={handleDeleteRequest}
+                  />
                 )}
               </div>
             </div>
@@ -289,7 +287,7 @@ const Inbox: React.FC = () => {
       <DeleteMessageModal
         show={showModal}
         onClose={() => setShowModal(false)}
-        onDelete={() => deleteMessage("messageIdPlaceholder", "communications")}
+        onDelete={deleteMessage}
       />
     </div>
   );
