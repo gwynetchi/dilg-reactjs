@@ -109,7 +109,7 @@ const Calendar: React.FC = () => {
     <main>
     <div className="dashboard-container">
       <section id="content">
-
+        <main>
         <div className="head-title">
             <div className="left">
               <h1>Deadlines</h1>
@@ -159,7 +159,7 @@ const Calendar: React.FC = () => {
               </div>
             )}
           />
-
+      </main>
       </section>
     </div>
     </main>

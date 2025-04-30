@@ -321,7 +321,7 @@ const Communication: React.FC = () => {
       if (data) {
         await softDelete(data, "communications", "deleted_communications", "deletedBy");
         await deleteDoc(commDoc);
-        showAlert("Communication deleted and archived successfully!", "success");
+        showAlert("Communication Deleted and Archived successfully!", "success");
         fetchSentCommunications(); // Refresh the list
       } else {
         showAlert("Communication not found!", "error");

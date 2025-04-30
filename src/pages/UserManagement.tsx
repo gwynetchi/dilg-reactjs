@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  doc,
-  deleteDoc,
-  getDoc,
-  setDoc,
-} from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { db, secondaryAuth } from "../firebase";
 import { softDelete } from "../pages/modules/inbox-modules/softDelete";
@@ -25,8 +18,20 @@ type UserType = {
 const UserManagement = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [updatedRole, setUpdatedRole] = useState<string>("");
+
+  const [editData, setEditData] = useState({
+    fname: "",
+    mname: "",
+    lname: "",
+    role: "",
+    email: "",
+    password: "",
+  });
+  
+  const [showPassword, setShowPassword] = useState(false);
+    const [updatedRole, setUpdatedRole] = useState<string>("");
   const [filter, setFilter] = useState("All");
   const [newUser, setNewUser] = useState<Omit<UserType, "id"> & { password: string }>({
     email: "",
@@ -36,7 +41,17 @@ const UserManagement = () => {
     mname: "",
     lname: "",
     profileImage: "",
-  });
+  });  
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+
+  // Notification state
+  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "warning" } | null>(null);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -53,16 +68,32 @@ const UserManagement = () => {
       setUsers(userList);
     } catch (error) {
       console.error("Error fetching users:", error);
+      showNotification("❌ Failed to fetch users.", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveRole = async (userId: string) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, { role: updatedRole });
+
+    setUsers(prev => prev.map(user => user.id === userId ? { ...user, role: updatedRole } : user));
+    setEditingUserId(null);
+    showNotification("✅ Role updated successfully!", "success");
+  } catch (error) {
+    console.error("Error updating role:", error);
+    showNotification("❌ Failed to update role.", "error");
+  }
+};
+
+
   const handleCreateUser = async () => {
     const { email, password, role, fname, mname, lname } = newUser;
 
     if (!email || !password || !role) {
-      alert("⚠️ Please fill in all required fields.");
+      showNotification("⚠️ Please fill in all required fields.");
       return;
     }
 
@@ -84,7 +115,7 @@ const UserManagement = () => {
         profileImage: "",
       });
 
-      alert("✅ User created successfully!");
+      showNotification("✅ User created successfully!");
       setNewUser({
         email: "",
         password: "",
@@ -97,56 +128,135 @@ const UserManagement = () => {
       fetchUsers();
     } catch (error: any) {
       console.error("Error creating user:", error.message);
-      alert("❌ Failed to create user: " + error.message);
+      showNotification("❌ Failed to create user: " + error.message);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this user?");
-    if (!confirmDelete) return;
+  const handleDeleteClick = (id: string) => {
+    setUserToDelete(id);
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async (id: string) => {
+    setShowConfirm(false);
 
     try {
-      const userRef = doc(db, "users", id);
-      const snapshot = await getDoc(userRef);
-      const userData = snapshot.exists() ? { id, ...snapshot.data() } : null;
+      const userDoc = doc(db, "users", id);
+      const snapshot = await getDoc(userDoc);
+      const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
 
-      if (userData) {
-        await softDelete(userData, "users", "deleted_users", "deletedBy");
-        await deleteDoc(userRef);
+      if (data) {
+        await softDelete(data, "users", "deleted_users", "deletedBy");
+        await deleteDoc(userDoc);
         setUsers((prev) => prev.filter((user) => user.id !== id));
-        alert("✅ User deleted and archived successfully!");
+        showNotification("✅ User Deleted and Archived Successfully!", "success");
       } else {
-        alert("❌ User not found.");
+        showNotification("❌ User not found", "error");
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("❌ Failed to delete user. Please try again later.");
+      showNotification("❌ Failed to Delete User! Please check permissions or try again later.", "error");
     }
   };
 
-  const filteredUsers = filter === "All" ? users : users.filter((u) => u.role === filter);
+  const handleEditClick = (user: UserType) => {
+    setEditingUser(user);
+    setEditData({
+      fname: user.fname || "",
+      mname: user.mname || "",
+      lname: user.lname || "",
+      role: user.role || "",
+      email: user.email || "",
+      password: user.password || "",
+    });
+  };
 
-  const handleSaveRole = async (id: string) => {
-    if (!updatedRole) {
-      alert("⚠️ Please select a role.");
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setEditData({ ...editData, [e.target.name]: e.target.value });
+  };
+
+  const updateUserAuth = async (uid: string, email: string, password: string) => {
+    const response = await fetch('http://localhost:5000/update-user-auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uid, email, password }),
+    });
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (err) {
+      throw new Error("❌ Failed to parse response from server. Make sure backend is returning JSON.");
+    }
+
+    if (!response.ok || !data?.success) {
+      throw new Error(data?.error || "❌ Unknown error occurred while updating user.");
+    }
+
+    return data;
+  };
+
+  const handleUpdate = async () => {
+    if (!editingUser) return;
+
+    if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
+      showNotification("❗ Please fill in all required fields: First Name, Last Name, and Email.", "warning");
       return;
     }
 
     try {
-      const userRef = doc(db, "users", id);
-      await setDoc(userRef, { role: updatedRole }, { merge: true });
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === id ? { ...user, role: updatedRole } : user
-        )
-      );
-      alert("✅ Role updated successfully!");
-      setEditingUserId(null);
+      let authResponse = null;
+      const isPasswordChanged = editData.password !== editingUser.password;
+
+      if (isPasswordChanged) {
+        authResponse = await updateUserAuth(editingUser.id, editData.email, editData.password);
+        if (!authResponse || !authResponse.success) {
+          showNotification("❌ Failed to Update Firebase Auth Credentials", "error");
+          return;
+        }
+      }
+
+      const userRef = doc(db, "users", editingUser.id);
+
+      const updatedData: any = {
+        fname: editData.fname,
+        mname: editData.mname,
+        lname: editData.lname,
+        role: editData.role,
+        email: editData.email,
+      };
+
+      if (isPasswordChanged) {
+        updatedData.password = editData.password;
+      }
+
+      await updateDoc(userRef, updatedData);
+
+      showNotification("✅ User Updated Successfully!", "success");
+      fetchUsers();
+      setEditingUser(null);
     } catch (error) {
-      console.error("Error updating role:", error);
-      alert("❌ Failed to update role. Please try again later.");
+      console.error("Error updating user:", error);
+      showNotification("❌ Failed to Update User Credentials", "error");
     }
   };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditData({
+      fname: "",
+      mname: "",
+      lname: "",
+      role: "",
+      email: "",
+      password: "",
+    });
+  };
+  const filteredUsers = filter === "All"
+  ? users
+  : users.filter((user) => user.role === filter);
 
   return (
     <div className="dashboard-container">
@@ -239,7 +349,9 @@ const UserManagement = () => {
                 </div>
 
                 {loading ? (
-                  <p>🔄 Loading users...</p>
+                  <div className="spinner-overlay">
+                    <div className="spinner"></div>
+                  </div>
                 ) : (
                   <div className="table-responsive mt-3">
                     <table className="table table-striped table-hover table-bordered">
@@ -306,13 +418,15 @@ const UserManagement = () => {
       }}>
         Edit Role
       </button>
-      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(user.id)}>
+      <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
+        Edit Info
+      </button>
+      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteClick(user.id)}>
         Delete
       </button>
     </>
   )}
 </td>
-
                             </tr>
                           ))
                         )}
@@ -323,6 +437,71 @@ const UserManagement = () => {
               </div>
             </div>
           </div>
+
+          {editingUser && (
+            <div className="modal-backdrop">
+              <div className="modal-content">
+                <h3>Edit User</h3>
+                <input type="text" name="fname" placeholder="First Name" value={editData.fname} onChange={handleEditChange} className="form-control mb-2" />
+                <input type="text" name="mname" placeholder="Middle Name" value={editData.mname} onChange={handleEditChange} className="form-control mb-2" />
+                <input type="text" name="lname" placeholder="Last Name" value={editData.lname} onChange={handleEditChange} className="form-control mb-2" />
+                <input type="email" name="email" placeholder="Email" value={editData.email} onChange={handleEditChange} className="form-control mb-2" />
+                <div className="input-group mb-2">
+                  <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={editData.password} onChange={handleEditChange} className="form-control" />
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPassword((prev) => !prev)}>{showPassword ? "Hide" : "Show"}</button>
+                </div>
+                <select name="role" value={editData.role} onChange={handleEditChange} className="form-select mb-2">
+                  <option value="Admin">Admin</option>
+                  <option value="LGU">LGU</option>
+                  <option value="Evaluator">Evaluator</option>
+                  <option value="Viewer">Viewer</option>
+                </select>
+                <div className="d-flex justify-content-end">
+                  <button className="btn btn-secondary me-2" onClick={handleCancelEdit}>Cancel</button>
+                  <button className="btn btn-success" onClick={handleUpdate}>Save Changes</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showConfirm && (
+            <div className="modal show fade d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+              <div className="modal-dialog modal-dialog-centered" role="document">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Confirm Deletion</h5>
+                    <button type="button" className="btn-close" onClick={() => setShowConfirm(false)}></button>
+                  </div>
+                  <div className="modal-body">
+                    <p>Are you sure you want to delete this user?</p>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => userToDelete && confirmDelete(userToDelete)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notification pop-up */}
+          {notification && (
+            <div
+              className={`alert alert-${notification.type} position-fixed top-0 end-0 m-3 shadow`}
+              role="alert"
+              style={{ zIndex: 1050 }}
+            >
+              {notification.message}
+            </div>
+          )}
         </main>
       </section>
     </div>
