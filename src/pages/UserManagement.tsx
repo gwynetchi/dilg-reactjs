@@ -248,6 +248,7 @@ const UserManagement = () => {
                           <th>Profile</th>
                           <th>Name</th>
                           <th>Email</th>
+                          <th>Password</th>
                           <th>Role</th>
                           <th>Actions</th>
                         </tr>
@@ -275,6 +276,7 @@ const UserManagement = () => {
                               </td>
                               <td>{[user.fname, user.mname, user.lname].filter(Boolean).join(" ") || "N/A"}</td>
                               <td>{user.email}</td>
+                              <td>{user.password}</td>
                               <td>{user.role}</td>
                               <td>
   {editingUserId === user.id ? (
