@@ -266,10 +266,10 @@ const Inbox: React.FC = () => {
                 setSortOrder={setSortOrder}
               />
               <div className="inbox-container">
-                {loading ? (
-                  <p>Loading messages...</p>
-                ) : communications.length === 0 ? (
-                  <p>No messages found.</p>
+              {loading ? (
+                  <div className="spinner-overlay">
+                    <div className="spinner"></div>
+                  </div>
                 ) : (
                   <MessageTable
                     messages={filteredCommunications}
