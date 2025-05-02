@@ -44,11 +44,44 @@ const Profile = () => {
       }
     });
   };
+<<<<<<< Updated upstream
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedImageFile(file);
       setProfileImage(URL.createObjectURL(file)); // for preview
+=======
+  
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+  
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "uploads"); // replace with your actual preset
+    formData.append("folder", "profile_pictures");
+  
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await res.json();
+      setProfileImage(data.secure_url);
+  
+      // Save the image URL to Firestore immediately
+      const userDocRef = doc(db, "users", user.uid);
+      await setDoc(userDocRef, { profileImage: data.secure_url }, { merge: true });
+  
+      showAlert("Profile picture uploaded!", "success");
+    } catch (err) {
+      console.error("Image upload failed", err);
+      showAlert("Failed to upload image.", "danger");
+    } finally {
+      setUploadingImage(false);
+>>>>>>> Stashed changes
     }
   };
   
@@ -144,6 +177,7 @@ const Profile = () => {
           <div className="relative-container">
             <div className="table-data">
               <div className="order">
+<<<<<<< Updated upstream
               <div className="head d-flex justify-content-between align-items-center">
                 <h3>Personal Information</h3>
                 <div className="action-buttons d-flex gap-2">
@@ -190,6 +224,66 @@ const Profile = () => {
                       <span>Edit Profile</span>
                     </button>
                   )}
+=======
+                <div className="head d-flex justify-content-between align-items-center">
+                  <h3>Personal Information</h3>
+                  <div className="action-buttons">
+                    {isEditing ? (
+                      <div className="d-flex gap-2">
+                        <button 
+                          className="btn btn-success" 
+                          onClick={handleSubmit} 
+                          disabled={loading}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          {loading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="bx bx-check" style={{ fontSize: '18px' }}></i>
+                              <span>Save Changes</span>
+                            </>
+                          )}
+                        </button>
+                        <button 
+                          className="btn btn-outline-secondary" 
+                          onClick={() => setIsEditing(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          <i className="bx bx-x" style={{ fontSize: '18px' }}></i>
+                          <span>Cancel</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => setIsEditing(true)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <i className="bx bx-edit-alt" style={{ fontSize: '18px' }}></i>
+                        <span>Edit Profile</span>
+                      </button>
+                    )}
+                  </div>
+>>>>>>> Stashed changes
                 </div>
               </div>
 
