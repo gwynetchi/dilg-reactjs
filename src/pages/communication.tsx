@@ -32,12 +32,12 @@
     const [deadlineError, setDeadlineError] = useState<string | null>(null);
     const [users, setUsers] = useState<{
       role: string; id: string; fullName: string; email: string 
-  }[]>([]);
-  const [alert, setAlert] = useState<{
-    message: string; 
-    type: string;
-    id?: number; // Add unique identifier
-  } | null>(null);
+      }[]>([]);
+      const [alert, setAlert] = useState<{
+        message: string; 
+        type: string;
+        id?: number; // Add unique identifier
+      } | null>(null);
     const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
     const [showDetails, setShowDetails] = useState(false);
     const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
