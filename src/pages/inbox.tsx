@@ -289,22 +289,18 @@ const Inbox: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      <section id="content">
         <main>
           <div className="head-title">
             <div className="left">
               <h1>Inbox</h1>
-              <ul className="breadcrumb">
-                <li>
-                  <a href="/dashboards" className="active">Home</a>
-                </li>
-                <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <a>Inbox</a>
-                </li>
-              </ul>
+              <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <a href="/dashboards">Home</a>
+              </li>
+              <li className="breadcrumb-item active">Dashboard Tools</li>
+            </ol>
+          </nav>
             </div>
           </div>
 
@@ -348,7 +344,6 @@ const Inbox: React.FC = () => {
             </div>
           </div>
         </main>
-      </section>
       <DeleteMessageModal
         show={showModal}
         onClose={() => setShowModal(false)}
