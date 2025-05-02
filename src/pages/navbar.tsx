@@ -271,24 +271,28 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     <div className="d-flex">
       <section id="sidebar" className={isSidebarOpen ? "open show" : "hide"}>
         <Link to="/dashboards" className="brand">
-          <img src="/images/logo.png" alt="Logo" className="brand-logo" />
+          <img 
+            src="/images/logo.png" 
+            alt="Logo" 
+            className={`brand-logo ${isSidebarOpen ? "logo-expanded" : "logo-collapsed"}`}
+          />
         </Link>
 
         <ul className="side-menu top">
-        {userRole && MENU_ITEMS[userRole].map(({ name, icon, path }) => (
-  <li key={name} className={activeMenu === name ? "active" : ""}>
-    <Link to={path} onClick={() => setActiveMenu(name)}>
-      <i className={`bx ${icon} bx-sm`}></i>
-      <span className="text">{name}</span>
-      {name === "Inbox" && unreadCounts.inbox > 0 && (
-        <span className="menu-badge">{unreadCounts.inbox}</span>
-      )}
-      {name === "Programs" && unreadCounts.programs > 0 && (
-        <span className="menu-badge">{unreadCounts.programs}</span>
-      )}
-    </Link>
-  </li>
-))}
+          {userRole && MENU_ITEMS[userRole].map(({ name, icon, path }) => (
+            <li key={name} className={activeMenu === name ? "active" : ""}>
+              <Link to={path} onClick={() => setActiveMenu(name)}>
+                <i className={`bx ${icon} bx-sm`}></i>
+                <span className="text">{name}</span>
+                {name === "Inbox" && unreadCounts.inbox > 0 && (
+                  <span className="menu-badge">{unreadCounts.inbox}</span>
+                )}
+                {name === "Programs" && unreadCounts.programs > 0 && (
+                  <span className="menu-badge">{unreadCounts.programs}</span>
+                )}
+              </Link>
+            </li>
+          ))}
         </ul>
         
         <ul className="side-menu bottom">
