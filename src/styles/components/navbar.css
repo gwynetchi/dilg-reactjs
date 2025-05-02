@@ -479,3 +479,71 @@
 
 
 
+
+/* Logo responsive styling - Add these to your navbar.css */
+
+/* Base brand logo styling */
+.brand-logo {
+    transition: all 0.3s ease;
+    border-radius: 48px 0 0 48px;
+    position: relative;
+    z-index: 2;
+  }
+  
+  /* When sidebar is expanded */
+  .logo-expanded {
+    height: 80px;
+    margin-top: 55px;
+    margin-left: 3px;
+    max-width: 90%;
+  }
+  
+  /* When sidebar is collapsed */
+  .logo-collapsed {
+    height: 50px;
+    margin-top:40px;
+    max-width: 60px;
+    object-fit: contain;
+  }
+  
+  /* Add transition to the sidebar for smooth animation */
+  #sidebar {
+    transition: width 0.3s ease-in-out, left 0.3s ease-in-out;
+  }
+  
+  /* Brand container adjustments */
+  #sidebar .brand {
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* Responsive adjustments for small screens */
+  @media screen and (max-width: 768px) {
+    .logo-expanded {
+      height: 60px;
+      margin-top: 30px;
+    }
+    
+    .logo-collapsed {
+      height: 40px;
+      margin-top: 25px;
+      margin-left: 5px;
+    }
+  }
+  
+  /* For very small screens */
+  @media screen and (max-width: 576px) {
+    .logo-expanded {
+      height: 50px;
+      margin-top: 25px;
+    }
+    
+    .logo-collapsed {
+      height: 35px;
+      margin-top: 20px;
+    }
+  }
+
+
+
