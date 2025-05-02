@@ -81,6 +81,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/inbox/:id", element: <EvaluatorMessageDetails /> },
     { path: "/evaluator/sentbox", element: <Sentbox /> },
     { path: "/evaluator/communication", element: <EvaluatorCommunication /> },
+    { path: "/evaluator/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/evaluator/sentCommunications/:id", element: <EvaluatorSent /> }, // Added this line
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
@@ -90,7 +91,6 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
     { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
     { path: "/evaluator/programs", element: <EvaluatorPrograms /> },
-
   ],
   LGU: [
     { path: "/lgu/dashboard", element: <LGUDashboard /> },
@@ -98,13 +98,13 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/inbox", element: <Inbox /> },
     { path: "/lgu/inbox/:id", element: <LGUMessageDetails /> },
     { path: "/lgu/communication", element: <LGUCommunication /> },
+    { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
     { path: "/lgu/programs", element: <LGUPrograms /> },
     { path: "/lgu/programs/:programId", element: <ProgramDetails />}
-
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <ViewerDashboard /> },
@@ -112,11 +112,11 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/inbox", element: <Inbox /> },
     { path: "/viewer/inbox/:id", element: <ViewerMessageDetails /> },
     { path: "/viewer/communication", element: <ViewerCommunication /> },
+    { path: "/viewer/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/viewer/scoreBoard", element: <Scoreboard /> },
-
   ],
 };
 
