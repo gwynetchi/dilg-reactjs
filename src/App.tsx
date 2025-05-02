@@ -72,7 +72,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
     { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/admin/programs", element: <AdminPrograms /> },
+    { path: "/admin/programs", element: <AdminPrograms /> }
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -104,6 +104,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
     { path: "/lgu/programs", element: <LGUPrograms /> },
     { path: "/lgu/programs/:programId", element: <ProgramDetails />}
+
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <ViewerDashboard /> },
