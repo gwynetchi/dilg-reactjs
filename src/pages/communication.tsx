@@ -29,6 +29,7 @@ const Communication: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deadlineError, setDeadlineError] = useState<string | null>(null);
   const [users, setUsers] = useState<{
     role: string; id: string; fullName: string; email: string 
 }[]>([]);
@@ -47,11 +48,17 @@ const Communication: React.FC = () => {
 
   
   // Group users by roles
-  const groupedOptions = Object.entries(
+  const groupedOptions: {
+    label: string;
+    options: { value: string; label: string; isSelectAll?: boolean; role?: string }[];
+  }[] = Object.entries(
     users.reduce((groups, user) => {
       const role = user.role || "No Role";
       if (!groups[role]) groups[role] = [];
-      groups[role].push({ value: user.id, label: user.fullName });
+      groups[role].push({ 
+        value: user.id, 
+        label: user.fullName 
+      });
       return groups;
     }, {} as Record<string, { value: string; label: string }[]>)
   ).map(([role, options]) => ({
@@ -60,13 +67,12 @@ const Communication: React.FC = () => {
       {
         value: `select_all_${role}`,
         label: `Select all ${role}`,
-        isSelectAll: true, // custom flag to detect this
+        isSelectAll: true,
         role,
       },
       ...options,
     ],
   }));
-  
 
   const fetchUsers = async () => {
     try {
@@ -172,14 +178,42 @@ const Communication: React.FC = () => {
   }, []);
 
   const handleRecipientChange = (
-    selectedOptions: MultiValue<{ value: string; label: string }>
+    selectedOptions: MultiValue<{ value: string; label: string; isSelectAll?: boolean; role?: string }>
   ) => {
-    // Store userIds instead of full names/emails
-    setRecipients(selectedOptions.map((option) => option.value));
+    // First handle any "Select all" options
+    const newRecipients = [...recipients];
+    
+    selectedOptions.forEach(option => {
+      if (option.isSelectAll && option.role) {
+        // Add all users from this role
+        const usersInRole = users
+          .filter(user => user.role === option.role)
+          .map(user => user.id);
+        
+        // Remove any existing users from this role first to avoid duplicates
+        const filtered = newRecipients.filter(id => {
+          const user = users.find(u => u.id === id);
+          return user?.role !== option.role;
+        });
+        
+        // Add the new selections
+        newRecipients.splice(0, newRecipients.length, ...filtered, ...usersInRole);
+      }
+    });
+  
+    // Then handle regular selections (non-select-all options)
+    const regularSelections = selectedOptions
+      .filter(option => !option.isSelectAll)
+      .map(option => option.value);
+  
+    // Combine all selections
+    const allSelections = [...new Set([...newRecipients, ...regularSelections])];
+    
+    setRecipients(allSelections);
   };
 
-  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
-    setAlert({ message, type });
+    const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
+      setAlert({ message, type });
   
     setTimeout(() => setAlert(null), 8000); // Hide after 5 seconds
   };  
@@ -190,13 +224,20 @@ const Communication: React.FC = () => {
       return;
     }
   
-    const currentDate = new Date();
-    const deadlineDate = new Date(deadline);
-  
-    if (deadlineDate < currentDate) {
-      showAlert("Invalid Date: The deadline cannot be in the past");
-      return;
-    }
+  // Create Date objects for comparison
+  const currentDateTime = new Date();
+  const deadlineDateTime = new Date(deadline);
+
+  // Remove milliseconds for accurate comparison
+  currentDateTime.setMilliseconds(0);
+  deadlineDateTime.setMilliseconds(0);
+
+  // Compare the timestamps
+  if (deadlineDateTime <= currentDateTime) {
+    showAlert("Invalid Deadline: The deadline must be in the future (including time)");
+    return;
+  }
+
   
     if (
       (submissionLink && !submissionLink.startsWith("https://")) ||
@@ -307,7 +348,25 @@ const Communication: React.FC = () => {
     setIsEditing(true);
     setShowDetails(true);
   };
+
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDeadline(value);
   
+    if (!value) {
+      setDeadlineError(null);
+      return;
+    }
+  
+    const currentDateTime = new Date();
+    const selectedDateTime = new Date(value);
+  
+    if (selectedDateTime <= currentDateTime) {
+      setDeadlineError("Deadline must be in the future (date and time)");
+    } else {
+      setDeadlineError(null);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     const confirmed = window.confirm("Are you sure you want to delete this communication?");
@@ -437,29 +496,45 @@ const Communication: React.FC = () => {
 </div>
 
                 <div className="col-md-12 mb-3">
-                  <label className="form-label">Recipients:</label>
+                  <label className="form-label" aria-required>Recipients:</label>
                   <Select
                     options={groupedOptions}
                     isMulti
-                    value={groupedOptions.flatMap(group => group.options).filter((option) =>
-                      recipients.includes(option.value)
-                    )}
+                    value={groupedOptions.flatMap(group => group.options).filter((option) => {
+                      // Show regular selections
+                      if (recipients.includes(option.value)) {
+                        return true;
+                      }
+                      
+                      // Show "Select all" as selected if all users in that role are selected
+                      if (option.isSelectAll && option.role) {
+                        const usersInRole = users.filter(user => user.role === option.role);
+                        return usersInRole.every(user => recipients.includes(user.id));
+                      }
+                      
+                      return false;
+                    })}
                     onChange={handleRecipientChange}
                     className="basic-multi-select"
                     classNamePrefix="select"
                     placeholder="Select recipients by role..."
+                    closeMenuOnSelect={false}
+                    hideSelectedOptions={false}
                   />
-
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Deadline:</label>
                   <input
                     type="datetime-local"
-                    className="form-control form-control-sm"
+                    className={`form-control form-control-sm ${deadlineError ? 'is-invalid' : ''}`}
                     value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
+                    onChange={handleDeadlineChange}
+                    min={new Date().toISOString().slice(0, 16)} // Set min to current datetime
                   />
-                </div>
+                  {deadlineError && (
+                    <div className="invalid-feedback">{deadlineError}</div>
+                  )}
+                </div>                
                 <div className="col-md-12 mb-3">
                   <label>Submission Link (https only):</label>
                   <input

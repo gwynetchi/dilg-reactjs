@@ -76,7 +76,7 @@ const AuthForm = () => {
         const existingUserDoc = userSnapshot.docs[0];
         const existingUserData = { ...existingUserDoc.data(), id: existingUserDoc.id };
 
-        await softDelete(existingUserData, "users", "deleted_users", "System");
+        await softDelete(existingUserData, "users", "deleted_users", "");
       }
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);

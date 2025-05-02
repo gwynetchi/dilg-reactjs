@@ -1,24 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import React from 'react';
-import { db, auth } from "../../firebase";
+import { db, auth } from "../firebase";
 import {
   collection,
-  onSnapshot,
   getDocs,
-  query,
   doc,
   getDoc,
-  updateDoc,
-  deleteDoc,
-  where,
-  orderBy,
-  limit
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 // import "../../styles/components/evalDashboard.css";
-import ReportMetricsChart from "../../pages/ReportMetricsChart";
-import ResultsFramework from '../../components/framework/Outcomes';
-import TodoList from '../../pages/TodoList';
+import ReportMetricsChart from "../pages/ReportMetricsChart";
+import ResultsFramework from '../components/framework/Outcomes';
+import TodoList from '../pages/TodoList';
 
 // Component styles with reduced sizes
 const dashboardStyles = {
@@ -90,6 +83,7 @@ const dashboardStyles = {
 
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
   const [totalReports, setTotalReports] = useState(0);
   const [onTimeReports, setOnTimeReports] = useState(0);
@@ -106,23 +100,33 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState("bar");
   const [isFrameworkCollapsed, setIsFrameworkCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editFormData, setEditFormData] = useState({
-    evaluatorStatus: "",
-    remarks: ""
+  const [editFormData, setEditFormData] = useState<{ evaluatorStatus: string; remarks: string }>({
+    evaluatorStatus: "Pending",
+    remarks: "",
   });
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Refs for scrolling
   const reportsDataRef = useRef<HTMLDivElement | null>(null);
 
-
   // Auth state effect
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user || null);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        // Fetch user role from Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -250,36 +254,6 @@ const Dashboard = () => {
     setShowEditModal(true);
   };
 
-  // Handle save changes
-  const handleSaveChanges = async () => {
-    if (!selectedReport) return;
-    
-    try {
-      setLoading(true);
-      await updateDoc(doc(db, "submittedDetails", selectedReport.id), {
-        evaluatorStatus: editFormData.evaluatorStatus,
-        remarks: editFormData.remarks,
-        lastUpdated: new Date()
-      });
-      
-      setShowEditModal(false);
-      // Refresh data after update
-      handleRefresh();
-    } catch (error) {
-      console.error("Error updating report:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
   // Apply filters
   const applyFilters = () => {
@@ -319,9 +293,9 @@ const Dashboard = () => {
 
   
   if (!currentUser) {
-    return <div>Please log in to view your tasks.</div>;
+    return <div>Please log in to view your dashboard.</div>;
   }
-
+  
   // Metric card data
   const metricCards = [
     { 
@@ -388,8 +362,13 @@ const Dashboard = () => {
       <div className="container-fluid p-0">
         {/* Page Header */}
         <div className="mb-3">
-          <h1 className="h3">Evaluator Dashboard</h1>
-          <nav aria-label="breadcrumb">
+        <h1 className="h3">
+            {userRole === 'Admin' && 'Admin Dashboard'}
+            {userRole === 'Evaluator' && 'Evaluator Dashboard'}
+            {userRole === 'LGU' && 'LGU Dashboard'}
+            {!['Admin', 'Evaluator', 'LGU'].includes(userRole || '') && 'Dashboard'}
+          </h1>
+        <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
                 <a href="/dashboards">Home</a>
@@ -571,7 +550,7 @@ const Dashboard = () => {
                 <div>
                   <button 
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={handleRefresh}
+                    onClick={applyFilters}
                     disabled={loading}
                   >
                     {loading ? (
@@ -827,6 +806,7 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+          
         </div>
       </div>
     </div>

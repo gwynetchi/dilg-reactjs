@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "../../../styles/components/dashboard.css";
 
 interface Communication {
   id: string;
@@ -13,8 +12,12 @@ interface Communication {
     seconds: number;
     nanoseconds?: number;
   } | null;
+  deadline?: {
+    seconds: number;
+    nanoseconds?: number;
+  } | null;
 }
-
+// In MessageTable.tsx
 interface Props {
   messages: Communication[];
   userId: string | null;
@@ -25,6 +28,12 @@ interface Props {
     recipients: string[],
     source: "communications" | "programcommunications"
   ) => void;
+  getDeadlineStatus: (deadline?: { seconds: number }) => string;
+  getStatusStyles: (status: string) => { 
+    className: string; 
+    text: string; 
+    icon: string 
+  };
 }
 
 const MessageTable: React.FC<Props> = ({
@@ -33,9 +42,15 @@ const MessageTable: React.FC<Props> = ({
   senderNames,
   openMessage,
   handleDeleteRequest,
+  getDeadlineStatus,
+  getStatusStyles
 }) => {
   const [showFileModal, setShowFileModal] = useState(false);
   const [currentFileUrl, setCurrentFileUrl] = useState("");
+
+  // Deadline status helpers
+
+  // Removed duplicate definition of getStatusStyles
 
   const handleAttachmentClick = (e: React.MouseEvent, url: string) => {
     e.preventDefault();
@@ -54,6 +69,30 @@ const MessageTable: React.FC<Props> = ({
       />
     ) : (
       <span>View Attachment</span>
+    );
+  };
+
+  const renderDeadline = (deadline?: { seconds: number }) => {
+    const status = getDeadlineStatus(deadline);
+    const { className, text, icon } = getStatusStyles(status);
+    
+    if (!deadline) {
+      return <span className={className}>{icon} {text}</span>;
+    }
+  
+    const deadlineDate = new Date(deadline.seconds * 1000);
+    const dateStr = deadlineDate.toLocaleDateString();
+    const timeStr = deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+    return (
+      <div className="d-flex align-items-center gap-2">
+        <span className={className}>
+          {icon} {text}
+        </span>
+        <span>
+          {dateStr} {timeStr}
+        </span>
+      </div>
     );
   };
 
@@ -106,6 +145,7 @@ const MessageTable: React.FC<Props> = ({
             <th>Attachment</th>
             <th>Focal Person</th>
             <th>Subject</th>
+            <th>Deadline</th>
             <th>Type</th>
             <th>Date</th>
             <th>Action</th>
@@ -143,6 +183,9 @@ const MessageTable: React.FC<Props> = ({
                 </td>
                 <td>{senderNames[msg.createdBy] || "Unknown"}</td>
                 <td>{msg.subject || "No Subject"}</td>
+                <td>
+                  {renderDeadline(msg.deadline || undefined)}
+                </td>
                 <td>
                   {msg.source === "programcommunications" ? (
                     <span className="program-label">Program Message</span>
