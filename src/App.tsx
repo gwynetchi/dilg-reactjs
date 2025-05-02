@@ -11,11 +11,11 @@ import CheckFrequency from "./pages/CheckFrequency";
 import DeletedCommunications from "./pages/DeletedCommunications";
 
 // Import Dashboards
-import AdminDashboard from "./pages/admin/dashboard";
+import AdminDashboard from "./pages/dashboard";
 import Analytics from "./pages/analytics";
-import LGUDashboard from "./pages/lgu/dashboard";
-import EvaluatorDashboard from "./pages/evaluator/dashboard";
-import ViewerDashboard from "./pages/viewer/dashboard";
+import LGUDashboard from "./pages/dashboard";
+import EvaluatorDashboard from "./pages/dashboard";
+import ViewerDashboard from "./pages/dashboard";
 
 // Import Message Details
 import EvaluatorMessageDetails from "./pages/messagedetails";

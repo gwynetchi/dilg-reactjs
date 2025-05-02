@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import InboxControls from "./modules/inbox-modules/inboxcontrols";
 import DeleteMessageModal from "./modules/inbox-modules/deletemodal";
 import MessageTable from "./modules/inbox-modules/messagetable";
+import "../styles/components/inbox.module.css"; // Make sure this CSS file exists
 
 const Inbox: React.FC = () => {
   interface Communication {
@@ -30,7 +31,44 @@ const Inbox: React.FC = () => {
       seconds: number;
       nanoseconds?: number;
     } | null;
+    deadline?: {
+      seconds: number;
+      nanoseconds?: number;
+    } | null;
+    remarks?: string;
+    submissionLink?: string;
+    monitoringLink?: string;
   }
+
+  // Deadline status helpers
+  const getDeadlineStatus = (deadline?: { seconds: number }) => {
+    if (!deadline) return 'no-deadline';
+    
+    const now = new Date();
+    const deadlineDate = new Date(deadline.seconds * 1000);
+    const timeDiff = deadlineDate.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+    if (timeDiff <= 0) return 'past-due';
+    if (hoursDiff <= 24) return 'urgent';
+    if (hoursDiff <= 72) return 'approaching';
+    return 'normal';
+  };
+
+  const getStatusStyles = (status: string) => {
+    switch(status) {
+      case 'past-due':
+        return { className: 'deadline-past-due', text: 'Past Due', icon: '⏱️' };
+      case 'urgent':
+        return { className: 'deadline-urgent', text: 'Urgent', icon: '⚠️' };
+      case 'approaching':
+        return { className: 'deadline-approaching', text: 'Approaching', icon: '⏳' };
+      case 'no-deadline':
+        return { className: 'deadline-none', text: 'No Deadline', icon: '∞' };
+      default:
+        return { className: '', text: 'Normal', icon: '✓' };
+    }
+  };
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "communications" | "programcommunications">("all");
@@ -89,6 +127,10 @@ const Inbox: React.FC = () => {
           seenBy: data.seenBy || [],
           subject: data.subject || "No Subject",
           imageUrl: data.imageUrl || "",
+          deadline: data.deadline || null,
+          remarks: data.remarks || "",
+          submissionLink: data.submissionLink || "",
+          monitoringLink: data.monitoringLink || "",
           source: "communications" as "communications"
         };
       });
@@ -107,6 +149,10 @@ const Inbox: React.FC = () => {
           seenBy: data.seenBy || [],
           subject: data.subject || "No Subject",
           imageUrl: data.imageUrl || "",
+          deadline: data.deadline || null,
+          remarks: data.remarks || "",
+          submissionLink: data.submissionLink || "",
+          monitoringLink: data.monitoringLink || "",
           source: "programcommunications" as "programcommunications"
         };
       });
@@ -225,7 +271,8 @@ const Inbox: React.FC = () => {
       const term = searchTerm.toLowerCase();
       return (
         msg.subject?.toLowerCase().includes(term) ||
-        senderNames[msg.createdBy]?.toLowerCase().includes(term)
+        senderNames[msg.createdBy]?.toLowerCase().includes(term) ||
+        msg.remarks?.toLowerCase().includes(term)
       );
     })
     .filter((msg) => filterType === "all" || msg.source === filterType)
@@ -234,6 +281,11 @@ const Inbox: React.FC = () => {
       const bTime = b.createdAt?.seconds || 0;
       return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
     });
+
+  // Count urgent messages
+  const urgentCount = filteredCommunications.filter(msg => {
+    return msg.deadline ? getDeadlineStatus(msg.deadline) === 'urgent' : false;
+  }).length;
 
   return (
     <div className="dashboard-container">
@@ -255,6 +307,17 @@ const Inbox: React.FC = () => {
               </ul>
             </div>
           </div>
+
+          {/* Urgent messages alert */}
+          {urgentCount > 0 && (
+            <div className="alert alert-danger d-flex align-items-center gap-2 mb-3">
+              <i className="bx bx-error-circle fs-4"></i>
+              <div>
+                <strong>Urgent!</strong> You have {urgentCount} message{urgentCount > 1 ? 's' : ''} with deadlines within 24 hours.
+              </div>
+            </div>
+          )}
+
           <div className="table-data">
             <div className="order">
               <InboxControls
@@ -266,7 +329,7 @@ const Inbox: React.FC = () => {
                 setSortOrder={setSortOrder}
               />
               <div className="inbox-container">
-              {loading ? (
+                {loading ? (
                   <div className="spinner-overlay">
                     <div className="spinner"></div>
                   </div>
@@ -277,6 +340,8 @@ const Inbox: React.FC = () => {
                     senderNames={senderNames}
                     openMessage={openMessage}
                     handleDeleteRequest={handleDeleteRequest}
+                    getDeadlineStatus={getDeadlineStatus}
+                    getStatusStyles={getStatusStyles}
                   />
                 )}
               </div>

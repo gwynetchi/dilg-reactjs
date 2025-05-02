@@ -1,0 +1,114 @@
+/* Deadline status indicators */
+.deadline-past-due {
+    color: #dc3545;
+    font-weight: bold;
+    background-color: #ffebee;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  .deadline-urgent {
+    color: #ff6b35;
+    font-weight: bold;
+    background-color: #fff3e0;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+  }
+  
+  .deadline-approaching {
+    color: #ffc107;
+    font-weight: bold;
+    background-color: #fff8e1;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  .deadline-none {
+    color: #6c757d;
+    font-style: italic;
+    padding: 3px 8px;
+    display: inline-block;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  /* Deadline status indicators */
+.deadline-past-due {
+    color: #dc3545;
+    font-weight: bold;
+    background-color: #ffebee;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  .deadline-urgent {
+    color: #ff6b35;
+    font-weight: bold;
+    background-color: #fff3e0;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+  }
+  
+  .deadline-approaching {
+    color: #ffc107;
+    font-weight: bold;
+    background-color: #fff8e1;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  .deadline-none {
+    color: #6c757d;
+    font-style: italic;
+    padding: 3px 8px;
+    display: inline-block;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+  
+  /* Message type labels */
+  .program-label {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+  
+  .regular-label {
+    background-color: #e8f5e9;
+    color: #388e3c;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+  
+  /* Delete button */
+  .delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .delete-btn:hover {
+    background-color: #c82333;
+  }
