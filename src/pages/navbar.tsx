@@ -41,6 +41,7 @@ const MENU_ITEMS = {
     { name: "Inbox", icon: "bxs-inbox", path: "/evaluator/inbox" },
     { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
     { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
+    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/evaluator/DeletedCommunications" },
     { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
     { name: "Message", icon: "bxs-chat", path: "/evaluator/message" },
     { name: "Score Board", icon: "bxs-crown", path: "/evaluator/scoreBoard" },
@@ -51,6 +52,7 @@ const MENU_ITEMS = {
     { name: "Inbox", icon: "bxs-inbox", path: "/lgu/inbox" },
     { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
     { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
+    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/lgu/DeletedCommunications" },
     { name: "Message", icon: "bxs-chat", path: "/lgu/message" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
     { name: "Programs", icon: "bxs-doughnut-chart", path: "/lgu/programs" },
@@ -60,11 +62,12 @@ const MENU_ITEMS = {
     { name: "Inbox", icon: "bxs-inbox", path: "/admin/inbox" },
     { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
     { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
+    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/admin/DeletedCommunications" },
     { name: "Message", icon: "bxs-chat", path: "/admin/message" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
     { name: "Deleted Users", icon: "bx bx-user-x", path: "/admin/DeletedUsers" },
-    { name: "Deleted Communication", icon: "bx bx-user-x", path: "/admin/DeletedCommunications" },
     { name: "User Management", icon: "bxs-user-plus", path: "/admin/userManagement" },
+    { name: "Programs", icon: "bxs-doughnut-chart", path: "/admin/programs" },
   ],
 };
 
@@ -303,12 +306,21 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
       <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
-          <i 
-            className="bx bx-menu bx-sm" 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            role="button"
-            aria-label="Toggle sidebar"
-          />
+        <div className="d-flex align-items-center">
+            <button 
+              className="btn btn-menu"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle sidebar"
+            >
+              <i className="bx bx-menu bx-sm"></i>
+              {/* Persistent unread badge - visible even when sidebar is collapsed */}
+              {(unreadCounts.inbox + unreadCounts.programs) > 0 && (
+                <span className="global-unread-badge">
+                  {unreadCounts.inbox + unreadCounts.programs}
+                </span>
+              )}
+            </button>
+          </div>
           
           <div className="d-flex justify-content-end align-items-center">
             <div className="position-relative" ref={notificationMenuRef}>
