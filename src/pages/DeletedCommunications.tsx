@@ -73,16 +73,18 @@ const DeletedCommunications = () => {
 
   return (
     <div className="dashboard-container">
-      <section id="content">
         <main>
           <div className="head-title">
             <div className="left">
               <h1>Deleted Communications</h1>
-              <ul className="breadcrumb">
-                <li><a className="active" href="/admin/dashboard">Home</a></li>
-                <li><i className="bx bx-chevron-right"></i></li>
-                <li><a href="#">Deleted Communications</a></li>
-              </ul>
+              <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <a href="/dashboards">Home</a>
+              </li>
+              <li className="breadcrumb-item active">Deleted Communication</li>
+            </ol>
+          </nav>
             </div>
           </div>
         </main>
@@ -149,7 +151,6 @@ const DeletedCommunications = () => {
             </table>
           </div>
         )}
-      </section>
 
       {/* Confirmation Modal */}
       {showConfirm && selectedComm && (
