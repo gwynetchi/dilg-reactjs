@@ -1,36 +1,82 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
+import { db, auth } from "../firebase";
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+    doc, 
+  updateDoc, 
+  deleteDoc,
+  onSnapshot 
+} from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 // Define the Task interface
 interface Task {
-  id: number;
+  id: string; // Changed from number to string to match Firestore IDs
   text: string;
   completed: boolean;
   createdAt: string;
+  userId: string; // Added to track which user owns the task
 }
 
-// Function to get tasks from localStorage
-const getSavedTasks = (): Task[] => {
-  const savedTasks = localStorage.getItem('tasks');
-  return savedTasks ? JSON.parse(savedTasks) : [];
-};
-
 const TodoList: React.FC = () => {
-  // State for todo list functionality
-  const [tasks, setTasks] = useState<Task[]>(getSavedTasks());
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState<string>('');
   const [isAddingTask, setIsAddingTask] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isTodoCollapsed, setIsTodoCollapsed] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   // State for task editing
-  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editTaskText, setEditTaskText] = useState<string>('');
 
-  // Save tasks to localStorage whenever tasks change
+  // Listen for auth state changes
   useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }, [tasks]);  
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+        // Load tasks for this user
+        loadTasks(user.uid);
+      } else {
+        setCurrentUser(null);
+        setTasks([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load tasks from Firestore for a specific user
+  const loadTasks = async (userId: string) => {
+    try {
+      const tasksRef = collection(db, "tasks");
+      const q = query(tasksRef, where("userId", "==", userId));
+      
+      // Set up real-time listener
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const tasksData: Task[] = [];
+        querySnapshot.forEach((doc) => {
+          tasksData.push({
+            id: doc.id,
+            ...doc.data()
+          } as Task);
+        });
+        // Sort by creation date (newest first)
+        tasksData.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setTasks(tasksData);
+      });
+
+      return unsubscribe; // Return the unsubscribe function
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+      setError("Failed to load tasks");
+    }
+  };
 
   // Clear status messages after 3 seconds
   useEffect(() => {
@@ -68,64 +114,87 @@ const TodoList: React.FC = () => {
     setIsTodoCollapsed(prev => !prev);
   };
 
-  // Add a new task
-  const addTask = (): void => {
+  // Add a new task to Firestore
+  const addTask = async (): Promise<void> => {
     if (!newTask.trim()) {
       setError('Task cannot be empty.');
       return;
     }
 
-    const newTaskObject: Task = {
-      id: Date.now(),
-      text: newTask.trim(),
-      completed: false,
-      createdAt: new Date().toISOString()
-    };
+    if (!currentUser) {
+      setError('You must be logged in to add tasks.');
+      return;
+    }
 
-    setTasks(prev => [newTaskObject, ...prev]);
-    setNewTask('');
-    setIsAddingTask(false);
-    setStatusMessage('Task added successfully!');
+    try {
+      await addDoc(collection(db, "tasks"), {
+        text: newTask.trim(),
+        completed: false,
+        createdAt: new Date().toISOString(),
+        userId: currentUser.uid
+      });
+      setNewTask('');
+      setIsAddingTask(false);
+      setStatusMessage('Task added successfully!');
+    } catch (err) {
+      console.error("Error adding task:", err);
+      setError('Failed to add task');
+    }
   };
 
-  // Remove a task
-  const removeTask = (id: number, completed: boolean): void => {
+  // Remove a task from Firestore
+  const removeTask = async (id: string, completed: boolean): Promise<void> => {
     if (!completed) {
       setError('Please complete the task before removing it.');
       return;
     }
 
-    setTasks(prev => prev.filter(task => task.id !== id));
-    setStatusMessage('Task removed successfully!');
+    try {
+      await deleteDoc(doc(db, "tasks", id));
+      setStatusMessage('Task removed successfully!');
+    } catch (err) {
+      console.error("Error removing task:", err);
+      setError('Failed to remove task');
+    }
   };
 
-  // Toggle completion status of a task
-  const toggleTaskCompletion = (id: number, currentStatus: boolean): void => {
-    setTasks(prev => prev.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
-    setStatusMessage(currentStatus ? 'Task marked as incomplete.' : 'Task marked as complete!');
+  // Toggle completion status of a task in Firestore
+  const toggleTaskCompletion = async (id: string, currentStatus: boolean): Promise<void> => {
+    try {
+      await updateDoc(doc(db, "tasks", id), {
+        completed: !currentStatus
+      });
+      setStatusMessage(currentStatus ? 'Task marked as incomplete.' : 'Task marked as complete!');
+    } catch (err) {
+      console.error("Error updating task:", err);
+      setError('Failed to update task');
+    }
   };
 
   // Start editing a task
-  const startEditingTask = (id: number, text: string): void => {
+  const startEditingTask = (id: string, text: string): void => {
     setEditingTaskId(id);
     setEditTaskText(text);
   };
 
-  // Save the edited task
-  const saveEditedTask = (id: number): void => {
+  // Save the edited task to Firestore
+  const saveEditedTask = async (id: string): Promise<void> => {
     if (!editTaskText.trim()) {
       setError('Task cannot be empty.');
       return;
     }
 
-    setTasks(prev => prev.map(task => 
-      task.id === id ? { ...task, text: editTaskText.trim() } : task
-    ));
-    setEditingTaskId(null);
-    setEditTaskText('');
-    setStatusMessage('Task updated successfully!');
+    try {
+      await updateDoc(doc(db, "tasks", id), {
+        text: editTaskText.trim()
+      });
+      setEditingTaskId(null);
+      setEditTaskText('');
+      setStatusMessage('Task updated successfully!');
+    } catch (err) {
+      console.error("Error updating task:", err);
+      setError('Failed to update task');
+    }
   };
 
   // Cancel editing a task
