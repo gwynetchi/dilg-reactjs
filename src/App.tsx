@@ -54,6 +54,7 @@ import DeletedUsers from "./pages/admin/DeletedUsers";
 
 import EvaluatorPrograms from "./pages/managePrograms";
 import LGUPrograms from "./pages/Programs";
+import AdminPrograms from "./pages/Programs";
 import ProgramDetails from './pages/ProgramDetails'; // Adjust path as needed
 
 
@@ -70,7 +71,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
-    { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>}
+    { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
+    { path: "/admin/programs", element: <AdminPrograms /> },
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -102,7 +104,6 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
     { path: "/lgu/programs", element: <LGUPrograms /> },
     { path: "/lgu/programs/:programId", element: <ProgramDetails />}
-
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <ViewerDashboard /> },
