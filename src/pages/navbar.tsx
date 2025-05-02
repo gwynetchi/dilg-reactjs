@@ -33,6 +33,8 @@ const MENU_ITEMS = {
     { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
     { name: "Inbox", icon: "bxs-inbox", path: "/viewer/inbox" },
     { name: "Calendar", icon: "bxs-calendar", path: "/viewer/calendar" },
+    { name: "Communication", icon: "bxs-message-alt-edit", path: "/viewer/communication" },
+    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/viewer/DeletedCommunications" },
     { name: "Message", icon: "bxs-chat", path: "/viewer/message" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
   ],
