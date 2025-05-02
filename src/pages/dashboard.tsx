@@ -6,6 +6,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 // import "../../styles/components/evalDashboard.css";
@@ -580,8 +581,8 @@ const Dashboard = () => {
                           <th>Submitted At</th>
                           <th>Status</th>
                           <th>Remarks</th>
-                          <th>Actions</th>
-                        </tr>
+                          {userRole === 'Evaluator' && <th>Actions</th>}
+                          </tr>
                       </thead>
                       <tbody>
                         {currentReports.map((report) => {
@@ -611,20 +612,22 @@ const Dashboard = () => {
                                 </span>
                               </td>
                               <td className="small">{report.remarks || "—"}</td>
-                              <td>
-                                <button 
-                                  className="btn btn-sm btn-light me-1"
-                                  onClick={() => handleViewReport(report)}
-                                >
-                                  <i className="bx bx-show"></i>
-                                </button>
-                                <button 
-                                  className="btn btn-sm btn-light"
-                                  onClick={() => handleEditReport(report)}
-                                >
-                                  <i className="bx bx-edit"></i>
-                                </button>
-                              </td>
+                              {userRole === 'Evaluator' && (
+                                <td>
+                                  <button 
+                                    className="btn btn-sm btn-light me-1"
+                                    onClick={() => handleViewReport(report)}
+                                  >
+                                    <i className="bx bx-show"></i>
+                                  </button>
+                                  <button 
+                                    className="btn btn-sm btn-light"
+                                    onClick={() => handleEditReport(report)}
+                                  >
+                                    <i className="bx bx-edit"></i>
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
@@ -809,6 +812,139 @@ const Dashboard = () => {
           
         </div>
       </div>
+      {showViewModal && selectedReport && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Report Details</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowViewModal(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <p><strong>Submitted By:</strong> {selectedReport.userName}</p>
+                    <p><strong>Email:</strong> {selectedReport.email}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <p><strong>Submitted At:</strong> {selectedReport.submittedAt?.toDate?.().toLocaleString()}</p>
+                    <p>
+                      <strong>Status:</strong> 
+                      <span className="badge" style={{ 
+                        backgroundColor: getStatusColor(selectedReport.evaluatorStatus),
+                        marginLeft: '8px'
+                      }}>
+                        {selectedReport.evaluatorStatus}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <h6>Remarks</h6>
+                  <div className="p-3 bg-light rounded">
+                    {selectedReport.remarks || "No remarks provided"}
+                  </div>
+                </div>
+                {/* Add more report details as needed */}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowViewModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Report Modal */}
+      {showEditModal && selectedReport && (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Edit Report Status</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowEditModal(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Status</label>
+                  <select
+                    className="form-select"
+                    value={editFormData.evaluatorStatus}
+                    onChange={(e) => setEditFormData({
+                      ...editFormData,
+                      evaluatorStatus: e.target.value
+                    })}
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="On Time">On Time</option>
+                    <option value="Late">Late</option>
+                    <option value="For Revision">For Revision</option>
+                    <option value="Incomplete">Incomplete</option>
+                    <option value="No Submission">No Submission</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Remarks</label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    value={editFormData.remarks}
+                    onChange={(e) => setEditFormData({
+                      ...editFormData,
+                      remarks: e.target.value
+                    })}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={async () => {
+                    try {
+                      // Update the report in Firestore
+                      await updateDoc(doc(db, "submittedDetails", selectedReport.id), {
+                        evaluatorStatus: editFormData.evaluatorStatus,
+                        remarks: editFormData.remarks
+                      });
+                      // Refresh the data
+                      setRefreshKey(prev => prev + 1);
+                      setShowEditModal(false);
+                    } catch (error) {
+                      console.error("Error updating report:", error);
+                    }
+                  }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
