@@ -75,15 +75,23 @@ const MessageTable: React.FC<Props> = ({
   const renderDeadline = (deadline?: { seconds: number }) => {
     const status = getDeadlineStatus(deadline);
     const { className, text, icon } = getStatusStyles(status);
-    
+  
     if (!deadline) {
       return <span className={className}>{icon} {text}</span>;
     }
   
     const deadlineDate = new Date(deadline.seconds * 1000);
-    const dateStr = deadlineDate.toLocaleDateString();
-    const timeStr = deadlineDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
+    const dateStr = deadlineDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = deadlineDate.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+      
     return (
       <div className="d-flex align-items-center gap-2">
         <span className={className}>
@@ -153,10 +161,16 @@ const MessageTable: React.FC<Props> = ({
         </thead>
         <tbody>
           {messages.map((msg) => {
-            const createdDate = msg.createdAt?.seconds
-              ? new Date(msg.createdAt.seconds * 1000).toLocaleString()
-              : "Unknown";
-            const isSeen = msg.seenBy?.includes(userId || "");
+        const createdDate = msg.createdAt?.seconds
+        ? new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "Unknown";
+        const isSeen = msg.seenBy?.includes(userId || "");
 
             return (
               <tr
