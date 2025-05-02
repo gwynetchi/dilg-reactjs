@@ -30,7 +30,7 @@ li {
 	--orange: #FD7238;
 	--light-orange: #FFE0D3;
 	--DILG: #ffffe0;
-	--calamansi: #fffece;
+	--calamansi: #e0e5fc;
 }
 
 html {
@@ -47,134 +47,7 @@ ol, ul {
     padding-left: 0 !important;
 }
 
-/* SIDEBAR */
-#sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 220px;
-    height: 100%;
-    background: var(--light);
-    z-index: 1001;
-    font-family: var(--lato);
-    transition: width .1s ease-in-out, left .1s ease-in-out;
-    overflow-x: hidden;
-	overflow-y: hidden;
-}
 
-#sidebar::--webkit-scrollbar {
-	display: none;
-}
-/* Collapsed Sidebar */
-#sidebar.hide {
-    width: 80px;
-}
-.brand-logo{
-  height: 80px;
-  margin-top: 50px;
-  margin-left: 3px;
-  border-radius: 48px 0 0 48px;
-}
-#sidebar .brand {
-	font-size: 24px;
-	font-weight: 700;
-	height: 56px;
-	display: flex;
-	align-items: center;
-	color: var(--blue);
-	position: sticky;
-	top: 0;
-	left: 0;
-	background: var(--light);
-	z-index: 500;
-	padding-bottom: 20px;
-	box-sizing: content-box;
-}
-#sidebar .brand .bx {
-	min-width: 60px;
-	display: flex;
-	justify-content: center;
-}
-#sidebar .side-menu {
-	width: 100%;
-	margin-top: 48px;
-}
-#sidebar .side-menu li {
-	height: 48px;
-	background: transparent;
-	margin-left: 6px;
-	border-radius: 48px 0 0 48px;
-	padding: 4px;
-}
-#sidebar .side-menu li.active {
-	background: var(--calamansi);
-	position: relative;
-}
-#sidebar .side-menu li.active::before {
-	content: '';
-	position: absolute;
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	top: -40px;
-	right: 0;
-	box-shadow: 20px 20px 0 var(--calamansi);
-	z-index: -1;
-}
-#sidebar .side-menu li.active::after {
-	content: '';
-	position: absolute;
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	bottom: -40px;
-	right: 0;
-	box-shadow: 20px -20px 0 var(--calamansi);
-	z-index: -1;
-}
-#sidebar .side-menu li a {
-	width: 100%;
-	height: 100%;
-	background: var(--light);
-	display: flex;
-	align-items: center;
-	border-radius: 48px;
-	font-size: 16px;
-	color: var(--dark);
-	white-space: nowrap;
-	overflow-x: hidden;
-}
-#sidebar .side-menu.top li.active a {
-	color: var(--blue);
-}
-#sidebar.hide .side-menu li a {
-	width: calc(48px - (4px * 2));
-	transition: width .1s ease;
-}
-#sidebar .side-menu li a.logout {
-	color: var(--red);
-}
-#sidebar .side-menu.top li a:hover {
-	color: var(--blue);
-}
-#sidebar .side-menu li a .bx {
-	min-width: calc(60px  - ((4px + 6px) * 2));
-	display: flex;
-	justify-content: center;
-}
-
-#sidebar .side-menu.bottom li:nth-last-of-type(-n+2) { /* Son iki <li>'yi seç */
-  position: absolute; /* Ebeveynine göre konumlandır */
-  bottom: 0; /* En alt */
-  left: 0;
-  right: 0;
-  text-align: center;
-}
-
-/* Birbirinin üzerine binmesini engellemek için */
-#sidebar .side-menu.bottom li:nth-last-of-type(2) {
-  bottom: 40px; /* İkinci son öğeyi yukarı kaydır */
-}
 
 
 .delete-btn {
@@ -229,109 +102,11 @@ ol, ul {
 	cursor: pointer;
 	text-align: center;
 }
-.notification-dropdown {
-	position: absolute;
-	top: 100%;
-	right: 0;
-	background: white;
-	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-	border-radius: 5px;
-	padding: 10px;
-	min-width: 250px;
-	z-index: 100;
-	max-height: 300px;
-	overflow-y: auto;
-  }
-  
-  .notification-dropdown ul {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-  }
-  
-  .notification-dropdown li {
-	padding: 8px 12px;
-	border-bottom: 1px solid #ddd;
-	font-size: 14px;
-  }
-  
-  .notification-dropdown li:last-child {
-	border-bottom: none;
-  }
+
+
 
 /* CONTENT */
-#contentnav {
-	position: fixed;
-	z-index: 1000;
-	transition: width .1s ease, left .1s ease;
-	
-  }
-  
-  /* When sidebar is open */
-  #contentnav.expanded {
-	width: calc(100% - 220px);
-	left: 220px;
-  }
-  
-  /* When sidebar is collapsed */
-  #contentnav.collapsed {
-	width: calc(100% - 60px);
-	left: 80px;
-  }
-  
-  /* For screens up to 576px (e.g., smaller phones) */
-  @media screen and (max-width: 576px) {
-	/* Adjust navbar menu width */
-	#contentnav nav .notification-menu,
-	#contentnav nav .profile-menu {
-	  width: 150px;
-	}
-  
-	/* Hide input fields and adjust button in navbar */
-	#contentnav nav form .form-input input {
-	  display: none;
-	}
-  
-	#contentnav nav form .form-input button {
-	  width: auto;
-	  height: auto;
-	  background: transparent;
-	  border-radius: none;
-	  color: var(--dark);
-	}
-  
-	/* When the form is shown, display the input field and adjust button */
-	#contentnav nav form.show .form-input input {
-	  display: block;
-	  width: 100%;
-	}
-  
-	#contentnav nav form.show .form-input button {
-	  width: 36px;
-	  height: 100%;
-	  border-radius: 0 36px 36px 0;
-	  color: var(--light);
-	  background: var(--red);
-	}
-  
-	/* Hide the notification and profile menus when form is shown */
-	#contentnav nav form.show ~ .notification,
-	#contentnav nav form.show ~ .profile {
-	  display: none;
-	}
-  
-	/* Adjust grid layout for box-info on smaller screens */
-	#content main .box-info {
-	  grid-template-columns: 1fr; /* Stack items vertically */
-	}
-  
-	/* Ensure tables and todo lists have a minimum width to prevent overflow */
-	#content main .table-data .head,
-	#content main .table-data .order table
-	{
-	  min-width: 320px; /* Adjust min-width for better mobile responsiveness */
-	}
-  }
+
   
 /* Media queries for responsiveness */
 @media (max-width: 1200px) {
@@ -365,18 +140,6 @@ ol, ul {
 
 
 
-#sidebar.hide ~ #contentnav {
-    width: calc(100% - 80px);
-    left: 80px;
-}
-
-@media screen and (max-width: 768px) {
-	#sidebar.hide ~ #contentnav {
-		width: 100%;
-		left: 0px;
-	}
-}
-
 .timestamp {
 	font-size: 12px;
 	color: gray;
@@ -385,191 +148,6 @@ ol, ul {
   }
 
 
-
-
-/* NAVBAR */
-#contentnav nav {
-	height: 56px;
-	background: var(--light);
-	padding: 0 24px;
-	display: flex;
-	align-items: center;
-	grid-gap: 16px;
-	font-family: var(--lato);
-	position: sticky;
-	top: 0;
-	left: 0;
-	z-index: 1000;
-  }
-  
-#contentnav nav a {
-	color: var(--dark);
-}
-#contentnav nav .bx.bx-menu {
-	cursor: pointer;
-	color: var(--dark);
-}
-#contentnav nav .nav-link {
-	font-size: 16px;
-	transition: .3s ease;
-}
-#contentnav nav .nav-link:hover {
-	color: var(--blue);
-}
-#contentnav nav form {
-	max-width: 400px;
-	width: 100%;
-	margin-right: auto;
-}
-#contentnav nav form .form-input {
-	display: flex;
-	align-items: center;
-	height: 36px;
-}
-#contentnav nav form .form-input input {
-	flex-grow: 1;
-	padding: 5px;
-	height: 100%;
-	border: none;
-	background: var(--calamansi);
-	border-radius: 36px 0 0 36px;
-	outline: none;
-	width: 100px;
-	min-width: 80px;
-	color: var(--dark);
-	display: block;
-}
-#contentnav nav form .form-input button {
-	width: auto;
-	height: auto;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background: transparent;
-	color: var(--light);
-	font-size: 18px;
-	border: none;
-	outline: none;
-	border-radius: none;
-	cursor: pointer;
-}
-#contentnav nav .notification {
-	font-size: 20px;
-	position: relative;
-}
-#contentnav nav .notification .num {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid var(--light);
-    background: var(--red);
-    color: var(--light);
-    font-weight: 700;
-    font-size: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-/* Notification Dropdown */
-#contentnav nav .notification-menu {
-    display: none;
-    position: relative;
-    top: 56px;
-    right: 0;
-    background: var(--light);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 15px;
-    width: 250px;
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 9999;
-    font-family: var(--lato);
-}
-
-#contentnav nav .notification-menu ul {
-    list-style: none;
-    padding: 10px;
-    margin: 0;
-}
-
-#contentnav nav .notification-menu li {
-    padding: 10px;
-    border-bottom: 1px solid var(--calamansi);
-	color: var(--dark);
-}
-
-#contentnav nav .notification-menu li:hover {
-    background-color: var(--light-blue);
-	color: var(--dark);
-}
-#contentnav nav .notification-menu li:hover a{
-    background-color: var(--calamansi);
-	color: var(--light);
-}
-#contentnav nav .profile img {
-	width: 36px;
-	height: 36px;
-	object-fit: cover;
-	border-radius: 50%;
-}
-#contentnav nav .profile-menu {
-    display: none;
-    position: absolute;
-    top: 56px;
-    right: 0;
-    background: var(--light);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 15px;
-    width: 200px;
-    z-index: 9999;
-    font-family: var(--lato);
-}
-
-#contentnav nav .profile-menu ul {
-    list-style: none;
-    padding: 10px;
-    margin: 0;
-}
-
-#contentnav nav .profile-menu li {
-    padding: 10px;
-    border-bottom: 1px solid var(--calamansi);
-}
-
-#contentnav nav .profile-menu li:hover {
-    background-color: var(--light-blue);
-	color: var(--dark);
-}
-#contentnav nav .profile-menu li a {
-    color: var(--dark);
-    font-size: 16px;
-}
-#contentnav nav .profile-menu li:hover a {
-    color: var(--dark);
-}
-/* Active State for Menus */
-#contentnav nav .notification-menu.show,
-#contentnav nav .profile-menu.show {
-    display: block;
-}
-#contentnav nav .swith-lm .ball {
-	background-color: var(--blue);
-	border-radius: 50%;
-	position: absolute;
-	top: 2px;
-	left: 2px;
-	height: 20px;
-	width: 20px;margin-top: 120px;
-	transform: translateX(0px);
-	transition: transform 0.2s linear;
-}
-
-#contentnav nav .checkbox:checked + .swith-lm .ball {
-	transform: translateX(22px);
-}
 /* MAIN */
 #content main {
 	 /* Adjust based on navbar height */
@@ -782,28 +360,8 @@ tr {
 #content main .menu-link:hover, #contentnav nav .menu-link:hover {
     text-decoration: underline;
 }
+
 /* MOBILE RESPONSIVENESS */
-@media screen and (max-width: 768px) {
-    #sidebar {
-        width: 200px;
-        left: -200px; /* Hide sidebar by default */
-    }
-
-    #sidebar.open {
-        left: 0; /* Show sidebar when toggled */
-    }
-
-    #contentnav {
-        width: 100%;
-        margin-left: 0;
-    }
-
-    #sidebar.open ~ #contentnav {
-        width: 100%;
-        margin-left: 200px;
-		left: 0;
-    }
-}
 
 @media screen and (max-width: 576px) {
     #contentnav nav .notification-menu,
@@ -903,16 +461,7 @@ tr {
 	color: #000000;
   }
   
-  .menu-badge {
-	background-color: #ff4757;
-	color: white;
-	border-radius: 50%;
-	padding: 2px 6px;
-	font-size: 0.7rem;
-	margin-left: 8px;
-	position: relative;
-	top: -1px;
-  }
+
   /* ✅ Auto-hide animation */
   @keyframes fadeOut {
 	0% { opacity: 1; }
@@ -1037,114 +586,7 @@ tr {
   .fc-scroller {
     overflow: hidden !important;
 }
-  .brand {
-	position: relative;
-	display: inline-block;
-}
 
-  .brand-logo {
-	height: 80px;
-	margin-top: 50px;
-	margin-left: 3px;
-	border-radius: 48px 0 0 48px;
-	position: relative;
-	z-index: 2; /* Keep the logo on top */
-}
-
-.navbar-logo {
-	display: flex;
-	justify-content: center;
-}
-
-  .jumpscare-img {
-	position: absolute;
-	top: 42px;
-	left: -100px; /* Start off-screen to the left */
-	width: 70px; /* Adjust as needed */
-	height: auto; /* Maintain aspect ratio */
-	opacity: 0; /* Start invisible */
-	transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out; /* Slide and fade in/out */
-	z-index: 1; /* Behind the logo */
-}
-
-@-webkit-keyframes slide {
-	0% {
-		left: -100px; /* Start off-screen to the left */
-		opacity: 0; /* Start invisible */
-	}
-	100% {
-		left: 65px; /* Final position */
-		opacity: 1; /* Fully visible */
-	}
-}
-
-@keyframes slide {
-	0% {
-		left: 20px; /* Start off-screen to the left */
-		opacity: 0; /* Start invisible */
-	}
-	100% {
-		left: 65px; /* Final position */
-		opacity: 1; /* Fully visible */
-	}
-}
-
-@-webkit-keyframes shake {
-	0% {
-		transform: translateX(0);
-	}
-	25% {
-		transform: translateX(-10px); /* Shake left */
-	}
-	50% {
-		transform: translateX(10px); /* Shake right */
-	}
-	75% {
-		transform: translateX(-10px); /* Shake left */
-	}
-	100% {
-		transform: translateX(0); /* Back to original position */
-	}
-}
-
-@keyframes shake {
-	0% {
-		transform: translateX(0);
-	}
-	25% {
-		transform: translateX(-10px); /* Shake left */
-	}
-	50% {
-		transform: translateX(10px); /* Shake right */
-	}
-	75% {
-		transform: translateX(-10px); /* Shake left */
-	}
-	100% {
-		transform: translateX(0); /* Back to original position */
-	}
-}
-
-.brand:hover .jumpscare-img {
-	animation: slide 0.5s forwards, shake 0.5s ease-in-out infinite; /* Apply slide and shake animations */
-	opacity: 1; /* Make visible */
-}
-
-.brand:not(:hover) .jumpscare-img {
-	animation: slide-out 0.5s forwards; /* Add slide-out animation */
-	opacity: 0; /* Make invisible */
-}
-
-@keyframes slide-out {
-	0% {
-		left: 65px; /* Final position */
-		opacity: 1; /* Fully visible */
-	}
-	100% {
-		left: 20px; /* Slide out to the left */
-		opacity: 0; /* Make invisible */
-	}
-}
 
 /* Modal Overlay */
 .modal-overlay {

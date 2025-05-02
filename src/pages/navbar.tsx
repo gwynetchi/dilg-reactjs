@@ -17,8 +17,10 @@ import {
 import { auth, db } from "../firebase";
 
 // Styles
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
+import "../styles/components/navbar.css"
 
 interface NavbarProps {
   isSidebarOpen: boolean;
