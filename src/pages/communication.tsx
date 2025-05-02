@@ -1,6 +1,6 @@
 import { getAuth } from "firebase/auth"; // Import Firebase auth
 import React, { useState, useEffect } from "react";
-import Select, { MultiValue } from "react-select";
+import Select, { ActionMeta, MultiValue } from "react-select";
 import {
   doc,
   getDoc,
@@ -33,7 +33,11 @@ const Communication: React.FC = () => {
   const [users, setUsers] = useState<{
     role: string; id: string; fullName: string; email: string 
 }[]>([]);
-  const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
+const [alert, setAlert] = useState<{
+  message: string; 
+  type: string;
+  id?: number; // Add unique identifier
+} | null>(null);
   const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
@@ -178,9 +182,32 @@ const Communication: React.FC = () => {
   }, []);
 
   const handleRecipientChange = (
-    selectedOptions: MultiValue<{ value: string; label: string; isSelectAll?: boolean; role?: string }>
+    newValue: MultiValue<{ value: string; label: string; isSelectAll?: boolean; role?: string }>,
+    actionMeta: ActionMeta<{ value: string; label: string; isSelectAll?: boolean; role?: string }>
   ) => {
-    // First handle any "Select all" options
+    // Handle removal of individual items
+    if (actionMeta.action === 'remove-value' || actionMeta.action === 'pop-value') {
+      const removedValue = actionMeta.removedValue;
+      
+      // If removing a "Select All" option
+      if (removedValue.isSelectAll && removedValue.role) {
+        // Remove all users from this role
+        setRecipients(prev => prev.filter(id => {
+          const user = users.find(u => u.id === id);
+          return user?.role !== removedValue.role;
+        }));
+        return;
+      }
+      
+      // If removing a regular user
+      if (!removedValue.isSelectAll) {
+        setRecipients(prev => prev.filter(id => id !== removedValue.value));
+        return;
+      }
+    }
+  
+    // Handle additions (your existing code)
+    const selectedOptions = newValue;
     const newRecipients = [...recipients];
     
     selectedOptions.forEach(option => {
@@ -211,13 +238,30 @@ const Communication: React.FC = () => {
     
     setRecipients(allSelections);
   };
-
-    const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
-      setAlert({ message, type });
-  
-    setTimeout(() => setAlert(null), 8000); // Hide after 5 seconds
-  };  
-
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
+    // Clear any existing alert immediately
+    setAlert(null);
+    
+    // Use setTimeout to ensure the state is cleared before showing new alert
+    setTimeout(() => {
+      const alertId = Date.now();
+      setAlert({ message, type, id: alertId });
+      
+      // Auto-dismiss after 5 seconds
+      const timer = setTimeout(() => {
+        setAlert(prev => {
+          // Only remove if it's the same alert we set
+          if (prev?.id === alertId) {
+            return null;
+          }
+          return prev;
+        });
+      }, 5000);
+      
+      // Return cleanup function
+      return () => clearTimeout(timer);
+    }, 50); // Small delay to ensure clean state transition
+  };
   const handleSubmit = async () => {
     if (!subject || recipients.length === 0 || !deadline || !remarks) {
       showAlert("Please fill in all fields before sending");
@@ -237,8 +281,6 @@ const Communication: React.FC = () => {
     showAlert("Invalid Deadline: The deadline must be in the future (including time)");
     return;
   }
-
-  
     if (
       (submissionLink && !submissionLink.startsWith("https://")) ||
       (monitoringLink && !monitoringLink.startsWith("https://"))
@@ -520,6 +562,9 @@ const Communication: React.FC = () => {
                     placeholder="Select recipients by role..."
                     closeMenuOnSelect={false}
                     hideSelectedOptions={false}
+                    isClearable={false} // Disable the clear all button if you want
+                    backspaceRemovesValue={true}
+                    escapeClearsValue={false}
                   />
                 </div>
                 <div className="col-md-6 mb-3">
@@ -632,13 +677,40 @@ const Communication: React.FC = () => {
               </ul>
             </div>
           </div>
-  
           {alert && (
-            <div className={`custom-alert alert-${alert.type}`}>
-              <span className="alert-icon">{getIcon(alert.type)}</span>
-              <span>{alert.message}</span>
-            </div>
-          )}
+  <div 
+    key={alert.id} // Add key to force re-render
+    className={`alert-notification alert-${alert.type}`}
+    style={{
+      animation: 'slideIn 0.3s forwards',
+      ...(alert.type === "success"
+        ? { backgroundColor: "#d4edda", color: "#155724" }
+        : alert.type === "error"
+        ? { backgroundColor: "#f8d7da", color: "#721c24" }
+        : alert.type === "warning"
+        ? { backgroundColor: "#fff3cd", color: "#856404" }
+        : { backgroundColor: "#d1ecf1", color: "#0c5460" })
+    }}
+  >
+    <span style={{ marginRight: '10px', fontSize: '20px' }}>
+      {getIcon(alert.type)}
+    </span>
+    <span>{alert.message}</span>
+    <button 
+      onClick={() => setAlert(null)}
+      style={{
+        marginLeft: '15px',
+        background: 'none',
+        border: 'none',
+        fontSize: '18px',
+        cursor: 'pointer',
+        color: 'inherit'
+      }}
+    >
+      ×
+    </button>
+  </div>
+)}
 <div className="inbox-controls mb-3 d-flex align-items-center gap-3">
   {/* Search Label */}
   <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
