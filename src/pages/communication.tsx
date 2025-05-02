@@ -557,45 +557,6 @@
       </div>
     )}
   </div>
-<<<<<<< Updated upstream
-=======
-)}
-      {/* Modal - Centered on the Screen */}
-      {showDetails && (
-        <div className="overlay" >
-          <div className="modal-container" style={{overflow: 'auto'}}>
-            <div className="container">
-              <div className="row">
-                <div className="col-md-12 mb-3">
-                  <label>Subject:</label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Enter subject"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-12 mb-3">
-  <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
-  <input 
-    type="file" 
-    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-    className="form-control" 
-    onChange={handleFileChange}
-  />
-  {selectedFile && (
-    <div className="mt-2">
-      <span>Selected file: {selectedFile.name}</span>
-    </div>
-  )}
-  {imageUrl && (
-    <div className="mt-2">
-      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Current Attachment</a>
-    </div>
-  )}
-</div>
->>>>>>> Stashed changes
 
                   <div className="col-md-12 mb-3">
                     <label className="form-label" aria-required>Recipients:</label>
