@@ -112,3 +112,19 @@
   .delete-btn:hover {
     background-color: #c82333;
   }
+
+  /* Add to your CSS */
+.select__option--is-select-all {
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  
+  .select__option--is-select-all.select__option--is-selected {
+    color: #ff4444; /* Red when active (will unselect) */
+  }
+  
+  .select__option--is-select-all:not(.select__option--is-selected) {
+    color: #2684FF; /* Blue when inactive (will select) */
+  }
