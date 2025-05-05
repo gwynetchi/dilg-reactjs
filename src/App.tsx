@@ -2,6 +2,7 @@ import React, { useState, useEffect, JSX } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
@@ -50,12 +51,13 @@ import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
 import DeletedUsers from "./pages/admin/DeletedUsers";
+import DeletedUsers from "./pages/admin/DeletedUsers";
 
 
 import EvaluatorPrograms from "./pages/managePrograms";
-import LGUPrograms from "./pages/Programs";
-import AdminPrograms from "./pages/Programs";
-import ProgramDetails from './pages/ProgramDetails'; // Adjust path as needed
+import ProgramCards from "./pages/ProgramsCards";
+import ProgramMessages from "./pages/ProgramMessages";
+import OrgChartAdmin from "./pages/admin/orgchart";
 
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
@@ -70,9 +72,10 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
+    { path: "/admin/OrganizationalChart", element: <OrgChartAdmin /> }, // ← Added here
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
     { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/admin/programs", element: <AdminPrograms /> }
+
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -91,6 +94,9 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
     { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
     { path: "/evaluator/programs", element: <EvaluatorPrograms /> },
+    { path: "/evaluator/programs/:programId", element: <ProgramMessages />}
+
+
   ],
   LGU: [
     { path: "/lgu/dashboard", element: <LGUDashboard /> },
@@ -99,12 +105,14 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/inbox/:id", element: <LGUMessageDetails /> },
     { path: "/lgu/communication", element: <LGUCommunication /> },
     { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
+    { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
-    { path: "/lgu/programs", element: <LGUPrograms /> },
-    { path: "/lgu/programs/:programId", element: <ProgramDetails />}
+    { path: "/lgu/programs", element: <ProgramCards /> },
+    { path: "/lgu/programs/:programId", element: <ProgramMessages />}
+
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <ViewerDashboard /> },
@@ -204,12 +212,19 @@ const App: React.FC = () => {
         {user && role && (
           <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
         <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
+        {user && (
+  <>
+    <CheckFrequency onDuePrograms={setDuePrograms} />
+    {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
+  </>
+)}
+
           <Routes>
             {/* Public Routes */}
             <Route path="/dashboard" element={<Landing />} />
             <Route path="/login" element={<AuthForm />} />
             <Route path="/register-success" element={<Navigate to="/login" replace />} />
-
+           
             {/* Protected Routes (Dynamically Rendered) */}
             {role &&
               roleRoutesConfig[role]?.map(({ path, element }) => (
@@ -219,8 +234,7 @@ const App: React.FC = () => {
             {/* Catch-All Route */}
             <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
           </Routes>
-          <CheckFrequency onDuePrograms={setDuePrograms} />
-          {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
+
         </div>
       </div>
     </Router>

@@ -24,7 +24,11 @@ const SendDueCommunications = ({ duePrograms }: Props) => {
               createdBy: program.createdBy,
               subject: `Scheduled communication for ${program.programName}`,
               createdAt: Timestamp.now(),
+              sentAt: Timestamp.now(), // ✅ ADD THIS
+              deadline: Timestamp.fromDate(new Date()), // Or a calculated due date if needed
+
             });
+            
             console.log(`Sent to ${participantId} for program ${program.programName}`);
           } catch (err) {
             console.error(`Failed to send for ${participantId}:`, err);
@@ -34,6 +38,7 @@ const SendDueCommunications = ({ duePrograms }: Props) => {
     };
 
     if (duePrograms.length > 0) {
+      console.log("⚪ No due programs to send communications for.");
       send();
     }
   }, [duePrograms]);
