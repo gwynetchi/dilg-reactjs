@@ -79,6 +79,9 @@ const Inbox: React.FC = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const [showModal, setShowModal] = useState(false);
+  const [urgentCount, setUrgentCount] = useState(0);
+  const [pastDueCount, setPastDueCount] = useState(0);
+
   const [selectedMessage, setSelectedMessage] = useState<{
     id: string;
     recipients: string[];
@@ -282,11 +285,19 @@ const Inbox: React.FC = () => {
       return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
     });
 
-  // Count urgent messages
-  const urgentCount = filteredCommunications.filter(msg => {
-    return msg.deadline ? getDeadlineStatus(msg.deadline) === 'urgent' : false;
-  }).length;
-
+    useEffect(() => {
+      const urgent = filteredCommunications.filter(msg =>
+        msg.deadline ? getDeadlineStatus(msg.deadline) === 'urgent' : false
+      ).length;
+    
+      const pastDue = filteredCommunications.filter(msg =>
+        msg.deadline ? getDeadlineStatus(msg.deadline) === 'past-due' : false
+      ).length;
+    
+      setUrgentCount(urgent);
+      setPastDueCount(pastDue);
+    }, [filteredCommunications]); // Recalculate when filteredCommunications update
+    
   return (
     <div className="dashboard-container">
         <main>
@@ -310,6 +321,14 @@ const Inbox: React.FC = () => {
               <i className="bx bx-error-circle fs-4"></i>
               <div>
                 <strong>Urgent!</strong> You have {urgentCount} message{urgentCount > 1 ? 's' : ''} with deadlines within 24 hours.
+              </div>
+            </div>
+          )}
+          {pastDueCount > 0 && (
+            <div className="alert alert-warning d-flex align-items-center gap-2 mb-3">
+              <i className="bx bx-time-five fs-4"></i>
+              <div>
+                <strong>Past Due:</strong> You have {pastDueCount} message{pastDueCount > 1 ? 's' : ''} that are overdue.
               </div>
             </div>
           )}
