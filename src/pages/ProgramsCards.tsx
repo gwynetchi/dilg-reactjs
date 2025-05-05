@@ -22,7 +22,9 @@ interface Program {
     yearlyDate?: string;
   };
   participants: string[];
+  imageUrl?: string;
 }
+
 
 const ProgramCards: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -32,44 +34,47 @@ const ProgramCards: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchRole = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setUserId(user.uid);
         const userDoc = await getDoc(doc(getFirestore(), "users", user.uid));
         const userRole = userDoc.data()?.role?.toLowerCase();
         setRole(userRole);
+      } else {
+        setUserId(null);
+        setRole(null);
       }
-    };
-    fetchRole();
-  }, []);
-
-  // Get current user ID
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserId(user ? user.uid : null);
     });
+  
     return () => unsubscribe();
-  }, []);
+  }, []);  
 
   // Fetch programs where current user is a participant
   useEffect(() => {
     if (!userId) return;
-
+  
     const q = query(collection(db, 'programs'), where('participants', 'array-contains', userId));
-
+  
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const myPrograms: Program[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Program, 'id'>),
-      }));
+      const myPrograms: Program[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          programName: data.programName,
+          frequency: data.frequency,
+          duration: data.duration,
+          frequencyDetails: data.frequencyDetails,
+          participants: data.participants,
+          imageUrl: data.imageUrl || '', // ✅ Ensure fallback
+        };
+      });
       setPrograms(myPrograms);
       setLoading(false);
     });
-
+  
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId]);  
 
   if (loading || !role)
     return (
@@ -92,11 +97,11 @@ const ProgramCards: React.FC = () => {
                 style={{ cursor: 'pointer', height: '100%' }}
                 className="shadow-sm h-100"
               >
-                <Card.Img
-                  variant="top"
-                  src="/images/logo.png"
-                  style={{ height: '100px', objectFit: 'cover' }}
-                />
+              <Card.Img
+                variant="top"
+                src={program.imageUrl || "/images/logo.png"} // ✅ Use image from Firestore or fallback
+                style={{ height: '100px', objectFit: 'cover' }}
+              />
                 <Card.Body>
                   <Card.Title>{program.programName}</Card.Title>
                   <Card.Text>
@@ -106,7 +111,7 @@ const ProgramCards: React.FC = () => {
 
                     {program.frequency === 'weekly' && program.frequencyDetails?.weeklyDay && (
                       <p><strong>Weekly Day:</strong> {program.frequencyDetails.weeklyDay}</p>
-                    )}
+                    )}g
                     {program.frequency === 'monthly' && program.frequencyDetails?.monthlyDate && (
                       <p><strong>Monthly Date:</strong> {program.frequencyDetails.monthlyDate}</p>
                     )}
