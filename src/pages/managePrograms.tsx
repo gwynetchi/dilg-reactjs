@@ -8,11 +8,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import CreatePrograms from "./createPrograms";
-import Select from "react-select";
+import Select, { ActionMeta, MultiValue } from "react-select";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Swal from "sweetalert2";
 
-// Updated Program interface with imageUrl
 interface Program {
   id: string;
   programName: string;
@@ -34,6 +33,8 @@ interface Program {
 interface User {
   id: string;
   fullName: string;
+  email: string;
+  role: string;
 }
 
 const ManagePrograms: React.FC = () => {
@@ -55,20 +56,132 @@ const ManagePrograms: React.FC = () => {
     });
   };
 
-  // Fetch users
-  useEffect(() => {
-    const fetchUsers = async () => {
+  // Fetch users with roles
+  const fetchUsers = async () => {
+    try {
       const snapshot = await getDocs(collection(db, "users"));
       const userList = snapshot.docs.map((doc) => {
         const data = doc.data();
-        const fullName = `${data.fname} ${data.mname || ""} ${data.lname}`.trim();
-        return { id: doc.id, fullName };
+        const fullName = `${data.fname} ${data.mname || ""} ${data.lname}`.trim() || data.email || "Unknown User";
+        return { 
+          id: doc.id, 
+          fullName,
+          email: data.email || "",
+          role: data.role || "No Role"
+        };
       });
       setUsers(userList);
-    };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load users',
+      });
+    }
+  };
 
-    fetchUsers();
-  }, []);
+  // Group users by roles with counts
+  const groupedOptions = Object.entries(
+    users.reduce((groups, user) => {
+      const role = user.role || "No Role";
+      if (!groups[role]) groups[role] = [];
+      groups[role].push({ 
+        value: user.id, 
+        label: user.fullName 
+      });
+      return groups;
+    }, {} as Record<string, { value: string; label: string }[]>)
+  ).map(([role, options]) => ({
+    label: `${role.charAt(0).toUpperCase() + role.slice(1)} (${options.length})`,
+    options: [
+      {
+        value: `toggle_all_${role}`,
+        label: `Select all ${role}`,
+        isSelectAll: true,
+        role,
+      },
+      ...options,
+    ],
+  }));
+
+  const handleParticipantChange = (
+    newValue: MultiValue<{ value: string; label: string; isSelectAll?: boolean; role?: string }>,
+    actionMeta: ActionMeta<{ value: string; label: string; isSelectAll?: boolean; role?: string }>
+  ) => {
+    if (!editingId) return;
+
+    if (actionMeta.action === 'remove-value' || 
+        actionMeta.action === 'pop-value' ||
+        actionMeta.action === 'deselect-option') {
+      const removedValue = actionMeta.removedValue || actionMeta.option;
+      
+      if (!removedValue) return;
+      
+      if (!removedValue.isSelectAll) {
+        setEditData(prev => ({
+          ...prev,
+          participants: (prev.participants || []).filter(id => id !== removedValue.value)
+        }));
+        return;
+      }
+      
+      if (removedValue.isSelectAll && removedValue.role) {
+        const usersInRole = users
+          .filter(user => user.role === removedValue.role)
+          .map(user => user.id);
+        setEditData(prev => ({
+          ...prev,
+          participants: (prev.participants || []).filter(id => !usersInRole.includes(id))
+        }));
+        return;
+      }
+    }
+    
+    const selectedOptions = newValue;
+    let newParticipants = [...(editData.participants || [])];
+    
+    const toggledSelectAlls = selectedOptions
+      .filter(option => option.isSelectAll && option.role)
+      .map(option => option.role);
+  
+    toggledSelectAlls.forEach(role => {
+      if (!role) return;
+      
+      const usersInRole = users
+        .filter(user => user.role === role)
+        .map(user => user.id);
+  
+      const wasJustSelected = selectedOptions.some(
+        opt => opt.isSelectAll && opt.role === role && !(editData.participants || []).includes(opt.value)
+      );
+  
+      if (wasJustSelected) {
+        const allCurrentlySelected = usersInRole.every(id => (editData.participants || []).includes(id));
+        
+        if (allCurrentlySelected) {
+          newParticipants = newParticipants.filter(id => !usersInRole.includes(id));
+        } else {
+          newParticipants = newParticipants.filter(id => {
+            const user = users.find(u => u.id === id);
+            return user?.role !== role;
+          });
+          newParticipants = [...newParticipants, ...usersInRole];
+        }
+      }
+    });
+  
+    const regularSelections = selectedOptions
+      .filter(option => !option.isSelectAll)
+      .map(option => option.value);
+  
+    const allSelections = [...new Set([...newParticipants, ...regularSelections])];
+    
+    setEditData(prev => ({
+      ...prev,
+      participants: allSelections
+    }));
+  };
 
   // Fetch programs
   useEffect(() => {
@@ -81,6 +194,10 @@ const ManagePrograms: React.FC = () => {
       setPrograms(list);
     };
     fetchPrograms();
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
   const handleEditClick = (program: Program) => {
@@ -99,7 +216,6 @@ const ManagePrograms: React.FC = () => {
       const file = e.target.files[0];
       setNewImage(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -143,13 +259,11 @@ const ManagePrograms: React.FC = () => {
     if (!editingId) return;
     
     try {
-      // Upload new image if one was selected
       const imageUrl = await uploadImage();
       
-      // Prepare updated data
       const updatedData = {
         ...editData,
-        ...(imageUrl && { imageUrl }) // Only include imageUrl if it exists
+        ...(imageUrl && { imageUrl })
       };
 
       const programRef = doc(db, "programs", editingId);
@@ -422,31 +536,70 @@ const ManagePrograms: React.FC = () => {
                 </div>
               )}
 
-              {/* Other frequency inputs remain the same... */}
-
               {/* Participants */}
               <div className="mb-3">
                 <label className="form-label">Participants</label>
                 <Select
+                  options={groupedOptions}
                   isMulti
-                  options={users.map((user) => ({
-                    value: user.id,
-                    label: user.fullName,
-                  }))}
-                  value={(editData.participants || [])
-                    .map((id) => {
-                      const user = users.find((u) => u.id === id);
-                      return user ? { value: user.id, label: user.fullName } : null;
-                    })
-                    .filter(Boolean)} 
-                  onChange={(selectedOptions) =>
-                    handleChange(
-                      "participants",
-                      selectedOptions.map((option) => option?.value).filter((value) => value !== null)
-                    )
-                  }
-                  placeholder="Select participants..."
+                  value={groupedOptions.flatMap(group => group.options).filter((option) => {
+                    if ((editData.participants || []).includes(option.value)) return true;
+                    if ('isSelectAll' in option && option.isSelectAll && option.role) {
+                      const usersInRole = users.filter(user => user.role === option.role);
+                      return usersInRole.every(user => (editData.participants || []).includes(user.id));
+                    }
+                    return false;
+                  })}
+                  onChange={handleParticipantChange}
+                  className="basic-multi-select"
+                  classNamePrefix="select"
+                  placeholder="Select participants by role..."
+                  closeMenuOnSelect={false}
+                  hideSelectedOptions={false}
+                  isClearable={false}
+                  backspaceRemovesValue={true}
+                  escapeClearsValue={false}
+                  getOptionLabel={(option) => {
+                    if ('isSelectAll' in option && option.isSelectAll && option.role) {
+                      const usersInRole = users.filter(u => u.role === option.role);
+                      const allSelected = usersInRole.every(u => (editData.participants || []).includes(u.id));
+                      const someSelected = usersInRole.some(u => (editData.participants || []).includes(u.id));
+                      
+                      return allSelected 
+                        ? `✓ All ${option.role} selected` 
+                        : someSelected
+                          ? `↻ ${usersInRole.filter(u => (editData.participants || []).includes(u.id)).length}/${usersInRole.length} ${option.role} selected`
+                          : `Select all ${option.role}`;
+                    }
+                    return option.label;
+                  }}
+                  formatGroupLabel={(group) => (
+                    <div className="d-flex justify-content-between">
+                      <span>{group.label}</span>
+                      <span className="badge bg-primary rounded-pill">
+                        {group.options.length - 1}
+                      </span>
+                    </div>
+                  )}
                 />
+                
+                <div className="selected-participants-summary mt-2">
+                  <small>
+                    Selected: {(editData.participants || []).length} participants | 
+                    {Object.entries(
+                      (editData.participants || []).reduce((acc, id) => {
+                        const user = users.find(u => u.id === id);
+                        const role = user?.role || 'No Role';
+                        acc[role] = (acc[role] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    ).map(([role, count]) => (
+                      <span key={role} className="badge bg-secondary ms-2">
+                        {role}: {count}
+                      </span>
+                    ))}
+                  </small>
+                </div>
               </div>
             </div>
             <div className="modal-footer">
