@@ -179,8 +179,8 @@ const deleteProgram = async (id: string) => {
       </table>
 
       {/* Edit Modal */}
-      <div className="modal fade" id="editModal" tabIndex={-1}>
-        <div className="modal-dialog modal-lg">
+      <div className="modal fade" id="editModal" tabIndex={-1} >
+        <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Edit Program</h5>

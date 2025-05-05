@@ -6,7 +6,7 @@
     width: 220px;
     height: 100%;
     background: var(--light);
-    z-index: 1001;
+    z-index: 1000;
     font-family: var(--lato);
     transition: width .1s ease-in-out, left .1s ease-in-out;
     overflow-x: hidden;
