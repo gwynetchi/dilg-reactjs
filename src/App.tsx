@@ -2,7 +2,6 @@ import React, { useState, useEffect, JSX } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
-import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
@@ -10,13 +9,14 @@ import "./styles/components/pages.css";
 import SendDueCommunications from "./pages/SendDuePrograms";
 import CheckFrequency from "./pages/CheckFrequency";
 import DeletedCommunications from "./pages/DeletedCommunications";
+import Analytics from "./pages/analytics";
 
 // Import Dashboards
 import AdminDashboard from "./pages/dashboard";
-import Analytics from "./pages/analytics";
 import LGUDashboard from "./pages/dashboard";
 import EvaluatorDashboard from "./pages/dashboard";
 import ViewerDashboard from "./pages/dashboard";
+
 
 // Import Message Details
 import EvaluatorMessageDetails from "./pages/messagedetails";
@@ -50,7 +50,6 @@ import MonthlyAnalytics from "./pages/monthly-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
-import DeletedUsers from "./pages/admin/DeletedUsers";
 import DeletedUsers from "./pages/admin/DeletedUsers";
 
 
