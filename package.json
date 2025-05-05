@@ -54,7 +54,8 @@
     "recharts": "^2.15.1",
     "sass": "^1.85.1",
     "slick-carousel": "^1.8.1",
-    "styled-components": "^6.1.15"
+    "styled-components": "^6.1.15",
+    "sweetalert2": "^11.21.0"
   },
   "devDependencies": {
     "@babel/plugin-transform-typescript": "^7.27.0",

@@ -10,6 +10,7 @@ import { db } from "../firebase";
 import CreatePrograms from "./createPrograms";
 import Select from "react-select";
 import "bootstrap/dist/css/bootstrap.min.css";
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 // Define Program interface
 interface Program {
@@ -41,8 +42,16 @@ const ManagePrograms: React.FC = () => {
   const [editData, setEditData] = useState<Partial<Program>>({});
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [users, setUsers] = useState<User[]>([]);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
+  const formatFullDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
 
   // Fetch users
   useEffect(() => {
@@ -89,50 +98,64 @@ const ManagePrograms: React.FC = () => {
     setPrograms((prev) =>
       prev.map((prog) => (prog.id === editingId ? { ...prog, ...editData } : prog))
     );
-      // Show success alert
-  setShowSuccess(true);
-  setTimeout(() => setShowSuccess(false), 3000); // hides after 3s
-};
-const deleteProgram = async (id: string) => {
-  await deleteDoc(doc(db, "programs", id));
-  setPrograms(programs.filter((p) => p.id !== id));
-
-  // Show delete success message
-  setShowDeleteSuccess(true);
-  setTimeout(() => setShowDeleteSuccess(false), 3000); // Hide after 3s
-};
-
+    
+    // Show SweetAlert success message
+    Swal.fire({
+      icon: 'success',
+      title: 'Success!',
+      text: 'Program updated successfully',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  };
+  
+  const deleteProgram = async (id: string) => {
+    // Ask for confirmation first
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await deleteDoc(doc(db, "programs", id));
+        setPrograms(programs.filter((p) => p.id !== id));
+        
+        // Show delete success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'Program has been deleted successfully',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    });
+  };
 
   const filteredPrograms = programs.filter((p) =>
     p.programName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-
     <div className="container py-4">
       <CreatePrograms />
       <h2>Manage Programs</h2>
-      {showSuccess && (
-  <div className="alert alert-success alert-dismissible fade show" role="alert">
-    ✅ Program updated successfully!
-    <button type="button" className="btn-close" onClick={() => setShowSuccess(false)}></button>
-  </div>
-)}
-
-{showDeleteSuccess && (
-  <div className="alert alert-danger alert-dismissible fade show" role="alert">
-    🗑️ Program deleted successfully!
-    <button type="button" className="btn-close" onClick={() => setShowDeleteSuccess(false)}></button>
-  </div>
-)}
-
-      <input
-        type="text"
-        className="form-control mb-3"
-        placeholder="Search programs..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+      
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search programs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
 
       <table className="table table-striped">
         <thead>
@@ -153,25 +176,27 @@ const deleteProgram = async (id: string) => {
               <td>{program.description}</td>
               <td>{program.link}</td>
               <td>
-                {program.duration.from} - {program.duration.to}
+                {formatFullDate(program.duration.from)} - {formatFullDate(program.duration.to)}
               </td>
               <td>{program.frequency}</td>
               <td>{program.participants.length}</td>
               <td>
-                <button
-                  className="btn btn-sm btn-primary me-2"
-                  data-bs-toggle="modal"
-                  data-bs-target="#editModal"
-                  onClick={() => handleEditClick(program)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => deleteProgram(program.id)}
-                >
-                  Delete
-                </button>
+                <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editModal"
+                    onClick={() => handleEditClick(program)}
+                  >
+                    <i className="bi bi-pencil-fill"></i> Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => deleteProgram(program.id)}
+                  >
+                    <i className="bi bi-trash-fill"></i> Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
