@@ -1,41 +1,73 @@
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
+import { getAuth } from "firebase/auth";
 
 /**
  * Soft delete a document by saving its data to an archive collection.
  * @param originalData - The original document data (must include `id`).
  * @param originalCollection - The name of the original collection.
  * @param deletedCollection - The name of the archive/deleted collection.
- * @param deletedBy - The UID or name of the user who deleted the document.
+ * @param deletedByField - The field name to store who deleted the document.
  */
 export const softDelete = async (
   originalData: any,
   originalCollection: string,
   deletedCollection: string,
-  deletedBy: string
 ) => {
   try {
-    const userDocRef = doc(db, "users", deletedBy);
-    const userSnapshot = await getDoc(userDocRef);
-    let deletedByName = deletedBy;
-
-    if (userSnapshot.exists()) {
-      const userData = userSnapshot.data();
-      deletedByName =
-        `${userData.fname || ""} ${userData.mname || ""} ${userData.lname || ""}`.trim() ||
-        userData.email ||
-        deletedBy;
+    const auth = getAuth();
+    const user = auth.currentUser;
+    
+    if (!user) {
+      throw new Error("User not authenticated");
     }
 
+    // Get user details
+    let deletedByInfo = {
+      id: user.uid,
+      name: "Unknown User",
+      email: user.email || "No email"
+    };
+
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userSnapshot = await getDoc(userDocRef);
+      
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.data();
+        deletedByInfo.name = 
+          `${userData.fname || ""} ${userData.mname || ""} ${userData.lname || ""}`.trim() ||
+          userData.email ||
+          "Unknown User";
+      }
+    } catch (userErr) {
+      console.warn("Could not fetch user details, using minimal info:", userErr);
+    }
+
+    // Prepare the deleted document
+// In your softDelete.tsx
+const deletedDoc = {
+  ...originalData,
+  deletedBy: { // Store as object with id for consistent permission checking
+    id: user.uid,
+    name: deletedByInfo.name,
+    email: deletedByInfo.email
+  },
+  deletedAt: serverTimestamp(),
+  originalCollection,
+  // Preserve important fields
+  createdAt: originalData.createdAt,
+  id: originalData.id
+};
+    // Save to deleted collection
     const deletedRef = doc(db, deletedCollection, originalData.id);
-    await setDoc(deletedRef, {
-      ...originalData,
-      deletedAt: new Date(),
-      deletedBy: deletedByName,
-      originalCollection,
-    });
+    await setDoc(deletedRef, deletedDoc);
+
+    console.log("Successfully soft-deleted document:", originalData.id);
+    return true;
   } catch (err) {
-    console.error("Error archiving deleted document:", err);
+    console.error("Error in softDelete:", err);
+    throw err; // Re-throw to handle in calling function
   }
 };
 
@@ -61,4 +93,9 @@ export const checkIfDeletedCommunication = async (id: string): Promise<boolean> 
   return docSnap.exists();
 };
 
-export default softDelete;
+// Export all functions
+export default {
+  softDelete,
+  checkIfDeletedUser,
+  checkIfDeletedCommunication
+};

@@ -5,8 +5,7 @@ import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, getDocs, getDoc, collection, query, where } from "firebase/firestore";
 import styles from "../styles/components/NewAuthForm.module.css"; // Make sure the CSS exists
-import { softDelete, checkIfDeletedUser } from "../pages/modules/inbox-modules/softDelete";
-
+import { checkIfDeletedUser, softDelete } from '../pages/modules/inbox-modules/softDelete';
 const AuthForm = () => {
   const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -76,7 +75,7 @@ const AuthForm = () => {
         const existingUserDoc = userSnapshot.docs[0];
         const existingUserData = { ...existingUserDoc.data(), id: existingUserDoc.id };
 
-        await softDelete(existingUserData, "users", "deleted_users", "");
+        await softDelete(existingUserData, "users", "deleted_users");
       }
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);

@@ -146,7 +146,7 @@ const UserManagement = () => {
       const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
 
       if (data) {
-        await softDelete(data, "users", "deleted_users", "deletedBy");
+        await softDelete(data, "users", "deleted_users");
         await deleteDoc(userDoc);
         setUsers((prev) => prev.filter((user) => user.id !== id));
         showNotification("✅ User Deleted and Archived Successfully!", "success");

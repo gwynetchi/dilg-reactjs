@@ -438,22 +438,32 @@
       try {
         const commDoc = doc(db, "communications", id);
         const snapshot = await getDoc(commDoc);
-        const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
-    
-        if (data) {
-          await softDelete(data, "communications", "deleted_communications", "deletedBy");
-          await deleteDoc(commDoc);
-          showAlert("Communication Deleted and Archived successfully!", "success");
-          fetchSentCommunications(); // Refresh the list
-        } else {
+        
+        if (!snapshot.exists()) {
           showAlert("Communication not found!", "error");
+          return;
         }
-      } catch (error) {
-        console.error("Error deleting communication:", error);
-        showAlert("Failed to delete communication. Please try again.", "error");
-      }
-    };
     
+        const data = { id, ...snapshot.data() };
+        
+        // Add debug logging
+        console.log("Attempting to soft delete:", id, data);
+        
+        await softDelete(data, "communications", "deleted_communications");
+        await deleteDoc(commDoc);
+        
+        showAlert("Communication Deleted and Archived successfully!", "success");
+        fetchSentCommunications();
+        
+        // Debug log
+        console.log("Verify deletion in Firestore console under deleted_communications collection");
+      } catch (error) {
+        console.error("Full error details:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        showAlert(`Failed to delete communication: ${errorMessage}`, "error");
+      }
+    };    
+
     const getIcon = (type: string) => {
       switch (type) {
         case "success":
