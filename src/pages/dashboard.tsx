@@ -814,7 +814,7 @@ const Dashboard = () => {
       </div>
       {showViewModal && selectedReport && (
         <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
+          <div className="modal-dialog ">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Report Details</h5>
