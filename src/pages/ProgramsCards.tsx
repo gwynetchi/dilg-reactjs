@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { onSnapshot, collection, query, where } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, doc, getDoc, getFirestore } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Spinner, Card, Row, Col, Container, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -24,11 +24,25 @@ interface Program {
   participants: string[];
 }
 
-const MyProgramInbox: React.FC = () => {
+const ProgramCards: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null); // ✅ Add this
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(getFirestore(), "users", user.uid));
+        const userRole = userDoc.data()?.role?.toLowerCase();
+        setRole(userRole);
+      }
+    };
+    fetchRole();
+  }, []);
 
   // Get current user ID
   useEffect(() => {
@@ -57,7 +71,7 @@ const MyProgramInbox: React.FC = () => {
     return () => unsubscribe();
   }, [userId]);
 
-  if (loading)
+  if (loading || !role)
     return (
       <div className="text-center mt-5">
         <Spinner animation="border" />
@@ -74,7 +88,7 @@ const MyProgramInbox: React.FC = () => {
           {programs.map((program) => (
             <Col key={program.id}>
               <Card
-                onClick={() => navigate(program.id)}
+                onClick={() => navigate(`/${role}/programs/${program.id}`)}
                 style={{ cursor: 'pointer', height: '100%' }}
                 className="shadow-sm h-100"
               >
@@ -127,4 +141,4 @@ const MyProgramInbox: React.FC = () => {
   );
 };
 
-export default MyProgramInbox;
+export default ProgramCards;

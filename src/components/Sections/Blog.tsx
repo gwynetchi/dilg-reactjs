@@ -5,8 +5,7 @@ import styled from "styled-components";
 //import FullButton from "../Buttons/FullButton";
 import TestimonialSlider from "../Elements/TestimonialSlider";
 import OrgChartViewer from "../Elements/OrgChartViewer";
-
-
+import MapSection from "../Elements/MapSection";
 
 // interface BlogPost {
 //   title: string;
@@ -243,8 +242,9 @@ export default function Blog() {
             </p>
             
           </HeaderInfo>
-          <OrgChartViewer imageUrl="/orgchart.png" />
-          
+          <OrgChartViewer  />
+          <MapSection/>
+
 
 
         </div>
