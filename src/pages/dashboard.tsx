@@ -84,6 +84,7 @@ const dashboardStyles = {
 
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfilePic, setUserProfilePic] = useState<string>("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
   const [totalReports, setTotalReports] = useState(0);
@@ -123,6 +124,7 @@ const Dashboard = () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           setUserRole(userDoc.data().role);
+          setUserProfilePic(userDoc.data().userProfilePic || "");
         }
       } else {
         setCurrentUser(null);
@@ -138,6 +140,10 @@ const Dashboard = () => {
       try {
         const usersSnapshot = await getDocs(collection(db, "users"));
         setActiveUsers(usersSnapshot.size);
+        const userDocs = usersSnapshot.docs.map(doc => doc.data());
+        const profileImages = userDocs.map(user => user.profileImage).filter(Boolean);
+        setUserProfilePic(profileImages[0] || "");
+        userProfilePic && setUserProfilePic(userProfilePic);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -170,6 +176,7 @@ const Dashboard = () => {
           return monthMatches && yearMatches;
         });
 
+        // In the fetchReportsData function, modify the enrichedReports mapping:
         const enrichedReports = await Promise.all(
           filtered.map(async (report) => {
             const userDoc = await getDoc(doc(db, "users", report.submittedBy));
@@ -180,14 +187,29 @@ const Dashboard = () => {
                     userData.mname ? userData.mname + " " : ""
                   }${userData.lname}`
                 : userData.email || "Anonymous";
+            
+            // Get the profile image URL (using the snapshot)
+            let profileImageUrl = "";
+            if (userData.profileImage) {
+              // If it's already a URL, use it directly
+              if (typeof userData.profileImage === 'string') {
+                profileImageUrl = userData.profileImage;
+              }
+              // If it's a Firebase Storage reference, get the download URL
+              else if (userData.profileImage.getDownloadURL) {
+                profileImageUrl = await userData.profileImage.getDownloadURL();
+              }
+            }
+
             return {
               ...report,
               userName: fullName,
               email: userData.email || "No email available",
+              profileImage: profileImageUrl // Store the resolved URL
             };
           })
         );
-
+        
         enrichedReports.sort((a, b) => {
           const dateA = a.submittedAt?.toDate?.() || new Date(0);
           const dateB = b.submittedAt?.toDate?.() || new Date(0);
@@ -591,17 +613,52 @@ const Dashboard = () => {
                           
                           return (
                             <tr key={report.id}>
-                              <td>
-                                <div className="d-flex align-items-center">
-                                  <div className="rounded-circle bg-light text-center d-flex align-items-center justify-content-center me-2" style={{width: "30px", height: "30px", minWidth: "30px"}}>
-                                    {report.userName?.charAt(0) || "U"}
-                                  </div>
-                                  <div>
-                                    <div className="fw-bold small">{report.userName || "Anonymous"}</div>
-                                    <div className="text-muted small">{report.email}</div>
-                                  </div>
+                            <td>
+                              <div className="d-flex align-items-center">
+                                {report.profileImage ? (
+                                  <img
+                                    src={report.profileImage}
+                                    alt="Profile"
+                                    className="rounded-circle"
+                                    style={{ 
+                                      width: "40px", 
+                                      height: "40px", 
+                                      objectFit: "cover",
+                                      border: "2px solid #f8f9fa"
+                                    }}
+                                    onError={(e) => {
+                                      // Fallback if image fails to load
+                                      e.currentTarget.onerror = null;
+                                      e.currentTarget.style.display = 'none';
+                                      const parent = e.currentTarget.parentElement;
+                                      if (parent) {
+                                        const fallback = parent.querySelector('.placeholder-profile') as HTMLElement;
+                                        if (fallback) fallback.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                <div 
+                                  className="placeholder-profile" 
+                                  style={{ 
+                                    width: "40px", 
+                                    height: "40px", 
+                                    backgroundColor: "#e9ecef", 
+                                    borderRadius: "50%",
+                                    display: report.profileImage ? "none" : "flex", 
+                                    alignItems: "center", 
+                                    justifyContent: "center",
+                                    border: "2px solid #f8f9fa"
+                                  }}
+                                >
+                                  <i className="bx bx-user" style={{ fontSize: "20px", color: "#adb5bd" }}></i>
                                 </div>
-                              </td>
+                                <div className="ms-2">
+                                  <div className="fw-bold small">{report.userName || "Anonymous"}</div>
+                                  <div className="text-muted small">{report.email}</div>
+                                </div>
+                              </div>
+                            </td>
                               <td className="small">{date ? `${date.toLocaleString('default', { month: 'long' })} ${date.getDate()}, ${date.getFullYear()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : "N/A"}</td>
                               <td>
                                 <span 
