@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, deleteDoc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { db, secondaryAuth } from "../firebase";
 import { softDelete } from "../pages/modules/inbox-modules/softDelete";
@@ -53,6 +53,26 @@ const UserManagement = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
+    // Set up real-time listener for users collection
+    useEffect(() => {
+      setLoading(true);
+      const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+        const userList: UserType[] = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as UserType[];
+        setUsers(userList);
+        setLoading(false);
+      }, (error) => {
+        console.error("Error listening to users:", error);
+        showNotification("❌ Failed to listen to users updates.", "error");
+        setLoading(false);
+      });
+  
+      // Clean up the listener when component unmounts
+      return () => unsubscribe();
+    }, []);
+  
   useEffect(() => {
     fetchUsers();
   }, []);

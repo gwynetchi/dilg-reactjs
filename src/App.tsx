@@ -1,6 +1,6 @@
 import React, { useState, useEffect, JSX } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
@@ -144,36 +144,34 @@ const App: React.FC = () => {
         setLoading(false);
         return;
       }
-  
+
       const uid = currentUser.uid;
       setUser(currentUser);
-  
+
       // Set up real-time listener for user deletion
       const deletedRef = doc(db, "deleted_users", uid);
       const unsubscribeDeleted = onSnapshot(deletedRef, async (deletedSnap) => {
         if (deletedSnap.exists()) {
           console.warn("This account is marked as deleted. Signing out...");
-          await auth.signOut();
+          await signOut(auth);  // Sign out user if they are marked as deleted
           setUser(null);
           setRole(null);
           setLoading(false);
         }
       });
-  
+
       // Fetch role from users collection
       const userDocRef = doc(db, "users", uid);
       const userDoc = await getDoc(userDocRef);
       setRole(userDoc.exists() ? userDoc.data().role : null);
       setLoading(false);
-  
+
       // Cleanup Firestore listener on unmount or auth change
       return () => unsubscribeDeleted();
     });
-  
+
     return () => unsubscribeAuth();
   }, []);
-  
-  
   const getDashboardPath = () => {
     return role && roleRoutesConfig[role] ? roleRoutesConfig[role][0].path : "/login";
   };
@@ -183,15 +181,14 @@ const App: React.FC = () => {
       return (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="spinner-border text-primary" role="status">
-
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
       );
-    
-    if (!user) return <Navigate to="/dashboard" replace />;
+
+    if (!user) return <Navigate to="/login" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
-    
+
     return children;
   };
 
@@ -202,42 +199,40 @@ const App: React.FC = () => {
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
-    );  
+    );
 
-  return (
-    <Router>
-       
-      <div className="app-container">
-        {user && role && (
-          <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
-        <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
-        {user && (
-  <>
-    <CheckFrequency onDuePrograms={setDuePrograms} />
-    {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
-  </>
-)}
-
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/dashboard" element={<Landing />} />
-            <Route path="/login" element={<AuthForm />} />
-            <Route path="/register-success" element={<Navigate to="/login" replace />} />
-           
-            {/* Protected Routes (Dynamically Rendered) */}
-            {role &&
-              roleRoutesConfig[role]?.map(({ path, element }) => (
-                <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
-              ))}
-              
-            {/* Catch-All Route */}
-            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
-          </Routes>
-
+    return (
+      <Router>
+        <div className="app-container">
+          {user && role && (
+            <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+          )}
+          <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
+            {user && (
+              <>
+                <CheckFrequency onDuePrograms={setDuePrograms} />
+                {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
+              </>
+            )}
+  
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/dashboard" element={<Landing />} />
+              <Route path="/login" element={<AuthForm />} />
+              <Route path="/register-success" element={<Navigate to="/login" replace />} />
+  
+              {/* Protected Routes (Dynamically Rendered) */}
+              {role &&
+                roleRoutesConfig[role]?.map(({ path, element }) => (
+                  <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
+                ))}
+  
+              {/* Catch-All Route */}
+              <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
+            </Routes>
+          </div>
         </div>
-      </div>
-    </Router>
-  );
-};
-
+      </Router>
+    );
+  };  
 export default App;

@@ -285,19 +285,19 @@ const Inbox: React.FC = () => {
       return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
     });
 
-    useEffect(() => {
-      const urgent = filteredCommunications.filter(msg =>
-        msg.deadline ? getDeadlineStatus(msg.deadline) === 'urgent' : false
-      ).length;
-    
-      const pastDue = filteredCommunications.filter(msg =>
-        msg.deadline ? getDeadlineStatus(msg.deadline) === 'past-due' : false
-      ).length;
-    
-      setUrgentCount(urgent);
-      setPastDueCount(pastDue);
-    }, [filteredCommunications]); // Recalculate when filteredCommunications update
-    
+useEffect(() => {
+  const urgent = filteredCommunications.filter(msg =>
+    msg.deadline ? getDeadlineStatus(msg.deadline) === 'urgent' : false
+  ).length;
+
+  const pastDue = filteredCommunications.filter(msg =>
+    msg.deadline ? getDeadlineStatus(msg.deadline) === 'past-due' : false
+  ).length;
+
+  setUrgentCount(urgent);
+  setPastDueCount(pastDue);
+}, [filteredCommunications]); // Recalculate when filteredCommunications update
+
   return (
     <div className="dashboard-container">
         <main>
@@ -305,13 +305,13 @@ const Inbox: React.FC = () => {
             <div className="left">
               <h1>Inbox</h1>
               <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a href="/dashboards">Home</a>
-              </li>
-              <li className="breadcrumb-item active">Dashboard Tools</li>
-            </ol>
-          </nav>
+                <ol className="breadcrumb">
+                  <li className="breadcrumb-item">
+                    <a href="/dashboards">Home</a>
+                  </li>
+                  <li className="breadcrumb-item active">Dashboard Tools</li>
+                </ol>
+              </nav>
             </div>
           </div>
 
