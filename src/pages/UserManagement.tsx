@@ -160,26 +160,33 @@ const UserManagement = () => {
 
   const confirmDelete = async (id: string) => {
     setShowConfirm(false);
-
+  
     try {
       const userDoc = doc(db, "users", id);
       const snapshot = await getDoc(userDoc);
-      const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
-
-      if (data) {
-        await softDelete(data, "users", "deleted_users");
-        await deleteDoc(userDoc);
-        setUsers((prev) => prev.filter((user) => user.id !== id));
-        showNotification("✅ User Deleted and Archived Successfully!", "success");
-      } else {
+      
+      if (!snapshot.exists()) {
         showNotification("❌ User not found", "error");
+        return;
       }
+  
+      const data = { id, ...snapshot.data() };
+      console.log("Archiving user:", id, data);
+  
+      // Archive first
+      await softDelete(data, "users", "deleted_users");
+      console.log("Archive successful, now deleting original...");
+  
+      // Then delete original
+      await deleteDoc(userDoc);
+      setUsers((prev) => prev.filter((user) => user.id !== id));
+      
+      showNotification("✅ User Deleted and Archived Successfully!", "success");
     } catch (error) {
-      console.error("Error deleting user:", error);
-      showNotification("❌ Failed to Delete User! Please check permissions or try again later.", "error");
+      console.error("Error in user deletion process:", error);
+      showNotification("❌ Failed to Delete User! " + (error as any).message, "error");
     }
   };
-
   const handleEditClick = (user: UserType) => {
     setEditingUser(user);
     setEditData({

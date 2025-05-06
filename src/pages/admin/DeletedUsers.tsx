@@ -6,6 +6,7 @@ import {
   getDoc,
   deleteDoc,
   setDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebase";
 
@@ -23,21 +24,41 @@ const DeletedUsers = () => {
       const users = await Promise.all(
         snapshot.docs.map(async (document) => {
           const userData = document.data();
-          console.log(userData);
-          const deletedByUID = userData.deletedBy;
-          let deletedByName = deletedByUID;
-
-          const userDocRef = doc(db, "users", deletedByUID);
-          const userSnapshot = await getDoc(userDocRef);
-          if (userSnapshot.exists()) {
-            const user = userSnapshot.data();
-            deletedByName =
-              `${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim() ||
-              user.email ||
-              deletedByUID;
+          console.log("Raw user data:", userData);
+          
+          // Handle both string and object deletedBy formats
+          let deletedByUID = typeof userData.deletedBy === 'string' 
+            ? userData.deletedBy 
+            : userData.deletedBy?.id;
+          
+          let deletedByName = typeof userData.deletedBy === 'string'
+            ? userData.deletedBy
+            : userData.deletedBy?.name || userData.deletedBy?.email;
+  
+          // Only fetch user details if we have a UID and need more info
+          if (deletedByUID && !deletedByName) {
+            try {
+              const userDocRef = doc(db, "users", deletedByUID);
+              const userSnapshot = await getDoc(userDocRef);
+              if (userSnapshot.exists()) {
+                const user = userSnapshot.data();
+                deletedByName = 
+                  `${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim() ||
+                  user.email ||
+                  deletedByUID;
+              }
+            } catch (err) {
+              console.warn("Couldn't fetch deleter details:", err);
+            }
           }
-
-          return { id: document.id, ...userData, deletedByName };
+  
+          return { 
+            id: document.id, 
+            ...userData,
+            deletedByName: deletedByName || "System",
+            // Convert Firestore Timestamp to JS Date
+            deletedAt: userData.deletedAt?.toDate?.() || null
+          };
         })
       );
       setDeletedUsers(users);
@@ -47,27 +68,27 @@ const DeletedUsers = () => {
       setLoading(false);
     }
   };
-
   const handleRestoreUser = async (user: any) => {
     try {
+      // Remove archive-specific fields before restoring
+      const { deletedAt, deletedBy, originalCollection, ...userData } = user;
+      
       await setDoc(doc(db, "users", user.id), {
-        ...user,
+        ...userData,
         restoredAt: new Date(),
+        // Preserve original createdAt if it exists
+        createdAt: userData.createdAt || serverTimestamp()
       });
-
+  
       await deleteDoc(doc(db, "deleted_users", user.id));
-
       setDeletedUsers((prev) => prev.filter((u) => u.id !== user.id));
       setShowConfirm(false);
-
-      // ✅ Show success message
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
     } catch (error) {
       console.error("Failed to restore user:", error);
     }
   };
-
   useEffect(() => {
     fetchDeletedUsers();
   }, []);
@@ -130,14 +151,15 @@ const DeletedUsers = () => {
                       <td>{user.role}</td>
                       <td>{user.password}</td>
                       <td>
-                        {user.deletedAt?.seconds &&
-                          new Date(user.deletedAt.seconds * 1000).toLocaleString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "numeric",
-                          })}
+                        {user.deletedAt
+                          ? user.deletedAt.toLocaleString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "numeric",
+                            })
+                          : "Unknown"}
                       </td>
                       <td>{user.deletedByName || "N/A"}</td>
                       <td>
