@@ -107,7 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           if (docSnap.exists()) {
             const userData = docSnap.data();
             setUserRole(userData.role);
-            setUserProfilePic(userData.profileImage || "/default-profile.png");
+            setUserProfilePic(userData.profileImage || "");
           }
         });
   
@@ -418,12 +418,35 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 onClick={() => navigate(`/${userRole.toLowerCase()}/profile`)}
                 aria-label="User profile"
               >
-                <img
-                  src={userProfilePic}
-                  alt="User"
-                  className="rounded-circle"
-                  style={{ width: "40px", height: "40px", objectFit: "cover" }}
-                />
+                {userProfilePic && userProfilePic.trim() !== "" ? (
+                  <img
+                    src={userProfilePic}
+                    alt="Profile"
+                    className="rounded-circle"
+                    style={{ 
+                      width: "40px", 
+                      height: "40px", 
+                      objectFit: "cover",
+                      border: "2px solid #f8f9fa"
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="placeholder-profile" 
+                    style={{ 
+                      width: "40px", 
+                      height: "40px", 
+                      backgroundColor: "#e9ecef", 
+                      borderRadius: "50%",
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      border: "2px solid #f8f9fa"
+                    }}
+                  >
+                    <i className="bx bx-user" style={{ fontSize: "20px", color: "#adb5bd" }}></i>
+                  </div>
+                )}
               </button>
             </div>
           </div>
