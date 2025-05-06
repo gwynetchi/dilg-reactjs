@@ -20,6 +20,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(false);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [editData, setEditData] = useState({
     fname: "",
@@ -31,7 +32,7 @@ const UserManagement = () => {
   });
   
   const [showPassword, setShowPassword] = useState(false);
-    const [updatedRole, setUpdatedRole] = useState<string>("");
+  const [updatedRole, setUpdatedRole] = useState<string>("");
   const [filter, setFilter] = useState("All");
   const [newUser, setNewUser] = useState<Omit<UserType, "id"> & { password: string }>({
     email: "",
@@ -274,10 +275,27 @@ const UserManagement = () => {
       password: "",
     });
   };
-  const filteredUsers = filter === "All"
-  ? users
-  : users.filter((user) => user.role === filter);
 
+  const searchUsers = (users: UserType[], term: string) => {
+    if (!term) return users;
+  
+    const lowerTerm = term.toLowerCase();
+    return users.filter(user => {
+      return (
+        (user.fname?.toLowerCase().includes(lowerTerm) || 
+         user.mname?.toLowerCase().includes(lowerTerm) || 
+         user.lname?.toLowerCase().includes(lowerTerm) ||
+         user.email.toLowerCase().includes(lowerTerm) ||
+         user.role.toLowerCase().includes(lowerTerm))
+      );
+    });
+  };
+
+  const filteredUsers = searchUsers(
+    filter === "All" ? users : users.filter((user) => user.role === filter),
+    searchTerm
+  );
+  
   return (
     <div className="dashboard-container">
       <section id="content">
@@ -353,8 +371,18 @@ const UserManagement = () => {
           <div className="relative-container">
             <div className="table-data">
               <div className="order">
-                <div className="head d-flex justify-content-between align-items-center">
-                  <h3>Registered Users</h3>
+              <div className="head d-flex justify-content-between align-items-center">
+                <h3>Registered Users</h3>
+                <div className="d-flex gap-2">
+                  <div className="search-box">
+                    <i className="bx bx-search"></i>
+                    <input 
+                      type="text" 
+                      placeholder="Search users..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
                   <select
                     className="form-select form-select-sm w-auto"
                     value={filter}
@@ -367,7 +395,7 @@ const UserManagement = () => {
                     <option value="Viewer">Viewer</option>
                   </select>
                 </div>
-
+              </div>
                 {loading ? (
                   <div className="spinner-overlay">
                     <div className="spinner"></div>
