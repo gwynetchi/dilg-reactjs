@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import { getAuth } from "firebase/auth";
 import React, { useState, useEffect } from "react";
 import Select, { ActionMeta, MultiValue } from "react-select";
@@ -17,27 +16,32 @@ import {
 } from "firebase/firestore";
 import { softDelete } from "./../pages/modules/inbox-modules/softDelete";
 import { db } from "../firebase";
-import "../styles/components/dashboard.css";
-=======
-  import { getAuth } from "firebase/auth"; // Import Firebase auth
-  import React, { useState, useEffect } from "react";
-  import Select, { ActionMeta, MultiValue } from "react-select";
-  import {
-    doc,
-    getDoc,
-    collection,
-    addDoc,
-    deleteDoc,
-    getDocs,
-    serverTimestamp,
-    query,
-    where,
-    getDocs as firestoreGetDocs,
-    updateDoc,
-  } from "firebase/firestore";
-  import { softDelete } from "./../pages/modules/inbox-modules/softDelete"; 
-  import Swal from 'sweetalert2'; // Import SweetAlert2
->>>>>>> Stashed changes
+import Swal from 'sweetalert2';
+
+interface User {
+  role: string;
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+interface Communication {
+  id: string;
+  subject: string;
+  recipients: string[];
+  deadline: { seconds: number };
+  remarks: string;
+  submissionLink?: string;
+  monitoringLink?: string;
+  imageUrl?: string;
+  createdAt?: Date;
+}
+
+interface Alert {
+  id: number;
+  type: "success" | "error" | "warning" | "info";
+  message: string;
+}
 
 const Communication: React.FC = () => {
   const [subject, setSubject] = useState("");
@@ -50,15 +54,8 @@ const Communication: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deadlineError, setDeadlineError] = useState<string | null>(null);
-  const [users, setUsers] = useState<{
-    role: string; id: string; fullName: string; email: string 
-  }[]>([]);
-  const [alert, setAlert] = useState<{
-    message: string; 
-    type: string;
-    id?: number;
-  } | null>(null);
-  const [sentCommunications, setSentCommunications] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [sentCommunications, setSentCommunications] = useState<Communication[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
@@ -68,7 +65,8 @@ const Communication: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
+  const [filteredCommunications, setFilteredCommunications] = useState<Communication[]>([]);
+  const [alert, setAlert] = useState<Alert | null>(null);
 
   // Group users by roles with counts
   const groupedOptions = Object.entries(
@@ -115,11 +113,11 @@ const Communication: React.FC = () => {
       console.error("Error fetching users:", error);
     }
   };
-
+  
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setSelectedFile(file || null);
-    setImageUrl("");
+    setImageUrl(""); // Clear any previous image URL
   };
   
   const fetchSentCommunications = async () => {
@@ -127,7 +125,6 @@ const Communication: React.FC = () => {
     const user = auth.currentUser;
     if (user) {
       try {
-<<<<<<< Updated upstream
         const communicationsRef = collection(db, "communications");
         const q = query(communicationsRef, where("createdBy", "==", user.uid));
         const querySnapshot = await firestoreGetDocs(q);
@@ -136,13 +133,18 @@ const Communication: React.FC = () => {
           const sentList = querySnapshot.docs.map((doc) => {
             const data = doc.data();
             const createdAt = data.createdAt ? data.createdAt.toDate() : null;
+
             return {
               id: doc.id,
               ...data,
               createdAt,
-            };
+              recipients: data.recipients || [],
+              deadline: data.deadline || { seconds: 0 },
+              remarks: data.remarks || "",
+            } as Communication;
           });
   
+          // Sort by createdAt field
           sentList.sort((a, b) => {
             const dateA = a.createdAt ? a.createdAt.getTime() : 0;
             const dateB = b.createdAt ? b.createdAt.getTime() : 0;
@@ -150,8 +152,11 @@ const Communication: React.FC = () => {
           });
   
           setSentCommunications(sentList);
+          setFilteredCommunications(sentList);
         } else {
+          console.log("No sent communications found.");
           setSentCommunications([]);
+          setFilteredCommunications([]);
         }
       } catch (error) {
         console.error("Error fetching sent communications:", error);
@@ -166,14 +171,20 @@ const Communication: React.FC = () => {
     );
   
     filtered.sort((a, b) => {
-      const aField = a[sortField];
-      const bField = b[sortField];
+      const aField = a[sortField as keyof Communication];
+      const bField = b[sortField as keyof Communication];
   
       if (aField && bField) {
-        const aVal = aField instanceof Date ? aField.getTime() : aField;
-        const bVal = bField instanceof Date ? bField.getTime() : bField;
+        const aVal = aField instanceof Date ? aField.getTime() : 
+                    typeof aField === 'string' ? aField.toLowerCase() : 
+                    aField;
+        const bVal = bField instanceof Date ? bField.getTime() : 
+                    typeof bField === 'string' ? bField.toLowerCase() : 
+                    bField;
   
-        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        return sortOrder === "asc" ? 
+          (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) : 
+          (bVal < aVal ? -1 : bVal > aVal ? 1 : 0);
       }
       return 0;
     });
@@ -199,215 +210,6 @@ const Communication: React.FC = () => {
       
       if (!removedValue.isSelectAll) {
         setRecipients(prev => prev.filter(id => id !== removedValue.value));
-=======
-        console.log("Fetching users...");
-        const usersRef = collection(db, "users");
-        const querySnapshot = await getDocs(usersRef);
-
-        if (querySnapshot.empty) {
-          console.warn("No users found in Firestore.");
-        }
-
-        const usersList = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          let fullName = "";
-
-          if (data.fname && data.lname) {
-            fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
-          } else {
-            fullName = data.email || "Unknown User"; // Default to email if full name is missing
-          }
-
-          return { id: doc.id, fullName, email: data.email, role: data.role || "No Role"  };
-        });
-
-        setUsers(usersList);
-        console.log("Final User List:", usersList);
-      } catch (error) {
-        console.error("Error fetching users:", error instanceof Error ? error.message : error);
-      }
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      setSelectedFile(file || null);
-      setImageUrl(""); // Clear any previous image URL
-    };
-    
-    
-    const fetchSentCommunications = async () => {
-      const auth = getAuth(); 
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const communicationsRef = collection(db, "communications");
-          const q = query(communicationsRef, where("createdBy", "==", user.uid));
-          const querySnapshot = await firestoreGetDocs(q);
-    
-          if (!querySnapshot.empty) {
-            const sentList = querySnapshot.docs.map((doc) => {
-              const data = doc.data();
-              const createdAt = data.createdAt ? data.createdAt.toDate() : null; // Convert timestamp
-    
-              return {
-                id: doc.id,
-                ...data,
-                createdAt, // Add converted date
-              };
-            });
-    
-            // Sort by createdAt field (ensure it's a valid date)
-            sentList.sort((a, b) => {
-              const dateA = a.createdAt ? a.createdAt.getTime() : 0; // Ensure it's a timestamp
-              const dateB = b.createdAt ? b.createdAt.getTime() : 0;
-              return dateB - dateA;
-            });
-    
-            setSentCommunications(sentList);
-          } else {
-            console.log("No sent communications found.");
-            setSentCommunications([]);
-          }
-        } catch (error) {
-          console.error("Error fetching sent communications:", error);
-        }
-      }
-    };
-    useEffect(() => {
-      let filtered = sentCommunications.filter((comm) =>
-        comm.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comm.remarks.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    
-      filtered.sort((a, b) => {
-        const aField = a[sortField];
-        const bField = b[sortField];
-    
-        if (aField && bField) {
-          const aVal = aField instanceof Date ? aField.getTime() : aField;
-          const bVal = bField instanceof Date ? bField.getTime() : bField;
-    
-          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
-        }
-        return 0;
-      });
-    
-      setFilteredCommunications(filtered);
-    }, [searchTerm, sentCommunications, sortField, sortOrder]);
-    
-    
-    useEffect(() => {
-      fetchUsers();
-      fetchSentCommunications(); // Fetch sent communications on mount
-    }, []);
-    const handleRecipientChange = (
-      newValue: MultiValue<{ value: string; label: string; isSelectAll?: boolean; role?: string }>,
-      actionMeta: ActionMeta<{ value: string; label: string; isSelectAll?: boolean; role?: string }>
-    ) => {
-      // Handle all removal cases (clicking X or clicking on selected item)
-      if (actionMeta.action === 'remove-value' || 
-          actionMeta.action === 'pop-value' ||
-          actionMeta.action === 'deselect-option') {
-        const removedValue = actionMeta.removedValue || actionMeta.option;
-        
-        if (!removedValue) return;
-        
-        // If removing a regular user
-        if (!removedValue.isSelectAll) {
-          setRecipients(prev => prev.filter(id => id !== removedValue.value));
-          return;
-        }
-        
-        // If removing a "Select All" option
-        if (removedValue.isSelectAll && removedValue.role) {
-          const usersInRole = users
-            .filter(user => user.role === removedValue.role)
-            .map(user => user.id);
-          setRecipients(prev => prev.filter(id => !usersInRole.includes(id)));
-          return;
-        }
-      }
-      
-      // Handle additions (including select/unselect all toggle)
-      const selectedOptions = newValue;
-      let newRecipients = [...recipients];
-      
-      // Check for any toggled "Select All" options
-      const toggledSelectAlls = selectedOptions
-        .filter(option => option.isSelectAll && option.role)
-        .map(option => option.role);
-    
-      // Process each toggled role
-      toggledSelectAlls.forEach(role => {
-        if (!role) return;
-        
-        const usersInRole = users
-          .filter(user => user.role === role)
-          .map(user => user.id);
-    
-        // Check if this "Select All" was just clicked (added to selection)
-        const wasJustSelected = selectedOptions.some(
-          opt => opt.isSelectAll && opt.role === role && !recipients.includes(opt.value)
-        );
-    
-        if (wasJustSelected) {
-          // Determine if we should select or deselect all
-          const allCurrentlySelected = usersInRole.every(id => recipients.includes(id));
-          
-          if (allCurrentlySelected) {
-            // Deselect all
-            newRecipients = newRecipients.filter(id => !usersInRole.includes(id));
-          } else {
-            // Select all - first remove existing users from this role
-            newRecipients = newRecipients.filter(id => {
-              const user = users.find(u => u.id === id);
-              return user?.role !== role;
-            });
-            // Then add all users from this role
-            newRecipients = [...newRecipients, ...usersInRole];
-          }
-        }
-      });
-    
-      // Handle regular selections (non-select-all options)
-      const regularSelections = selectedOptions
-        .filter(option => !option.isSelectAll)
-        .map(option => option.value);
-    
-      // Combine all selections
-      const allSelections = [...new Set([...newRecipients, ...regularSelections])];
-      
-      setRecipients(allSelections);
-    };
-    
-    const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
-      const iconMap = {
-        success: 'success',
-        error: 'error',
-        warning: 'warning',
-        info: 'info'
-      } as const;
-      
-      Swal.fire({
-        title: type.charAt(0).toUpperCase() + type.slice(1),
-        text: message,
-        icon: type,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 5000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-          toast.addEventListener('mouseenter', Swal.stopTimer);
-          toast.addEventListener('mouseleave', Swal.resumeTimer);
-        }
-      });
-    };
-
-    const handleSubmit = async () => {
-      if (!subject || recipients.length === 0 || !deadline || !remarks) {
-        showAlert("Please fill in all fields before sending", "warning");
->>>>>>> Stashed changes
         return;
       }
       
@@ -461,304 +263,123 @@ const Communication: React.FC = () => {
     
     setRecipients(allSelections);
   };
-
+  
   const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
-    setAlert(null);
     
-    setTimeout(() => {
-      const alertId = Date.now();
-      setAlert({ message, type, id: alertId });
-      
-      const timer = setTimeout(() => {
-        setAlert(prev => {
-          if (prev?.id === alertId) {
-            return null;
-          }
-          return prev;
-        });
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }, 50);
+    Swal.fire({
+      title: type.charAt(0).toUpperCase() + type.slice(1),
+      text: message,
+      icon: type,
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 5000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
   };
 
   const handleSubmit = async () => {
     if (!subject || recipients.length === 0 || !deadline || !remarks) {
-      showAlert("Please fill in all fields before sending");
+      showAlert("Please fill in all fields before sending", "warning");
       return;
     }
-  
-    const currentDateTime = new Date();
-    const deadlineDateTime = new Date(deadline);
 
-    currentDateTime.setMilliseconds(0);
-    deadlineDateTime.setMilliseconds(0);
-
-    if (deadlineDateTime <= currentDateTime) {
-      showAlert("Invalid Deadline: The deadline must be in the future (including time)", "warning");
+    if (deadlineError) {
+      showAlert("Please fix the deadline error before sending", "warning");
       return;
     }
-<<<<<<< Updated upstream
 
-    if (
-      (submissionLink && !submissionLink.startsWith("https://")) ||
-      (monitoringLink && !monitoringLink.startsWith("https://"))
-    ) {
-      showAlert("Only HTTPS links are allowed for submission and monitoring!");
-      return;
-    }
-  
     setLoading(true);
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-  
+      
       if (!user) {
-        showAlert("You must be logged in to send a communication");
-=======
-      if (
-        (submissionLink && !submissionLink.startsWith("https://")) ||
-        (monitoringLink && !monitoringLink.startsWith("https://"))
-      ) {
-        showAlert("Only HTTPS links are allowed for submission and monitoring!", "warning");
+        showAlert("You must be logged in to send communications", "error");
         return;
       }
-    
-      setLoading(true);
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-    
-        if (!user) {
-          showAlert("You must be logged in to send a communication", "error");
-          setLoading(false);
-          return;
-        }
-    
-        // Upload file if one was selected
-        let uploadedFileUrl = imageUrl; // Use existing URL if editing
-        if (selectedFile && !isEditing) {
-          const formData = new FormData();
-          formData.append("file", selectedFile);
-          formData.append("upload_preset", "uploads");
-          formData.append("resource_type", "auto");
-          formData.append("folder", `communications/${user.uid}`);
-    
-          const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
-            method: "POST",
-            body: formData,
-          });
-    
-          if (!response.ok) {
-            throw new Error("File upload failed.");
-          }
-    
-          const data = await response.json();
-          uploadedFileUrl = data.secure_url;
-        }
-    
-        if (isEditing && editingId) {
-          // Update existing communication
-          const docRef = doc(db, "communications", editingId);
-          await updateDoc(docRef, {
-            subject,
-            recipients,
-            deadline: new Date(deadline),
-            remarks,
-            imageUrl: uploadedFileUrl,
-            submissionLink,
-            monitoringLink,
-          });
-          
-          showAlert("Communication updated successfully!", "success");
-        } else {
-          // Create new communication
-          const communicationRef = collection(db, "communications");
-          await addDoc(communicationRef, {
-            subject,
-            recipients,
-            deadline: new Date(deadline),
-            remarks,
-            submissionLink,
-            monitoringLink,
-            createdBy: user.uid,
-            imageUrl: uploadedFileUrl,
-            createdAt: serverTimestamp(),
-            submitID: [],
-          });
-          
-          showAlert("Message Sent Successfully!", "success");
-        }
-    
-        // Reset form
-        setSubject("");
-        setRecipients([]);
-        setDeadline("");
-        setRemarks("");
-        setSubmissionLink("");
-        setMonitoringLink("");
-        setSelectedFile(null);
-        setImageUrl("");
-        
-        setIsEditing(false);
-        setEditingId(null);
-    
-        fetchSentCommunications();
-      } catch (error) {
-        console.error("Error submitting message:", error);
-        showAlert("Failed to process message. Please try again!", "error");
-      } finally {
->>>>>>> Stashed changes
-        setLoading(false);
-        return;
-      }
-<<<<<<< Updated upstream
-  
-      let uploadedFileUrl = imageUrl;
-      if (selectedFile && !isEditing) {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("upload_preset", "uploads");
-        formData.append("resource_type", "auto");
-        formData.append("folder", `communications/${user.uid}`);
-  
-        const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
-          method: "POST",
-          body: formData,
-=======
-    
-      const currentDateTime = new Date();
-      const selectedDateTime = new Date(value);
-    
-      if (selectedDateTime <= currentDateTime) {
-        setDeadlineError("Deadline must be in the future (date and time)");
-      } else {
-        setDeadlineError(null);
-      }
-    };
 
-    const handleDelete = async (id: string) => {
-      // Replace confirm with SweetAlert2 confirmation
-      Swal.fire({
-        title: 'Are you sure?',
-        text: 'Do you want to delete this communication?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, keep it',
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            const commDoc = doc(db, "communications", id);
-            const snapshot = await getDoc(commDoc);
-            const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
-        
-            if (data) {
-              await softDelete(data, "communications", "deleted_communications", "deletedBy");
-              await deleteDoc(commDoc);
-              showAlert("Communication Deleted and Archived successfully!", "success");
-              fetchSentCommunications(); // Refresh the list
-            } else {
-              showAlert("Communication not found!", "error");
-            }
-          } catch (error) {
-            console.error("Error deleting communication:", error);
-            showAlert("Failed to delete communication. Please try again.", "error");
-          }
-        }
-      });
-    };
-    
-    const getIcon = (type: string) => {
-      switch (type) {
-        case "success":
-          return "✔️"; // Checkmark or a success icon
-        case "error":
-          return "❌"; // Cross or an error icon
-        case "warning":
-          return "⚠️"; // Warning sign
-        case "info":
-          return "ℹ️"; // Info symbol
-        default:
-          return "ℹ️"; // Default info icon
-      }
-    };  
-    
+      const communicationData = {
+        subject,
+        recipients,
+        deadline: new Date(deadline),
+        remarks,
+        submissionLink: submissionLink || null,
+        monitoringLink: monitoringLink || null,
+        imageUrl: imageUrl || null,
+        createdAt: serverTimestamp(),
+        createdBy: user.uid,
+      };
 
-    const fetchRecipientDetails = async (userId: string) => {
-      const userRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        setRecipientDetails({
-          id: userDoc.id,
-          fullName: `${userDoc.data().fname} ${userDoc.data().mname || ""} ${userDoc.data().lname}`,
-          email: userDoc.data().email,
->>>>>>> Stashed changes
-        });
-  
-        if (!response.ok) {
-          throw new Error("File upload failed.");
-        }
-  
-        const data = await response.json();
-        uploadedFileUrl = data.secure_url;
-      }
-  
       if (isEditing && editingId) {
-        const docRef = doc(db, "communications", editingId);
-        await updateDoc(docRef, {
-          subject,
-          recipients,
-          deadline: new Date(deadline),
-          remarks,
-          imageUrl: uploadedFileUrl,
-          submissionLink,
-          monitoringLink,
-        });
-        
+        await updateDoc(doc(db, "communications", editingId), communicationData);
         showAlert("Communication updated successfully!", "success");
       } else {
-        const communicationRef = collection(db, "communications");
-        await addDoc(communicationRef, {
-          subject,
-          recipients,
-          deadline: new Date(deadline),
-          remarks,
-          submissionLink,
-          monitoringLink,
-          createdBy: user.uid,
-          imageUrl: uploadedFileUrl,
-          createdAt: serverTimestamp(),
-          submitID: [],
-        });
-        
-        showAlert("Message Sent Successfully!", "success");
+        await addDoc(collection(db, "communications"), communicationData);
+        showAlert("Communication sent successfully!", "success");
       }
-  
+
+      // Reset form
       setSubject("");
       setRecipients([]);
       setDeadline("");
       setRemarks("");
       setSubmissionLink("");
       setMonitoringLink("");
-      setSelectedFile(null);
       setImageUrl("");
-      
+      setSelectedFile(null);
       setIsEditing(false);
       setEditingId(null);
-  
+      setShowDetails(false);
+
+      // Refresh the list
       fetchSentCommunications();
     } catch (error) {
-      console.error("Error submitting message:", error);
-      showAlert("Failed to process message. Please try again!");
+      console.error("Error sending communication:", error);
+      showAlert("Failed to send communication. Please try again.", "error");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDelete = async (id: string) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to delete this communication?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, keep it',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const commDoc = doc(db, "communications", id);
+          const snapshot = await getDoc(commDoc);
+          const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+      
+          if (data) {
+            await softDelete(data, "communications", "deleted_communications");
+            await deleteDoc(commDoc);
+            showAlert("Communication Deleted and Archived successfully!", "success");
+            fetchSentCommunications();
+          } else {
+            showAlert("Communication not found!", "error");
+          }
+        } catch (error) {
+          console.error("Error deleting communication:", error);
+          showAlert("Failed to delete communication. Please try again.", "error");
+        }
+      }
+    });
+  };    
   
-  const handleEdit = (comm: any) => {
+  const handleEdit = (comm: Communication) => {
     setSubject(comm.subject);
     setRecipients(comm.recipients);
     setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16));
@@ -790,33 +411,6 @@ const Communication: React.FC = () => {
       setDeadlineError(null);
     }
   };
-
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this communication?");
-    if (!confirmed) return;
-  
-    try {
-      const commDoc = doc(db, "communications", id);
-      const snapshot = await getDoc(commDoc);
-      
-      if (!snapshot.exists()) {
-        showAlert("Communication not found!", "error");
-        return;
-      }
-  
-      const data = { id, ...snapshot.data() };
-      
-      await softDelete(data, "communications", "deleted_communications");
-      await deleteDoc(commDoc);
-      
-      showAlert("Communication Deleted and Archived successfully!", "success");
-      fetchSentCommunications();
-    } catch (error) {
-      console.error("Full error details:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      showAlert(`Failed to delete communication: ${errorMessage}`, "error");
-    }
-  };    
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -1059,238 +653,22 @@ const Communication: React.FC = () => {
           </div>
         </div>
       )}
-    
-      <div className="table-data">
-        <div className="order">
-          <div className="head"></div>
+
+      {recipientDetails && (
+        <div className="overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h4>Recipient Details</h4>
+                <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
+            </div>
+            <div className="modal-body">
+              <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+              <p><strong>Email:</strong> {recipientDetails.email}</p>
+            </div>
+          </div>
         </div>
-
-        {recipientDetails && (
-          <div className="overlay">
-            <div className="modal-container">
-              <div className="modal-header">
-                <h4>Recipient Details</h4>
-                  <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
-              </div>
-              <div className="modal-body">
-                <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-                <p><strong>Email:</strong> {recipientDetails.email}</p>
-              </div>
-            </div>
-          </div>
-        )}
-<<<<<<< Updated upstream
-=======
+      )}
     
-        {/* Table Data Section */}
-        <div className="table-data">
-          <div className="order">
-            <div className="head"></div>
-          </div>
-    
-          {recipientDetails && (
-            <div className="overlay">
-              <div className="modal-container">
-                <div className="modal-header">
-                  <h4>Recipient Details</h4>
-                    <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
-            </div>
-                  <div className="modal-body">
-                  <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-                  <p><strong>Email:</strong> {recipientDetails.email}</p>
-                </div>
-              </div>
-            </div>
-            )}
-            </div>
-    
-          <main>
-            <div className="head-title">
-              <div className="left">
-                <h1>Communication</h1>
-                <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a href="/dashboards">Home</a>
-              </li>
-              <li className="breadcrumb-item active">Communication</li>
-            </ol>
-          </nav>
-              </div>
-            </div>
-            {alert && (
-    <div 
-      key={alert.id} // Add key to force re-render
-      className={`alert-notification alert-${alert.type}`}
-      style={{
-        animation: 'slideIn 0.3s forwards',
-        ...(alert.type === "success"
-          ? { backgroundColor: "#d4edda", color: "#155724" }
-          : alert.type === "error"
-          ? { backgroundColor: "#f8d7da", color: "#721c24" }
-          : alert.type === "warning"
-          ? { backgroundColor: "#fff3cd", color: "#856404" }
-          : { backgroundColor: "#d1ecf1", color: "#0c5460" })
-      }}
-    >
-      <span style={{ marginRight: '10px', fontSize: '20px' }}>
-        {getIcon(alert.type)}
-      </span>
-      <span>{alert.message}</span>
-      <button 
-        onClick={() => setAlert(null)}
-        style={{
-          marginLeft: '15px',
-          background: 'none',
-          border: 'none',
-          fontSize: '18px',
-          cursor: 'pointer',
-          color: 'inherit'
-        }}
-      >
-        ×
-      </button>
-    </div>
-  )}
-  <div className="inbox-controls mb-3 d-flex align-items-center gap-3">
-    {/* Search Label */}
-    <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
-    <input
-      id="searchInput"
-      type="text"
-      placeholder="Search by subject or remarks..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="form-control w-50"
-    />
-
-    {/* Sort Label */}
-    <label htmlFor="sortSelect" className="form-label mb-0">Sort By:</label>
-    <select
-      id="sortSelect"
-      value={sortField}
-      onChange={(e) => setSortField(e.target.value)}
-      className="form-select w-auto"
-    >
-      <option value="createdAt">Created Date</option>
-      <option value="subject">Subject</option>
-      <option value="deadline">Deadline</option>
-    </select>
-
-    {/* Order Label */}
-    <label htmlFor="orderSelect" className="form-label mb-0">Order:</label>
-    <select
-      id="orderSelect"
-      value={sortOrder}
-      onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
-      className="form-select w-auto"
-    >
-      <option value="asc">Ascending</option>
-      <option value="desc">Descending</option>
-    </select>
-  </div>
-
-
-            <h3>Sent Communications</h3>
-            {sentCommunications.length === 0 ? (
-              <p>No sent communications found.</p>
-            ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Attachment</th>
-                    <th>Subject</th>
-                    <th>Recipients</th>
-                    <th>Deadline</th>
-                    <th>Remarks</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCommunications.map((comm) => (
-                    <tr key={comm.id}>
-                      <td>
-                        {comm.imageUrl ? (
-                          <a 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentFileUrl(comm.imageUrl);
-                              setShowFileModal(true);
-                            }}
-                            style={{ cursor: "pointer" }}
-                          >
-                            {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
-                              <img
-                                src={comm.imageUrl}
-                                alt="attachment"
-                                style={{
-                                  width: "80px",
-                                  height: "80px",
-                                  objectFit: "cover",
-                                  borderRadius: "5px"
-                                }}
-                              />
-                            ) : (
-                              <span>View Attachment</span>
-                            )}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>      
-                      <td>{comm.subject}</td>
-                      <td>
-                        {comm.recipients.map((userId: string, idx: number) => {
-                          const user = users.find((user) => user.id === userId);
-                          return (
-                            <span
-                              key={idx}
-                              onClick={() => fetchRecipientDetails(userId)}
-                            >
-                              {user ? user.fullName : "Unknown User"}
-                              {idx < comm.recipients.length - 1 && ", "}
-                            </span>
-                          );
-                        })}
-                      </td>
-                      <td>
-                        {(() => {
-                          const date = new Date(comm.deadline.seconds * 1000);
-                          const datePart = date.toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          });
-                          const timePart = date.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
-                          return `${datePart} at ${timePart}`;
-                        })()}
-                      </td>
-
-                      <td>{comm.remarks}</td>
-                      <td>
-                        <button className="btn btn-sm btn-outline-primary me-2"
-  onClick={() => handleEdit(comm)}>
-                          Edit
-                        </button>
-                      <button className="btn btn-sm btn-outline-danger"  onClick={() => handleDelete(comm.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </main>
->>>>>>> Stashed changes
-      </div>
-
       <main>
         <div className="head-title">
           <div className="left">
@@ -1377,7 +755,7 @@ const Communication: React.FC = () => {
         </div>
 
         <h3>Sent Communications</h3>
-        {sentCommunications.length === 0 ? (
+        {filteredCommunications.length === 0 ? (
           <p>No sent communications found.</p>
         ) : (
           <table className="table">
@@ -1400,7 +778,7 @@ const Communication: React.FC = () => {
                         href="#" 
                         onClick={(e) => {
                           e.preventDefault();
-                          setCurrentFileUrl(comm.imageUrl);
+                          setCurrentFileUrl(comm.imageUrl || "");
                           setShowFileModal(true);
                         }}
                         style={{ cursor: "pointer" }}
