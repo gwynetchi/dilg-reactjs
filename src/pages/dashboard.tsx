@@ -9,7 +9,6 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-// import "../../styles/components/evalDashboard.css";
 import ReportMetricsChart from "../pages/ReportMetricsChart";
 import ResultsFramework from '../components/framework/Outcomes';
 import TodoList from '../pages/TodoList';
@@ -84,7 +83,6 @@ const dashboardStyles = {
 
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userProfilePic, setUserProfilePic] = useState<string>("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
   const [totalReports, setTotalReports] = useState(0);
@@ -102,7 +100,6 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState("bar");
   const [isFrameworkCollapsed, setIsFrameworkCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -124,7 +121,6 @@ const Dashboard = () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           setUserRole(userDoc.data().role);
-          setUserProfilePic(userDoc.data().userProfilePic || "");
         }
       } else {
         setCurrentUser(null);
@@ -140,17 +136,12 @@ const Dashboard = () => {
       try {
         const usersSnapshot = await getDocs(collection(db, "users"));
         setActiveUsers(usersSnapshot.size);
-        const userDocs = usersSnapshot.docs.map(doc => doc.data());
-        const profileImages = userDocs.map(user => user.profileImage).filter(Boolean);
-        setUserProfilePic(profileImages[0] || "");
-        userProfilePic && setUserProfilePic(userProfilePic);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
     };
     fetchRegisteredUsers();
   }, [refreshKey]);
-
 
   // Reports fetch effect
   useEffect(() => {
@@ -176,7 +167,6 @@ const Dashboard = () => {
           return monthMatches && yearMatches;
         });
 
-        // In the fetchReportsData function, modify the enrichedReports mapping:
         const enrichedReports = await Promise.all(
           filtered.map(async (report) => {
             const userDoc = await getDoc(doc(db, "users", report.submittedBy));
@@ -188,28 +178,18 @@ const Dashboard = () => {
                   }${userData.lname}`
                 : userData.email || "Anonymous";
             
-            // Get the profile image URL (using the snapshot)
-            let profileImageUrl = "";
-            if (userData.profileImage) {
-              // If it's already a URL, use it directly
-              if (typeof userData.profileImage === 'string') {
-                profileImageUrl = userData.profileImage;
-              }
-              // If it's a Firebase Storage reference, get the download URL
-              else if (userData.profileImage.getDownloadURL) {
-                profileImageUrl = await userData.profileImage.getDownloadURL();
-              }
-            }
+            // Get profile image URL from user data
+            const profileImage = userData.profileImage || "";
 
             return {
               ...report,
               userName: fullName,
               email: userData.email || "No email available",
-              profileImage: profileImageUrl // Store the resolved URL
+              profileImage // Add profile image to report data
             };
           })
         );
-        
+
         enrichedReports.sort((a, b) => {
           const dateA = a.submittedAt?.toDate?.() || new Date(0);
           const dateB = b.submittedAt?.toDate?.() || new Date(0);
@@ -247,7 +227,6 @@ const Dashboard = () => {
 
   // Toggle visibility functions
   const toggleFramework = () => setIsFrameworkCollapsed(!isFrameworkCollapsed);
-  // const toggleTodo = () => setIsTodoCollapsed(!isTodoCollapsed);
 
   // Reset filters
   const resetFilters = () => {
@@ -261,8 +240,8 @@ const Dashboard = () => {
     setRefreshKey(prevKey => prevKey + 1);
   };
 
-   // Handle view report
-   const handleViewReport = (report: any) => {
+  // Handle view report
+  const handleViewReport = (report: any) => {
     setSelectedReport(report);
     setShowViewModal(true);
   };
@@ -277,12 +256,10 @@ const Dashboard = () => {
     setShowEditModal(true);
   };
 
-
   // Apply filters
   const applyFilters = () => {
     handleRefresh();
   };
-
 
   // Pagination functions
   const indexOfLastReport = currentPage * reportsPerPage;
@@ -300,8 +277,8 @@ const Dashboard = () => {
       case "Late": return "#2196F3"; // blue
       case "For Revision": return "#FF9800"; // orange
       case "No Submission": return "#F44336"; // red
-      case "Incomplete": return "#E91E63"; // yellow
-      default: return "#9E9E9E" ; // grey
+      case "Incomplete": return "#E91E63"; // pink
+      default: return "#9E9E9E"; // grey
     }
   };
 
@@ -314,7 +291,6 @@ const Dashboard = () => {
     return totalReports > 0 ? (value / totalReports * 100).toFixed(1) : "0.0";
   };
 
-  
   if (!currentUser) {
     return <div>Please log in to view your dashboard.</div>;
   }
@@ -375,17 +351,14 @@ const Dashboard = () => {
       icon: "bx bx-block",
       color: "#F44336"
     }
-    
   ];
-
-  
 
   return (
     <div style={dashboardStyles.container} className="dashboard-container">
       <div className="container-fluid p-0">
         {/* Page Header */}
         <div className="mb-3">
-        <h1 className="h3">
+          <h1 className="h3">
             {userRole === 'Admin' && 'Admin Dashboard'}
             {userRole === 'Evaluator' && 'Evaluator Dashboard'}
             {userRole === 'LGU' && 'LGU Dashboard'}
@@ -464,7 +437,7 @@ const Dashboard = () => {
                   </div>
 
                   <div className="col-md-4 d-flex justify-content-end">
-                    <button className="btn btn-sm btn-primary me-2">
+                    <button className="btn btn-sm btn-primary me-2" onClick={applyFilters}>
                       <i className="bx bx-filter-alt"></i> Apply
                     </button>
                     <button className="btn btn-sm btn-outline-secondary" onClick={resetFilters}>
@@ -479,7 +452,7 @@ const Dashboard = () => {
             <div className="card mb-3">
               <div className="card-body">
                 <div className="row">
-                  {/* Metrics Column - reduced from 7 to 6 columns */}
+                  {/* Metrics Column */}
                   <div className="col-lg-5">
                     <h6 className="mb-3">Evaluation Metrics</h6>
                     <div className="row g-2">
@@ -515,7 +488,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   
-                  {/* Chart Column - increased from 5 to 6 columns */}
+                  {/* Chart Column */}
                   <div className="col-lg-7">
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h6 className="mb-0">Report Metrics Visualization</h6>
@@ -604,7 +577,7 @@ const Dashboard = () => {
                           <th>Status</th>
                           <th>Remarks</th>
                           {userRole === 'Evaluator' && <th>Actions</th>}
-                          </tr>
+                        </tr>
                       </thead>
                       <tbody>
                         {currentReports.map((report) => {
@@ -613,52 +586,52 @@ const Dashboard = () => {
                           
                           return (
                             <tr key={report.id}>
-                            <td>
-                              <div className="d-flex align-items-center">
-                                {report.profileImage ? (
-                                  <img
-                                    src={report.profileImage}
-                                    alt="Profile"
-                                    className="rounded-circle"
+                              <td>
+                                <div className="d-flex align-items-center">
+                                  {report.profileImage ? (
+                                    <img
+                                      src={report.profileImage}
+                                      alt="Profile"
+                                      className="rounded-circle"
+                                      style={{ 
+                                        width: "40px", 
+                                        height: "40px", 
+                                        objectFit: "cover",
+                                        border: "2px solid #f8f9fa"
+                                      }}
+                                      onError={(e) => {
+                                        // Fallback if image fails to load
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.style.display = 'none';
+                                        const parent = e.currentTarget.parentElement;
+                                        if (parent) {
+                                          const fallback = parent.querySelector('.placeholder-profile') as HTMLElement;
+                                          if (fallback) fallback.style.display = 'flex';
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div 
+                                    className="placeholder-profile" 
                                     style={{ 
                                       width: "40px", 
                                       height: "40px", 
-                                      objectFit: "cover",
+                                      backgroundColor: "#e9ecef", 
+                                      borderRadius: "50%",
+                                      display: report.profileImage ? "none" : "flex", 
+                                      alignItems: "center", 
+                                      justifyContent: "center",
                                       border: "2px solid #f8f9fa"
                                     }}
-                                    onError={(e) => {
-                                      // Fallback if image fails to load
-                                      e.currentTarget.onerror = null;
-                                      e.currentTarget.style.display = 'none';
-                                      const parent = e.currentTarget.parentElement;
-                                      if (parent) {
-                                        const fallback = parent.querySelector('.placeholder-profile') as HTMLElement;
-                                        if (fallback) fallback.style.display = 'flex';
-                                      }
-                                    }}
-                                  />
-                                ) : null}
-                                <div 
-                                  className="placeholder-profile" 
-                                  style={{ 
-                                    width: "40px", 
-                                    height: "40px", 
-                                    backgroundColor: "#e9ecef", 
-                                    borderRadius: "50%",
-                                    display: report.profileImage ? "none" : "flex", 
-                                    alignItems: "center", 
-                                    justifyContent: "center",
-                                    border: "2px solid #f8f9fa"
-                                  }}
-                                >
-                                  <i className="bx bx-user" style={{ fontSize: "20px", color: "#adb5bd" }}></i>
+                                  >
+                                    <i className="bx bx-user" style={{ fontSize: "20px", color: "#adb5bd" }}></i>
+                                  </div>
+                                  <div className="ms-2">
+                                    <div className="fw-bold small">{report.userName || "Anonymous"}</div>
+                                    <div className="text-muted small">{report.email}</div>
+                                  </div>
                                 </div>
-                                <div className="ms-2">
-                                  <div className="fw-bold small">{report.userName || "Anonymous"}</div>
-                                  <div className="text-muted small">{report.email}</div>
-                                </div>
-                              </div>
-                            </td>
+                              </td>
                               <td className="small">{date ? `${date.toLocaleString('default', { month: 'long' })} ${date.getDate()}, ${date.getFullYear()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : "N/A"}</td>
                               <td>
                                 <span 
@@ -772,11 +745,10 @@ const Dashboard = () => {
           
           {/* Sidebar - 3 columns */}
           <div className="col-lg-3 col-md-4">
-
             {/* To-Do List Section in Sidebar */}
             <TodoList />
 
-            {/* Additional stats widget - can be shown or hidden based on needs */}
+            {/* Additional stats widget */}
             <div className="card mb-3">
               <div className="card-header">
                 <h5 className="mb-0">Key Statistics</h5>
@@ -866,12 +838,13 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          
         </div>
       </div>
+
+      {/* View Report Modal */}
       {showViewModal && selectedReport && (
         <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog ">
+          <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Report Details</h5>
@@ -907,7 +880,6 @@ const Dashboard = () => {
                     {selectedReport.remarks || "No remarks provided"}
                   </div>
                 </div>
-                {/* Add more report details as needed */}
               </div>
               <div className="modal-footer">
                 <button 
