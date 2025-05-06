@@ -1,6 +1,6 @@
-import { getAuth } from "firebase/auth"; // Import Firebase auth
+import { getAuth } from "firebase/auth";
 import React, { useState, useEffect } from "react";
-import Select, { MultiValue } from "react-select";
+import Select, { ActionMeta, MultiValue } from "react-select";
 import {
   doc,
   getDoc,
@@ -14,14 +14,38 @@ import {
   getDocs as firestoreGetDocs,
   updateDoc,
 } from "firebase/firestore";
-import { softDelete } from "./../pages/modules/inbox-modules/softDelete"; // <- Add this import
+import { softDelete } from "./../pages/modules/inbox-modules/softDelete";
+import { db } from "../firebase";
+import Swal from 'sweetalert2';
 
-import { db } from "../firebase"; // Ensure correct Firebase import
-import "../styles/components/dashboard.css"; // Ensure you have the corresponding CSS file
+interface User {
+  role: string;
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+interface Communication {
+  id: string;
+  subject: string;
+  recipients: string[];
+  deadline: { seconds: number };
+  remarks: string;
+  submissionLink?: string;
+  monitoringLink?: string;
+  imageUrl?: string;
+  createdAt?: Date;
+}
+
+interface Alert {
+  id: number;
+  type: "success" | "error" | "warning" | "info";
+  message: string;
+}
 
 const Communication: React.FC = () => {
   const [subject, setSubject] = useState("");
-  const [recipients, setRecipients] = useState<string[]>([]); // Store userIds
+  const [recipients, setRecipients] = useState<string[]>([]);
   const [deadline, setDeadline] = useState("");
   const [remarks, setRemarks] = useState("");
   const [submissionLink, setSubmissionLink] = useState("");
@@ -29,11 +53,9 @@ const Communication: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [users, setUsers] = useState<{
-    role: string; id: string; fullName: string; email: string 
-}[]>([]);
-  const [alert, setAlert] = useState<{ message: string; type: string } | null>(null);
-  const [sentCommunications, setSentCommunications] = useState<any[]>([]); // New state for sent communications
+  const [deadlineError, setDeadlineError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [sentCommunications, setSentCommunications] = useState<Communication[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [recipientDetails, setRecipientDetails] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
@@ -43,67 +65,60 @@ const Communication: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [filteredCommunications, setFilteredCommunications] = useState<any[]>([]);
+  const [filteredCommunications, setFilteredCommunications] = useState<Communication[]>([]);
+  const [alert, setAlert] = useState<Alert | null>(null);
 
-  
-  // Group users by roles
+  // Group users by roles with counts
   const groupedOptions = Object.entries(
     users.reduce((groups, user) => {
       const role = user.role || "No Role";
       if (!groups[role]) groups[role] = [];
-      groups[role].push({ value: user.id, label: user.fullName });
+      groups[role].push({ 
+        value: user.id, 
+        label: user.fullName 
+      });
       return groups;
     }, {} as Record<string, { value: string; label: string }[]>)
   ).map(([role, options]) => ({
-    label: role.charAt(0).toUpperCase() + role.slice(1),
+    label: `${role.charAt(0).toUpperCase() + role.slice(1)} (${options.length})`,
     options: [
       {
-        value: `select_all_${role}`,
+        value: `toggle_all_${role}`,
         label: `Select all ${role}`,
-        isSelectAll: true, // custom flag to detect this
+        isSelectAll: true,
         role,
       },
       ...options,
     ],
   }));
-  
 
   const fetchUsers = async () => {
     try {
-      console.log("Fetching users...");
       const usersRef = collection(db, "users");
       const querySnapshot = await getDocs(usersRef);
 
-      if (querySnapshot.empty) {
-        console.warn("No users found in Firestore.");
-      }
-
       const usersList = querySnapshot.docs.map((doc) => {
         const data = doc.data();
-        let fullName = "";
-
-        if (data.fname && data.lname) {
-          fullName = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
-        } else {
-          fullName = data.email || "Unknown User"; // Default to email if full name is missing
-        }
-
-        return { id: doc.id, fullName, email: data.email, role: data.role || "No Role"  };
+        const fullName = `${data.fname} ${data.mname || ""} ${data.lname}`.trim() || data.email || "Unknown User";
+        return { 
+          id: doc.id, 
+          fullName, 
+          email: data.email, 
+          role: data.role || "No Role"  
+        };
       });
 
       setUsers(usersList);
-      console.log("Final User List:", usersList);
     } catch (error) {
-      console.error("Error fetching users:", error instanceof Error ? error.message : error);
+      console.error("Error fetching users:", error);
     }
   };
-
+  
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setSelectedFile(file || null);
     setImageUrl(""); // Clear any previous image URL
   };
-  
   
   const fetchSentCommunications = async () => {
     const auth = getAuth(); 
@@ -117,32 +132,38 @@ const Communication: React.FC = () => {
         if (!querySnapshot.empty) {
           const sentList = querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            const createdAt = data.createdAt ? data.createdAt.toDate() : null; // Convert timestamp
-  
+            const createdAt = data.createdAt ? data.createdAt.toDate() : null;
+
             return {
               id: doc.id,
               ...data,
-              createdAt, // Add converted date
-            };
+              createdAt,
+              recipients: data.recipients || [],
+              deadline: data.deadline || { seconds: 0 },
+              remarks: data.remarks || "",
+            } as Communication;
           });
   
-          // Sort by createdAt field (ensure it's a valid date)
+          // Sort by createdAt field
           sentList.sort((a, b) => {
-            const dateA = a.createdAt ? a.createdAt.getTime() : 0; // Ensure it's a timestamp
+            const dateA = a.createdAt ? a.createdAt.getTime() : 0;
             const dateB = b.createdAt ? b.createdAt.getTime() : 0;
             return dateB - dateA;
           });
   
           setSentCommunications(sentList);
+          setFilteredCommunications(sentList);
         } else {
           console.log("No sent communications found.");
           setSentCommunications([]);
+          setFilteredCommunications([]);
         }
       } catch (error) {
         console.error("Error fetching sent communications:", error);
       }
     }
   };
+
   useEffect(() => {
     let filtered = sentCommunications.filter((comm) =>
       comm.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,14 +171,20 @@ const Communication: React.FC = () => {
     );
   
     filtered.sort((a, b) => {
-      const aField = a[sortField];
-      const bField = b[sortField];
+      const aField = a[sortField as keyof Communication];
+      const bField = b[sortField as keyof Communication];
   
       if (aField && bField) {
-        const aVal = aField instanceof Date ? aField.getTime() : aField;
-        const bVal = bField instanceof Date ? bField.getTime() : bField;
+        const aVal = aField instanceof Date ? aField.getTime() : 
+                    typeof aField === 'string' ? aField.toLowerCase() : 
+                    aField;
+        const bVal = bField instanceof Date ? bField.getTime() : 
+                    typeof bField === 'string' ? bField.toLowerCase() : 
+                    bField;
   
-        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        return sortOrder === "asc" ? 
+          (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) : 
+          (bVal < aVal ? -1 : bVal > aVal ? 1 : 0);
       }
       return 0;
     });
@@ -165,113 +192,137 @@ const Communication: React.FC = () => {
     setFilteredCommunications(filtered);
   }, [searchTerm, sentCommunications, sortField, sortOrder]);
   
-  
   useEffect(() => {
     fetchUsers();
-    fetchSentCommunications(); // Fetch sent communications on mount
+    fetchSentCommunications();
   }, []);
 
   const handleRecipientChange = (
-    selectedOptions: MultiValue<{ value: string; label: string }>
+    newValue: MultiValue<{ value: string; label: string; isSelectAll?: boolean; role?: string }>,
+    actionMeta: ActionMeta<{ value: string; label: string; isSelectAll?: boolean; role?: string }>
   ) => {
-    // Store userIds instead of full names/emails
-    setRecipients(selectedOptions.map((option) => option.value));
-  };
-
-  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
-    setAlert({ message, type });
+    if (actionMeta.action === 'remove-value' || 
+        actionMeta.action === 'pop-value' ||
+        actionMeta.action === 'deselect-option') {
+      const removedValue = actionMeta.removedValue || actionMeta.option;
+      
+      if (!removedValue) return;
+      
+      if (!removedValue.isSelectAll) {
+        setRecipients(prev => prev.filter(id => id !== removedValue.value));
+        return;
+      }
+      
+      if (removedValue.isSelectAll && removedValue.role) {
+        const usersInRole = users
+          .filter(user => user.role === removedValue.role)
+          .map(user => user.id);
+        setRecipients(prev => prev.filter(id => !usersInRole.includes(id)));
+        return;
+      }
+    }
+    
+    const selectedOptions = newValue;
+    let newRecipients = [...recipients];
+    
+    const toggledSelectAlls = selectedOptions
+      .filter(option => option.isSelectAll && option.role)
+      .map(option => option.role);
   
-    setTimeout(() => setAlert(null), 8000); // Hide after 5 seconds
-  };  
+    toggledSelectAlls.forEach(role => {
+      if (!role) return;
+      
+      const usersInRole = users
+        .filter(user => user.role === role)
+        .map(user => user.id);
+  
+      const wasJustSelected = selectedOptions.some(
+        opt => opt.isSelectAll && opt.role === role && !recipients.includes(opt.value)
+      );
+  
+      if (wasJustSelected) {
+        const allCurrentlySelected = usersInRole.every(id => recipients.includes(id));
+        
+        if (allCurrentlySelected) {
+          newRecipients = newRecipients.filter(id => !usersInRole.includes(id));
+        } else {
+          newRecipients = newRecipients.filter(id => {
+            const user = users.find(u => u.id === id);
+            return user?.role !== role;
+          });
+          newRecipients = [...newRecipients, ...usersInRole];
+        }
+      }
+    });
+  
+    const regularSelections = selectedOptions
+      .filter(option => !option.isSelectAll)
+      .map(option => option.value);
+  
+    const allSelections = [...new Set([...newRecipients, ...regularSelections])];
+    
+    setRecipients(allSelections);
+  };
+  
+  const showAlert = (message: string, type: "success" | "error" | "warning" | "info" = "error") => {
+    
+    Swal.fire({
+      title: type.charAt(0).toUpperCase() + type.slice(1),
+      text: message,
+      icon: type,
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 5000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
+  };
 
   const handleSubmit = async () => {
     if (!subject || recipients.length === 0 || !deadline || !remarks) {
-      showAlert("Please fill in all fields before sending");
+      showAlert("Please fill in all fields before sending", "warning");
       return;
     }
-  
-    const currentDate = new Date();
-    const deadlineDate = new Date(deadline);
-  
-    if (deadlineDate < currentDate) {
-      showAlert("Invalid Date: The deadline cannot be in the past");
+
+    if (deadlineError) {
+      showAlert("Please fix the deadline error before sending", "warning");
       return;
     }
-  
-    if (
-      (submissionLink && !submissionLink.startsWith("https://")) ||
-      (monitoringLink && !monitoringLink.startsWith("https://"))
-    ) {
-      showAlert("Only HTTPS links are allowed for submission and monitoring!");
-      return;
-    }
-  
+
     setLoading(true);
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-  
+      
       if (!user) {
-        showAlert("You must be logged in to send a communication");
-        setLoading(false);
+        showAlert("You must be logged in to send communications", "error");
         return;
       }
-  
-      // Upload file if one was selected
-      let uploadedFileUrl = imageUrl; // Use existing URL if editing
-      if (selectedFile && !isEditing) {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("upload_preset", "uploads");
-        formData.append("resource_type", "auto");
-        formData.append("folder", `communications/${user.uid}`);
-  
-        const response = await fetch("https://api.cloudinary.com/v1_1/dr5c99td8/auto/upload", {
-          method: "POST",
-          body: formData,
-        });
-  
-        if (!response.ok) {
-          throw new Error("File upload failed.");
-        }
-  
-        const data = await response.json();
-        uploadedFileUrl = data.secure_url;
-      }
-  
+
+      const communicationData = {
+        subject,
+        recipients,
+        deadline: new Date(deadline),
+        remarks,
+        submissionLink: submissionLink || null,
+        monitoringLink: monitoringLink || null,
+        imageUrl: imageUrl || null,
+        createdAt: serverTimestamp(),
+        createdBy: user.uid,
+      };
+
       if (isEditing && editingId) {
-        // Update existing communication
-        const docRef = doc(db, "communications", editingId);
-        await updateDoc(docRef, {
-          subject,
-          recipients,
-          deadline: new Date(deadline),
-          remarks,
-          imageUrl: uploadedFileUrl,
-          submissionLink,
-          monitoringLink,
-        });
-        
+        await updateDoc(doc(db, "communications", editingId), communicationData);
         showAlert("Communication updated successfully!", "success");
       } else {
-        // Create new communication
-        const communicationRef = collection(db, "communications");
-        await addDoc(communicationRef, {
-          subject,
-          recipients,
-          deadline: new Date(deadline),
-          remarks,
-          submissionLink,
-          monitoringLink,
-          createdBy: user.uid,
-          imageUrl: uploadedFileUrl,
-          createdAt: serverTimestamp(),
-          submitID: [],
-        });
-        
-        showAlert("Message Sent Successfully!", "success");
+        await addDoc(collection(db, "communications"), communicationData);
+        showAlert("Communication sent successfully!", "success");
       }
-  
+
       // Reset form
       setSubject("");
       setRecipients([]);
@@ -279,22 +330,56 @@ const Communication: React.FC = () => {
       setRemarks("");
       setSubmissionLink("");
       setMonitoringLink("");
-      setSelectedFile(null);
       setImageUrl("");
-      
+      setSelectedFile(null);
       setIsEditing(false);
       setEditingId(null);
-  
+      setShowDetails(false);
+
+      // Refresh the list
       fetchSentCommunications();
     } catch (error) {
-      console.error("Error submitting message:", error);
-      showAlert("Failed to process message. Please try again!");
+      console.error("Error sending communication:", error);
+      showAlert("Failed to send communication. Please try again.", "error");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDelete = async (id: string) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to delete this communication?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, keep it',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const commDoc = doc(db, "communications", id);
+          const snapshot = await getDoc(commDoc);
+          const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+      
+          if (data) {
+            await softDelete(data, "communications", "deleted_communications");
+            await deleteDoc(commDoc);
+            showAlert("Communication Deleted and Archived successfully!", "success");
+            fetchSentCommunications();
+          } else {
+            showAlert("Communication not found!", "error");
+          }
+        } catch (error) {
+          console.error("Error deleting communication:", error);
+          showAlert("Failed to delete communication. Please try again.", "error");
+        }
+      }
+    });
+  };    
   
-  const handleEdit = (comm: any) => {
+  const handleEdit = (comm: Communication) => {
     setSubject(comm.subject);
     setRecipients(comm.recipients);
     setDeadline(new Date(comm.deadline.seconds * 1000).toISOString().slice(0, 16));
@@ -302,48 +387,38 @@ const Communication: React.FC = () => {
     setSubmissionLink(comm.submissionLink || "");
     setMonitoringLink(comm.monitoringLink || "");
     setImageUrl(comm.imageUrl || "");
-    setSelectedFile(null); // Clear any selected file
+    setSelectedFile(null);
     setEditingId(comm.id);
     setIsEditing(true);
     setShowDetails(true);
   };
-  
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this communication?");
-    if (!confirmed) return;
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDeadline(value);
   
-    try {
-      const commDoc = doc(db, "communications", id);
-      const snapshot = await getDoc(commDoc);
-      const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+    if (!value) {
+      setDeadlineError(null);
+      return;
+    }
   
-      if (data) {
-        await softDelete(data, "communications", "deleted_communications", "deletedBy");
-        await deleteDoc(commDoc);
-        showAlert("Communication deleted and archived successfully!", "success");
-        fetchSentCommunications(); // Refresh the list
-      } else {
-        showAlert("Communication not found!", "error");
-      }
-    } catch (error) {
-      console.error("Error deleting communication:", error);
-      showAlert("Failed to delete communication. Please try again.", "error");
+    const currentDateTime = new Date();
+    const selectedDateTime = new Date(value);
+  
+    if (selectedDateTime <= currentDateTime) {
+      setDeadlineError("Deadline must be in the future (date and time)");
+    } else {
+      setDeadlineError(null);
     }
   };
-  
+
   const getIcon = (type: string) => {
     switch (type) {
-      case "success":
-        return "✔️"; // Checkmark or a success icon
-      case "error":
-        return "❌"; // Cross or an error icon
-      case "warning":
-        return "⚠️"; // Warning sign
-      case "info":
-        return "ℹ️"; // Info symbol
-      default:
-        return "ℹ️"; // Default info icon
+      case "success": return "✔️";
+      case "error": return "❌";
+      case "warning": return "⚠️";
+      case "info": return "ℹ️";
+      default: return "ℹ️";
     }
   };  
 
@@ -359,9 +434,19 @@ const Communication: React.FC = () => {
     }
   };
 
+  // Keyboard shortcut for closing modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showDetails) {
+        setShowDetails(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showDetails]);
+
   return (
     <div className="dashboard-container">
-      {/* Sticky Button - Always Visible */}
       <button
         className="btn-toggle btn btn-primary btn-md w-40 sticky-btn"
         onClick={() => setShowDetails(!showDetails)}
@@ -369,40 +454,40 @@ const Communication: React.FC = () => {
         <i className={`bx ${showDetails ? "bxs-minus-circle" : "bxs-plus-circle"} bx-tada-hover`}></i>
         <span className="text">{showDetails ? "Hide" : "Create New Communication"}</span>
       </button>
-  
+    
       {showFileModal && (
-  <div className="overlay">
-    <div className="modal-container" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
-      <button className="close-btn" onClick={() => setShowFileModal(false)}>
-        ✖
-      </button>
-      <div className="modal-body" style={{ overflow: 'auto' }}>
-        {currentFileUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
-          <img 
-            src={currentFileUrl} 
-            alt="Attachment" 
-            style={{ maxWidth: "100%", maxHeight: "80vh" }}
-          />
-        ) : (
-          <div>
-            <p>This file type cannot be previewed. Please download it instead.</p>
-            <a 
-              href={currentFileUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-            >
-              Download File
-            </a>
+        <div className="overlay">
+          <div className="modal-container" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
+            <button className="close-btn" onClick={() => setShowFileModal(false)}>
+              ✖
+            </button>
+            <div className="modal-body" style={{ overflow: 'auto' }}>
+              {currentFileUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+                <img 
+                  src={currentFileUrl} 
+                  alt="Attachment" 
+                  style={{ maxWidth: "100%", maxHeight: "80vh" }}
+                />
+              ) : (
+                <div>
+                  <p>This file type cannot be previewed. Please download it instead.</p>
+                  <a 
+                    href={currentFileUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                  >
+                    Download File
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
-      {/* Modal - Centered on the Screen */}
+        </div>
+      )}
+
       {showDetails && (
-        <div className="overlay" >
+        <div className="overlay">
           <div className="modal-container" style={{overflow: 'auto'}}>
             <div className="container">
               <div className="row">
@@ -417,49 +502,102 @@ const Communication: React.FC = () => {
                   />
                 </div>
                 <div className="col-md-12 mb-3">
-  <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
-  <input 
-    type="file" 
-    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-    className="form-control" 
-    onChange={handleFileChange}
-  />
-  {selectedFile && (
-    <div className="mt-2">
-      <span>Selected file: {selectedFile.name}</span>
-    </div>
-  )}
-  {imageUrl && (
-    <div className="mt-2">
-      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Current Attachment</a>
-    </div>
-  )}
-</div>
+                  <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
+                  <input 
+                    type="file" 
+                    accept=".png,.jpg,.jpeg,.gif,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                    className="form-control" 
+                    onChange={handleFileChange}
+                  />
+                  {selectedFile && (
+                    <div className="mt-2">
+                      <span>Selected file: {selectedFile.name}</span>
+                    </div>
+                  )}
+                  {imageUrl && (
+                    <div className="mt-2">
+                      <a href={imageUrl} target="_blank" rel="noopener noreferrer">View Current Attachment</a>
+                    </div>
+                  )}
+                </div>
 
                 <div className="col-md-12 mb-3">
-                  <label className="form-label">Recipients:</label>
+                  <label className="form-label" aria-required>Recipients:</label>
                   <Select
                     options={groupedOptions}
                     isMulti
-                    value={groupedOptions.flatMap(group => group.options).filter((option) =>
-                      recipients.includes(option.value)
-                    )}
+                    value={groupedOptions.flatMap(group => group.options).filter((option) => {
+                      if (recipients.includes(option.value)) return true;
+                      if ('isSelectAll' in option && option.isSelectAll && option.role) {
+                        const usersInRole = users.filter(user => user.role === option.role);
+                        return usersInRole.every(user => recipients.includes(user.id));
+                      }
+                      return false;
+                    })}
                     onChange={handleRecipientChange}
                     className="basic-multi-select"
                     classNamePrefix="select"
                     placeholder="Select recipients by role..."
+                    closeMenuOnSelect={false}
+                    hideSelectedOptions={false}
+                    isClearable={false}
+                    backspaceRemovesValue={true}
+                    escapeClearsValue={false}
+                    getOptionLabel={(option) => {
+                      if ('isSelectAll' in option && option.isSelectAll && option.role) {
+                        const usersInRole = users.filter(u => u.role === option.role);
+                        const allSelected = usersInRole.every(u => recipients.includes(u.id));
+                        const someSelected = usersInRole.some(u => recipients.includes(u.id));
+                        
+                        return allSelected 
+                          ? `✓ All ${option.role} selected` 
+                          : someSelected
+                            ? `↻ ${usersInRole.filter(u => recipients.includes(u.id)).length}/${usersInRole.length} ${option.role} selected`
+                            : `Select all ${option.role}`;
+                      }
+                      return option.label;
+                    }}
+                    formatGroupLabel={(group) => (
+                      <div className="d-flex justify-content-between">
+                        <span>{group.label}</span>
+                        <span className="badge bg-primary rounded-pill">
+                          {group.options.length - 1}
+                        </span>
+                      </div>
+                    )}
                   />
-
+                  
+                  <div className="selected-recipients-summary mt-2">
+                    <small>
+                      Selected: {recipients.length} recipients | 
+                      {Object.entries(
+                        recipients.reduce((acc, id) => {
+                          const user = users.find(u => u.id === id);
+                          const role = user?.role || 'No Role';
+                          acc[role] = (acc[role] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      ).map(([role, count]) => (
+                        <span key={role} className="badge bg-secondary ms-2">
+                          {role}: {count}
+                        </span>
+                      ))}
+                    </small>
+                  </div>
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Deadline:</label>
                   <input
                     type="datetime-local"
-                    className="form-control form-control-sm"
+                    className={`form-control form-control-sm ${deadlineError ? 'is-invalid' : ''}`}
                     value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
+                    onChange={handleDeadlineChange}
+                    min={new Date().toISOString().slice(0, 16)}
                   />
-                </div>
+                  {deadlineError && (
+                    <div className="invalid-feedback">{deadlineError}</div>
+                  )}
+                </div>                
                 <div className="col-md-12 mb-3">
                   <label>Submission Link (https only):</label>
                   <input
@@ -482,7 +620,7 @@ const Communication: React.FC = () => {
                   />
                 </div>
               </div>
-  
+
               <div className="row">
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Remarks/Comments:</label>
@@ -494,21 +632,20 @@ const Communication: React.FC = () => {
                   ></textarea>
                 </div>
               </div>
-  
+
               <div className="row">
                 <div className="col-md-12 text-center">
                   <button
                     onClick={handleSubmit}
                     disabled={loading}
                     className="btn btn-primary btn-lg"
-              >
-              <i className="bx bxs-send bx-tada-hover"></i>
-              <span className="text">{loading ? "Sending..." : "Send"}</span>
+                  >
+                    <i className="bx bxs-send bx-tada-hover"></i>
+                    <span className="text">{loading ? "Sending..." : "Send"}</span>
                   </button>
                 </div>
               </div>
 
-            {/* Close Button (Keep it the same) */}
               <button className="close-btn" onClick={() => setShowDetails(false)}>
                 ✖
               </button>
@@ -516,195 +653,212 @@ const Communication: React.FC = () => {
           </div>
         </div>
       )}
-  
-      {/* Table Data Section */}
-      <div className="table-data">
-        <div className="order">
-          <div className="head"></div>
+
+      {recipientDetails && (
+        <div className="overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h4>Recipient Details</h4>
+                <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
+            </div>
+            <div className="modal-body">
+              <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
+              <p><strong>Email:</strong> {recipientDetails.email}</p>
+            </div>
+          </div>
         </div>
-  
-        {recipientDetails && (
-          <div className="overlay">
-            <div className="modal-container">
-              <div className="modal-header">
-                <h4>Recipient Details</h4>
-                  <button className="close-btn" onClick={() => setRecipientDetails(null)}>✖</button>
-          </div>
-                <div className="modal-body">
-                <p><strong>Full Name:</strong> {recipientDetails.fullName}</p>
-                <p><strong>Email:</strong> {recipientDetails.email}</p>
-              </div>
-            </div>
-          </div>
-          )}
-          </div>
-  
-      <section id="content">
-        <main>
-          <div className="head-title">
-            <div className="left">
-              <h1>Communication</h1>
-              <ul className="breadcrumb">
-                <li>
-                  <a href="/dashboards" className="active"> Home </a>
+      )}
+    
+      <main>
+        <div className="head-title">
+          <div className="left">
+            <h1>Communication</h1>
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb">
+                <li className="breadcrumb-item">
+                  <a href="/dashboards">Home</a>
                 </li>
-                <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <a> Communication Details </a>
-                </li>
-              </ul>
-            </div>
+                <li className="breadcrumb-item active">Communication</li>
+              </ol>
+            </nav>
           </div>
-  
-          {alert && (
-            <div className={`custom-alert alert-${alert.type}`}>
-              <span className="alert-icon">{getIcon(alert.type)}</span>
-              <span>{alert.message}</span>
-            </div>
-          )}
-<div className="inbox-controls mb-3 d-flex align-items-center gap-3">
-  {/* Search Label */}
-  <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
-  <input
-    id="searchInput"
-    type="text"
-    placeholder="Search by subject or remarks..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="form-control w-50"
-  />
+        </div>
+        
+        {alert && (
+          <div 
+            key={alert.id}
+            className={`alert-notification alert-${alert.type}`}
+            style={{
+              animation: 'slideIn 0.3s forwards',
+              ...(alert.type === "success"
+                ? { backgroundColor: "#d4edda", color: "#155724" }
+                : alert.type === "error"
+                ? { backgroundColor: "#f8d7da", color: "#721c24" }
+                : alert.type === "warning"
+                ? { backgroundColor: "#fff3cd", color: "#856404" }
+                : { backgroundColor: "#d1ecf1", color: "#0c5460" })
+            }}
+          >
+            <span style={{ marginRight: '10px', fontSize: '20px' }}>
+              {getIcon(alert.type)}
+            </span>
+            <span>{alert.message}</span>
+            <button 
+              onClick={() => setAlert(null)}
+              style={{
+                marginLeft: '15px',
+                background: 'none',
+                border: 'none',
+                fontSize: '18px',
+                cursor: 'pointer',
+                color: 'inherit'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
-  {/* Sort Label */}
-  <label htmlFor="sortSelect" className="form-label mb-0">Sort By:</label>
-  <select
-    id="sortSelect"
-    value={sortField}
-    onChange={(e) => setSortField(e.target.value)}
-    className="form-select w-auto"
-  >
-    <option value="createdAt">Created Date</option>
-    <option value="subject">Subject</option>
-    <option value="deadline">Deadline</option>
-  </select>
+        <div className="inbox-controls mb-3 d-flex align-items-center gap-3">
+          <label htmlFor="searchInput" className="form-label mb-0">Search:</label>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Search by subject or remarks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="form-control w-50"
+          />
 
-  {/* Order Label */}
-  <label htmlFor="orderSelect" className="form-label mb-0">Order:</label>
-  <select
-    id="orderSelect"
-    value={sortOrder}
-    onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
-    className="form-select w-auto"
-  >
-    <option value="asc">Ascending</option>
-    <option value="desc">Descending</option>
-  </select>
-</div>
+          <label htmlFor="sortSelect" className="form-label mb-0">Sort By:</label>
+          <select
+            id="sortSelect"
+            value={sortField}
+            onChange={(e) => setSortField(e.target.value)}
+            className="form-select w-auto"
+          >
+            <option value="createdAt">Created Date</option>
+            <option value="subject">Subject</option>
+            <option value="deadline">Deadline</option>
+          </select>
 
+          <label htmlFor="orderSelect" className="form-label mb-0">Order:</label>
+          <select
+            id="orderSelect"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+            className="form-select w-auto"
+          >
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
 
-          <h3>Sent Communications</h3>
-          {sentCommunications.length === 0 ? (
-            <p>No sent communications found.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Attachment</th>
-                  <th>Subject</th>
-                  <th>Recipients</th>
-                  <th>Deadline</th>
-                  <th>Remarks</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCommunications.map((comm) => (
-                  <tr key={comm.id}>
-                    <td>
-                      {comm.imageUrl ? (
-                        <a 
-                          href="#" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentFileUrl(comm.imageUrl);
-                            setShowFileModal(true);
-                          }}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
-                            <img
-                              src={comm.imageUrl}
-                              alt="attachment"
-                              style={{
-                                width: "80px",
-                                height: "80px",
-                                objectFit: "cover",
-                                borderRadius: "5px"
-                              }}
-                            />
-                          ) : (
-                            <span>View Attachment</span>
-                          )}
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>      
-                    <td>{comm.subject}</td>
-                    <td>
-                      {comm.recipients.map((userId: string, idx: number) => {
-                        const user = users.find((user) => user.id === userId);
-                        return (
-                          <span
-                            key={idx}
-                            onClick={() => fetchRecipientDetails(userId)}
-                          >
-                            {user ? user.fullName : "Unknown User"}
-                            {idx < comm.recipients.length - 1 && ", "}
-                          </span>
-                        );
-                      })}
-                    </td>
-                    <td>
-                      {(() => {
-                        const date = new Date(comm.deadline.seconds * 1000);
-                        const datePart = date.toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        });
-                        const timePart = date.toLocaleTimeString("en-US", {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        });
-                        return `${datePart} at ${timePart}`;
-                      })()}
-                    </td>
-
-                    <td>{comm.remarks}</td>
-                    <td>
-                      <button className="btn btn-sm btn-primary me-2"
-onClick={() => handleEdit(comm)}>
-                        Edit
-                      </button>
-                    <button className="btn btn-sm btn-danger"  onClick={() => handleDelete(comm.id)}
-                        style={{ marginLeft: "8px", backgroundColor: "#dc3545", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px" }}
+        <h3>Sent Communications</h3>
+        {filteredCommunications.length === 0 ? (
+          <p>No sent communications found.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Attachment</th>
+                <th>Subject</th>
+                <th>Recipients</th>
+                <th>Deadline</th>
+                <th>Remarks</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCommunications.map((comm) => (
+                <tr key={comm.id}>
+                  <td>
+                    {comm.imageUrl ? (
+                      <a 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentFileUrl(comm.imageUrl || "");
+                          setShowFileModal(true);
+                        }}
+                        style={{ cursor: "pointer" }}
                       >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </main>
-      </section>
+                        {comm.imageUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/) ? (
+                          <img
+                            src={comm.imageUrl}
+                            alt="attachment"
+                            style={{
+                              width: "80px",
+                              height: "80px",
+                              objectFit: "cover",
+                              borderRadius: "5px"
+                            }}
+                          />
+                        ) : (
+                          <span>View Attachment</span>
+                        )}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>      
+                  <td>{comm.subject}</td>
+                  <td>
+                    {comm.recipients.map((userId: string, idx: number) => {
+                      const user = users.find((user) => user.id === userId);
+                      return (
+                        <span
+                          key={idx}
+                          onClick={() => fetchRecipientDetails(userId)}
+                          style={{ cursor: "pointer" }}
+                          className="recipient-name"
+                        >
+                          {user ? user.fullName : "Unknown User"}
+                          {idx < comm.recipients.length - 1 && ", "}
+                        </span>
+                      );
+                    })}
+                  </td>
+                  <td>
+                    {(() => {
+                      const date = new Date(comm.deadline.seconds * 1000);
+                      const datePart = date.toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      });
+                      const timePart = date.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      });
+                      return `${datePart} at ${timePart}`;
+                    })()}
+                  </td>
+
+                  <td>{comm.remarks}</td>
+                  <td>
+                    <button 
+                      className="btn btn-sm btn-primary me-2"
+                      onClick={() => handleEdit(comm)}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-danger"  
+                      onClick={() => handleDelete(comm.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </main>
     </div>
   );
-  
 };
 
 export default Communication;

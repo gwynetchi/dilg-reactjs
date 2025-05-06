@@ -1,61 +1,54 @@
-import React from "react";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+// OrgChartPage.tsx
+import React, { useEffect, useState } from "react";
+import D3OrgChart, { OrgChartNode } from "./D3OrgChart";
+import { db } from "../../firebase"; // adjust this path if needed
+import { collection, getDocs } from "firebase/firestore";
 
-interface OrgChartViewerProps {
-  imageUrl: string;
-}
+const OrgChartPage: React.FC = () => {
+  const [data, setData] = useState<OrgChartNode[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ imageUrl }) => {
+  useEffect(() => {
+    const fetchOrgChart = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "orgdata"));
+        const items: OrgChartNode[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: typeof data.id === "string" ? parseInt(data.id) : data.id,
+            name: data.name || "",
+            position1: data.position1 || "",
+            position2: data.position2 || "",
+            email: data.email || "",
+            contact: data.contact || "",
+            img: data.img || "",
+            subordinates: (data.subordinates || []).map((s: any) =>
+              typeof s === "string" ? parseInt(s) : s
+            ),
+            layout: data.layout || "",
+            status: data.status || "active", // default to "active" if not present
+            icon: data.icon || "",           // default to empty string if not present
+          };
+        });
+        setData(items);
+      } catch (error) {
+        console.error("Error fetching org chart data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchOrgChart();
+  }, []);
+  
+  
+  if (loading) return <div className="p-6">Loading org chart...</div>;
+
   return (
-    <div
-      className="container-fluid bg-light rounded shadow overflow-hidden position-relative"
-      style={{ height: "300px" }} // You can adjust this height
-    >
-      <TransformWrapper
-        initialScale={1}
-        minScale={0.5}
-        maxScale={5}
-        wheel={{ disabled: false }}
-        doubleClick={{ disabled: false }}
-        panning={{ disabled: false }}
-      >
-        {({ zoomIn, zoomOut, resetTransform }) => (
-          <>
-            {/* Controls */}
-            <div className="position-absolute top-0 start-0 m-3 d-flex gap-2 z-3">
-              <button onClick={() => zoomIn()} className="btn btn-light shadow-sm">
-                ➕ Zoom In
-              </button>
-              <button onClick={() => zoomOut()} className="btn btn-light shadow-sm">
-                ➖ Zoom Out
-              </button>
-              <button onClick={() => resetTransform()} className="btn btn-light shadow-sm">
-                🔄 Reset
-              </button>
-            </div>
-
-            {/* Zoomable Image Area */}
-            <TransformComponent>
-              <img
-                src={imageUrl}
-                alt="Org Chart"
-                className="w-100 h-auto"
-                style={{
-                  maxWidth: "none",
-                  userSelect: "none",
-                  pointerEvents: "none",
-                }}
-                draggable={false}
-              />
-            </TransformComponent>
-          </>
-        )}
-      </TransformWrapper>
+    <div className="relative p-6">
+      <D3OrgChart data={data} />
     </div>
   );
 };
 
-export default OrgChartViewer;
-
-
-
+export default OrgChartPage;

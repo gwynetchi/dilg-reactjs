@@ -1,7 +1,7 @@
 import React, { useState, useEffect, JSX } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
@@ -9,13 +9,14 @@ import "./styles/components/pages.css";
 import SendDueCommunications from "./pages/SendDuePrograms";
 import CheckFrequency from "./pages/CheckFrequency";
 import DeletedCommunications from "./pages/DeletedCommunications";
+import Analytics from "./pages/analytics";
 
 // Import Dashboards
-import AdminDashboard from "./pages/admin/dashboard";
-import Analytics from "./pages/analytics";
-import LGUDashboard from "./pages/lgu/dashboard";
-import EvaluatorDashboard from "./pages/evaluator/dashboard";
-import ViewerDashboard from "./pages/viewer/dashboard";
+import AdminDashboard from "./pages/dashboard";
+import LGUDashboard from "./pages/dashboard";
+import EvaluatorDashboard from "./pages/dashboard";
+import ViewerDashboard from "./pages/dashboard";
+
 
 // Import Message Details
 import EvaluatorMessageDetails from "./pages/messagedetails";
@@ -53,8 +54,9 @@ import DeletedUsers from "./pages/admin/DeletedUsers";
 
 
 import EvaluatorPrograms from "./pages/managePrograms";
-import LGUPrograms from "./pages/Programs";
-import ProgramDetails from './pages/ProgramDetails'; // Adjust path as needed
+import ProgramCards from "./pages/ProgramsCards";
+import ProgramMessages from "./pages/ProgramMessages";
+import OrgChartAdmin from "./pages/admin/orgchart";
 
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
@@ -69,8 +71,10 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
     { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
+    { path: "/admin/OrganizationalChart", element: <OrgChartAdmin /> }, // ← Added here
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
-    { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>}
+    { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
+
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
@@ -79,6 +83,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/inbox/:id", element: <EvaluatorMessageDetails /> },
     { path: "/evaluator/sentbox", element: <Sentbox /> },
     { path: "/evaluator/communication", element: <EvaluatorCommunication /> },
+    { path: "/evaluator/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/evaluator/sentCommunications/:id", element: <EvaluatorSent /> }, // Added this line
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
@@ -88,6 +93,8 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/analytics/monthly-analytics", element: <MonthlyAnalytics /> },
     { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
     { path: "/evaluator/programs", element: <EvaluatorPrograms /> },
+    { path: "/evaluator/programs/:programId", element: <ProgramMessages />}
+
 
   ],
   LGU: [
@@ -96,12 +103,14 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/inbox", element: <Inbox /> },
     { path: "/lgu/inbox/:id", element: <LGUMessageDetails /> },
     { path: "/lgu/communication", element: <LGUCommunication /> },
+    { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
+    { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
-    { path: "/lgu/programs", element: <LGUPrograms /> },
-    { path: "/lgu/programs/:programId", element: <ProgramDetails />}
+    { path: "/lgu/programs", element: <ProgramCards /> },
+    { path: "/lgu/programs/:programId", element: <ProgramMessages />}
 
   ],
   Viewer: [
@@ -110,11 +119,11 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/inbox", element: <Inbox /> },
     { path: "/viewer/inbox/:id", element: <ViewerMessageDetails /> },
     { path: "/viewer/communication", element: <ViewerCommunication /> },
+    { path: "/viewer/DeletedCommunications", element: <DeletedCommunications/>},
     { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/viewer/scoreBoard", element: <Scoreboard /> },
-
   ],
 };
 
@@ -128,36 +137,41 @@ const App: React.FC = () => {
   const db = getFirestore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        // Check if this UID is in deleted_users
-        const deletedRef = doc(db, "deleted_users", currentUser.uid);
-        const deletedSnap = await getDoc(deletedRef);
-  
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      const uid = currentUser.uid;
+      setUser(currentUser);
+
+      // Set up real-time listener for user deletion
+      const deletedRef = doc(db, "deleted_users", uid);
+      const unsubscribeDeleted = onSnapshot(deletedRef, async (deletedSnap) => {
         if (deletedSnap.exists()) {
           console.warn("This account is marked as deleted. Signing out...");
-          await auth.signOut();
+          await signOut(auth);  // Sign out user if they are marked as deleted
           setUser(null);
           setRole(null);
           setLoading(false);
-          return;
         }
-  
-        setUser(currentUser);
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-  
-        setRole(userDoc.exists() ? userDoc.data().role : null);
-      } else {
-        setUser(null);
-        setRole(null);
-      }
+      });
+
+      // Fetch role from users collection
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      setRole(userDoc.exists() ? userDoc.data().role : null);
       setLoading(false);
+
+      // Cleanup Firestore listener on unmount or auth change
+      return () => unsubscribeDeleted();
     });
-  
-    return () => unsubscribe();
+
+    return () => unsubscribeAuth();
   }, []);
-  
   const getDashboardPath = () => {
     return role && roleRoutesConfig[role] ? roleRoutesConfig[role][0].path : "/login";
   };
@@ -167,15 +181,14 @@ const App: React.FC = () => {
       return (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="spinner-border text-primary" role="status">
-
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
       );
-    
-    if (!user) return <Navigate to="/dashboard" replace />;
+
+    if (!user) return <Navigate to="/login" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
-    
+
     return children;
   };
 
@@ -186,36 +199,40 @@ const App: React.FC = () => {
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
-    );  
+    );
 
-  return (
-    <Router>
-       
-      <div className="app-container">
-        {user && role && (
-          <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />)}
-        <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/dashboard" element={<Landing />} />
-            <Route path="/login" element={<AuthForm />} />
-            <Route path="/register-success" element={<Navigate to="/login" replace />} />
-
-            {/* Protected Routes (Dynamically Rendered) */}
-            {role &&
-              roleRoutesConfig[role]?.map(({ path, element }) => (
-                <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
-              ))}
-              
-            {/* Catch-All Route */}
-            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
-          </Routes>
-          <CheckFrequency onDuePrograms={setDuePrograms} />
-          {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
+    return (
+      <Router>
+        <div className="app-container">
+          {user && role && (
+            <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+          )}
+          <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
+            {user && (
+              <>
+                <CheckFrequency onDuePrograms={setDuePrograms} />
+                {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
+              </>
+            )}
+  
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/dashboard" element={<Landing />} />
+              <Route path="/login" element={<AuthForm />} />
+              <Route path="/register-success" element={<Navigate to="/login" replace />} />
+  
+              {/* Protected Routes (Dynamically Rendered) */}
+              {role &&
+                roleRoutesConfig[role]?.map(({ path, element }) => (
+                  <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
+                ))}
+  
+              {/* Catch-All Route */}
+              <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
+            </Routes>
+          </div>
         </div>
-      </div>
-    </Router>
-  );
-};
-
+      </Router>
+    );
+  };  
 export default App;

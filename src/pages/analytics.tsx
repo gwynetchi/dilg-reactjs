@@ -7,25 +7,20 @@ const Analytics = () => {
 
   return (
     <div className="dashboard-container">
-      <section id="content">
         <main>
         <div className="head-title">
             <div className="left">
               <h1>Analytics</h1>
-              <ul className="breadcrumb">
-                <li>
-                  <a href="/dashboads" className="active">Home</a>
-                </li>
-                <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <a>Analytics</a>
-                </li>
-              </ul>
+              <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <a href="/dashboards">Home</a>
+              </li>
+              <li className="breadcrumb-item active">Analytics</li>
+            </ol>
+          </nav>
             </div>
           </div>
-          <section id="content">
           {/* Analytics Navigation */}
           <div className="analytics-navigation">
             <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/submission-analytics")}>
@@ -43,9 +38,7 @@ const Analytics = () => {
               <span>Monthly Report</span>
             </div>
           </div>
-          </section>
           </main> 
-      </section>
     </div>
   );
 };

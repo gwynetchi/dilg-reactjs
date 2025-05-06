@@ -11,7 +11,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/update-user-auth': 'http://localhost:3001', // 👈 match your Express backend port here
+      '/api': {  // 👈 Changed from '/update-user-auth'
+        target: 'http://localhost:5000', // Your Express backend port
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
     },
   },
 })

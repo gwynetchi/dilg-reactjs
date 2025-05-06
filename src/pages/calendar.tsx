@@ -106,24 +106,19 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <main>
     <div className="dashboard-container">
-      <section id="content">
-
+        <main>
         <div className="head-title">
             <div className="left">
               <h1>Deadlines</h1>
-              <ul className="breadcrumb">
-                <li>
-                  <a href="/dashboards" className="active">Home</a>
-                </li>
-                <li>
-                  <i className="bx bx-chevron-right"></i>
-                </li>
-                <li>
-                  <a>Calendar</a>
-                </li>
-              </ul>
+              <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <a href="/dashboards">Home</a>
+              </li>
+              <li className="breadcrumb-item active">Calendar</li>
+            </ol>
+          </nav>
             </div>
           </div>
 
@@ -159,10 +154,8 @@ const Calendar: React.FC = () => {
               </div>
             )}
           />
-
-      </section>
+      </main>
     </div>
-    </main>
   );
 };
 
