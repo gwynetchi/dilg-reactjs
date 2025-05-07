@@ -240,9 +240,7 @@ const App: React.FC = () => {
             <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
           )}
           <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
-            {user && (
-
-            )}
+ 
             {/* Warning Modal */}
             {showWarning && (
               <div className="warning-modal" style={{
@@ -295,6 +293,7 @@ const App: React.FC = () => {
                 }
               />
               <Route path="/register-success" element={<Navigate to="/login" replace />} />
+              <Route path="/program-links/:programId" element={<ProgramLinksManager />} />
   
               {/* Protected Routes (Dynamically Rendered) */}
               {role &&
