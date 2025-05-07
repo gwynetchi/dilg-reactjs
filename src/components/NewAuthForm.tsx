@@ -2,19 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { setDoc, doc, getDocs, getDoc, collection, query, where } from "firebase/firestore";
-import styles from "../styles/components/NewAuthForm.module.css"; // Make sure the CSS exists
-import { checkIfDeletedUser, softDelete } from '../pages/modules/inbox-modules/softDelete';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { getDoc, doc, getDocs, collection, query, where } from "firebase/firestore";
+import styles from "../styles/components/NewAuthForm.module.css";
+// Adding icons for enhanced UI
+import { FaEye, FaEyeSlash, FaHome, FaExclamationCircle, FaCheck } from "react-icons/fa";
+
 const AuthForm = () => {
-  const [isActive, setIsActive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Select Role");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,98 +25,65 @@ const AuthForm = () => {
   }, []);
 
   useEffect(() => {
-    if (!successMessage && !error) return;
+    if (!successMessage && !error && !resetEmailSent) return;
 
     let loadingTimer: NodeJS.Timeout | null = null;
     let errorTimer: NodeJS.Timeout | null = null;
+    let resetEmailTimer: NodeJS.Timeout | null = null;
 
     loadingTimer = setTimeout(() => setLoading(false), 1000);
 
     if (error) {
       errorTimer = setTimeout(() => setError(""), 5000);
     }
+    
+    if (resetEmailSent) {
+      resetEmailTimer = setTimeout(() => setResetEmailSent(false), 5000);
+    }
 
     return () => {
       if (loadingTimer) clearTimeout(loadingTimer);
       if (errorTimer) clearTimeout(errorTimer);
+      if (resetEmailTimer) clearTimeout(resetEmailTimer);
     };
-  }, [successMessage, error]);
+  }, [successMessage, error, resetEmailSent]);
 
   const resetForm = () => {
     setEmail("");
     setPassword("");
-    setRole("Select Role");
     setError("");
     setLoading(false);
     setSuccessMessage("");
+    setResetEmailSent(false);
   };
-
-  const handleSignUp = async (e: React.FormEvent) => {
+  
+  const handleForgotPassword = async (e: React.MouseEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccessMessage("");
-
-    if (role === "Select Role" || role.trim() === "") {
-      setError("❌ Please select a valid role.");
-      setLoading(false);
+    
+    if (!email.trim()) {
+      setError("Please enter your email address to reset your password.");
       return;
     }
-
+    
+    setResetLoading(true);
+    setError("");
+    
     try {
-      const isDeleted = await checkIfDeletedUser(email.toLowerCase());
-      if (isDeleted) {
-        setError("❌ This email belongs to a deleted account. Please contact an administrator.");
-        setLoading(false);
-        return;
-      }
-
-      const q = query(collection(db, "users"), where("email", "==", email.toLowerCase()));
-      const userSnapshot = await getDocs(q);
-
-      if (!userSnapshot.empty) {
-        const existingUserDoc = userSnapshot.docs[0];
-        const existingUserData = { ...existingUserDoc.data(), id: existingUserDoc.id };
-
-        await softDelete(existingUserData, "users", "deleted_users");
-      }
-
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      await setDoc(doc(db, "users", user.uid), {
-        email: email.toLowerCase(),
-        role,
-        password,
-        createdAt: new Date(),
-      });
-
-      console.log("✅ Account Created Successfully");
-
-      await auth.signOut();
-
-      setSuccessMessage("✅ Account Created Successfully! Please log in.");
-      setLoading(false);
-
-      setTimeout(() => {
-        setIsActive(false);
-        resetForm();
-      }, 500);
-
+      await sendPasswordResetEmail(auth, email);
+      setResetEmailSent(true);
+      setResetLoading(false);
     } catch (err: any) {
       console.error(err);
-
-      if (err.code === "auth/email-already-in-use") {
-        setError("❌ This email is already in use. Please log in or use a different email.");
+      
+      if (err.code === "auth/user-not-found") {
+        setError("No account found with this email.");
       } else if (err.code === "auth/invalid-email") {
-        setError("❌ Please enter a valid email address.");
-      } else if (err.code === "auth/weak-password") {
-        setError("❌ Password should be at least 6 characters.");
+        setError("Invalid email format.");
       } else {
-        setError("❌ Error creating account. Please try again.");
+        setError("Error sending password reset email. Please try again.");
       }
-
-      setLoading(false);
+      
+      setResetLoading(false);
     }
   };
 
@@ -122,13 +92,14 @@ const AuthForm = () => {
     setLoading(true);
     setError("");
     setSuccessMessage("");
+    setResetEmailSent(false);
 
     try {
       const q = query(collection(db, "deleted_users"), where("email", "==", email.toLowerCase()));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        setError("❌ This email belongs to a deleted account. Please contact an administrator.");
+        setError("This email belongs to a deleted account. Please contact an administrator.");
         setLoading(false);
         return;
       }
@@ -137,7 +108,7 @@ const AuthForm = () => {
       const user = userCredential.user;
 
       if (!user) {
-        setError("❌ User authentication failed.");
+        setError("User authentication failed.");
         setLoading(false);
         return;
       }
@@ -149,7 +120,7 @@ const AuthForm = () => {
         const userRole = userDoc.data().role;
         console.log(`User role: ${userRole}`);
 
-        setSuccessMessage("✅ Logged in successfully!");
+        setSuccessMessage("Logged in successfully!");
         setLoading(false);
 
         setTimeout(() => {
@@ -157,7 +128,7 @@ const AuthForm = () => {
           navigate(`/${userRole.toLowerCase()}/dashboard`);
         }, 1000);
       } else {
-        setError("❌ User data not found.");
+        setError("User data not found.");
         await auth.signOut();
         setLoading(false);
       }
@@ -165,15 +136,15 @@ const AuthForm = () => {
       console.error(err);
 
       if (err.code === "auth/user-not-found") {
-        setError("❌ No account found with this email.");
+        setError("No account found with this email.");
       } else if (err.code === "auth/wrong-password") {
-        setError("❌ Incorrect password.");
+        setError("Incorrect password.");
       } else if (err.code === "auth/invalid-email") {
-        setError("❌ Invalid email format.");
+        setError("Invalid email format.");
       } else if (err.code === "auth/invalid-credential") {
-        setError("❌ Invalid credentials. Please check your email and password.");
+        setError("Invalid credentials. Please check your email and password.");
       } else {
-        setError("❌ Error logging in. Please try again.");
+        setError("Error logging in. Please try again.");
       }
 
       setLoading(false);
@@ -185,7 +156,7 @@ const AuthForm = () => {
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            className={`${styles.container} ${isActive ? styles.active : ""}`}
+            className={styles.container}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 120, damping: 10 }}
@@ -194,95 +165,113 @@ const AuthForm = () => {
             <div className={`${styles.formBox} ${styles.login}`}>
               <form onSubmit={handleLogin}>
                 <h1>Login</h1>
-                {successMessage && <p className={styles.success}>{successMessage}</p>}
-                {error && <p className={styles.error}>{error}</p>}
+                
+                {/* Enhanced Success Message */}
+                {successMessage && (
+                  <div className={styles.messageContainer}>
+                    <div className={styles.successMessage}>
+                      <FaCheck className={styles.messageIcon} />
+                      <p>{successMessage}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Enhanced Error Message */}
+                {error && (
+                  <div className={styles.messageContainer}>
+                    <div className={styles.errorMessage}>
+                      <FaExclamationCircle className={styles.messageIcon} />
+                      <p>{error}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Reset Password Success Message */}
+                {resetEmailSent && (
+                  <div className={styles.messageContainer}>
+                    <div className={styles.successMessage}>
+                      <FaCheck className={styles.messageIcon} />
+                      <p>Password reset email sent! Check your inbox.</p>
+                    </div>
+                  </div>
+                )}
+                
                 <div className={styles.inputBox}>
-                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <input 
+                    type="email" 
+                    placeholder="Email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    required 
+                  />
                 </div>
+                
                 <div className={styles.inputBox}>
-                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                  />
+                  <button 
+                    type="button"
+                    className={styles.togglePassword}
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
                 </div>
+                
+                <div className={styles.forgotPasswordContainer}>
+                  <button 
+                    type="button" 
+                    className={styles.forgotPassword}
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? "Sending..." : "Forgot Password?"}
+                  </button>
+                </div>
+                
                 {loading ? (
                   <div className={styles.loadingSpinner}></div>
                 ) : (
-                  <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <motion.button 
+                    type="submit" 
+                    className={styles.btn} 
+                    whileHover={{ scale: 1.05 }} 
+                    whileTap={{ scale: 0.95 }}
+                  >
                     Login
                   </motion.button>
                 )}
               </form>
             </div>
 
-            {/* Registration Form */}
-            <div className={`${styles.formBox} ${styles.register}`}>
-              <form onSubmit={handleSignUp}>
-                <h1>Register</h1>
-                {successMessage && <p className={styles.success}>{successMessage}</p>}
-                {error && <p className={styles.error}>{error}</p>}
-                <div className={styles.inputBox}>
-                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className={styles.inputBox}>
-                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                </div>
-                <div className={styles.inputBox}>
-                  <select value={role} onChange={(e) => setRole(e.target.value)} required>
-                    <option value="Select Role" disabled>Select Role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="LGU">LGU</option>
-                    <option value="Viewer">Viewer</option>
-                    <option value="Evaluator">Evaluator</option>
-                  </select>
-                </div>
-                {loading ? (
-                  <div className={styles.loadingSpinner}></div>
-                ) : (
-                  <motion.button type="submit" className={styles.btn} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    Register
-                  </motion.button>
-                )}
-              </form>
-            </div>
-
-            {/* Toggle Box */}
+            {/* Logo and Description Panel */}
             <div className={styles.toggleBox}>
               <div className={`${styles.togglePanel} ${styles.toggleLeft}`}>
-                <h1>New Here?</h1>
-                <p>Create an account and start your journey!</p>
-                <motion.button
-                  type="button"
-                  className={`${styles.btn} ${styles.registerBtn}`}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    setIsActive(true);
-                    resetForm();
-                  }}
-                >
-                  Register
-                </motion.button>
-                <button className={styles.backLink} onClick={() => navigate("/")}>
-                  ← Back to Home
-                </button>
-              </div>
-
-              <div className={`${styles.togglePanel} ${styles.toggleRight}`}>
-                <h1>Welcome Back!</h1>
-                <p>Sign in to continue</p>
-                <motion.button
-                  type="button"
-                  className={`${styles.btn} ${styles.loginBtn}`}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    setIsActive(false);
-                    resetForm();
-                  }}
-                >
-                  Login
-                </motion.button>
-                <button className={styles.backLink} onClick={() => navigate("/")}>
-                  ← Back to Home
-                </button>
+                <div className={styles.logoContainer}>
+                  <div className={styles.logo}>
+                    <img 
+                      src="/images/logo.png" 
+                      alt="DILG - RMS Logo" 
+                      className={styles.logoImage}
+                    />
+                  </div>
+                  <h1>DILG - RMS</h1>
+                  <p>Records Management System</p>
+                  <motion.button 
+                    className={styles.backLink}
+                    onClick={() => navigate("/")}
+                    whileHover={{ scale: 1.05, backgroundColor: "#ffce1b" }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FaHome className={styles.homeIcon} /> Back to Home
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>

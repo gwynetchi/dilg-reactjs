@@ -331,15 +331,15 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           <div className="d-flex justify-content-end align-items-center">
             <div className="position-relative" ref={notificationMenuRef}>
             <button 
-  className="btn notification" 
-  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-  aria-label="Notifications"
->
-  <i className="bx bx-md bx-bell bx-tada-hover"></i>
-  {unreadCounts.inbox + unreadCounts.programs > 0 && (
-    <span className="num">{unreadCounts.inbox + unreadCounts.programs}</span>
-  )}
-</button>
+              className="btn notification" 
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              aria-label="Notifications"
+            >
+              <i className="bx bx-md bx-bell bx-tada-hover"></i>
+              {unreadCounts.inbox + unreadCounts.programs > 0 && (
+                <span className="num">{unreadCounts.inbox + unreadCounts.programs}</span>
+              )}
+            </button>
 
               {isNotificationOpen && unreadMessages.length > 0 && (
   <div className="notification-dropdown">
