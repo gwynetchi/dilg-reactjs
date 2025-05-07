@@ -7,8 +7,7 @@ import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
 import { useIdleTimer } from 'react-idle-timer'; // Add this import
 
-import SendDueCommunications from "./pages/SendDuePrograms";
-import CheckFrequency from "./pages/CheckFrequency";
+
 import DeletedCommunications from "./pages/DeletedCommunications";
 import Analytics from "./pages/analytics";
 
@@ -41,11 +40,12 @@ import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
 import DeletedUsers from "./pages/admin/DeletedUsers";
 
-
+import ProgramMessageDetails from "./pages/ProgramMessageDetails";
 import EvaluatorPrograms from "./pages/managePrograms";
 import ProgramCards from "./pages/ProgramsCards";
-import ProgramMessages from "./pages/ProgramMessages";
+import ProgramMessages from "./pages/ViewProgramLinks";
 import OrgChartAdmin from "./pages/admin/orgchart";
+import ProgramLinksManager from "./pages/modules/program-modules/ProgramLinksManager";
 
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
@@ -98,7 +98,12 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
     { path: "/lgu/programs", element: <ProgramCards /> },
-    { path: "/lgu/programs/:programId", element: <ProgramMessages />}
+    { path: "/lgu/programs/:programId", element: <ProgramMessages />},
+    { path: "/lgu/program-inbox/message/:id", element: <ProgramMessageDetails /> },
+
+
+
+    
 
   ],
   Viewer: [
@@ -120,7 +125,6 @@ const App: React.FC = () => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
-  const [duePrograms, setDuePrograms] = useState<any[]>([]);
   const auth = getAuth();
   const db = getFirestore();
   const [showWarning, setShowWarning] = useState(false);
@@ -237,10 +241,7 @@ const App: React.FC = () => {
           )}
           <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
             {user && (
-              <>
-                <CheckFrequency onDuePrograms={setDuePrograms} />
-                {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
-              </>
+
             )}
             {/* Warning Modal */}
             {showWarning && (

@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import "../styles/components/dashboard.css";
+import { generateProgramLinks } from "./modules/program-modules/generateProgramLinks";
 
 interface User {
   id: string;
@@ -283,7 +284,7 @@ const CreatePrograms: React.FC = () => {
         imageUrl = await uploadImage();
       }
   
-      await addDoc(collection(db, "programs"), {
+      const programRef = await addDoc(collection(db, "programs"), {
         programName,
         link,
         description,
@@ -295,7 +296,10 @@ const CreatePrograms: React.FC = () => {
         createdAt: serverTimestamp(),
         createdBy: getAuth().currentUser?.uid || null,
       });
-  
+      
+      // ⬇️ Create the programlinks document
+      await generateProgramLinks(programRef.id, frequency, details, duration);
+      
       showAlert("Program successfully added!", "success");
       setProgramName("");
       setLink("");

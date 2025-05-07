@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Table } from "react-bootstrap";
 import "../../../styles/components/dashboard.css";
+import { useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../firebase"; // ✅ Adjust path if needed
 
 export interface Message {
   id: string;
@@ -19,24 +23,36 @@ interface MessageTableProps {
   messages: Message[];
   userId: string | null;
   senderNames: { [key: string]: string };
-  openMessage: (id: string) => void;
   handleDeleteRequest: (
     id: string,
     recipients: string,
     source: "communications" | "programcommunications"
   ) => void;
-  
 }
 
 const MessageTable: React.FC<MessageTableProps> = ({
   messages,
   userId,
   senderNames,
-  openMessage,
   handleDeleteRequest,
 }) => {
   const [showFileModal, setShowFileModal] = useState(false);
   const [currentFileUrl, setCurrentFileUrl] = useState("");
+  const [role, setRole] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userRole = userDoc.data()?.role?.toLowerCase();
+        setRole(userRole);
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   const handleAttachmentClick = (e: React.MouseEvent, url: string) => {
     e.preventDefault();
@@ -115,7 +131,9 @@ const MessageTable: React.FC<MessageTableProps> = ({
             return (
               <tr
                 key={msg.id}
-                onClick={() => openMessage(msg.id)}
+                onClick={() => {
+                  if (role) navigate(`/${role}/program-messages/${msg.id}`);
+                }}
                 style={{
                   cursor: "pointer",
                   fontWeight: isSeen ? "normal" : "bold",
