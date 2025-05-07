@@ -1,87 +1,86 @@
 import { useEffect, useState } from "react";
 import {
   collection,
-  getDocs,
   doc,
   getDoc,
   deleteDoc,
   setDoc,
   serverTimestamp,
+  onSnapshot,
+  query
 } from "firebase/firestore";
 import { db } from "../../firebase";
 
 const DeletedUsers = () => {
   const [deletedUsers, setDeletedUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false); // ✅ NEW STATE
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const fetchDeletedUsers = async () => {
-    setLoading(true);
-    try {
-      const snapshot = await getDocs(collection(db, "deleted_users"));
-      const users = await Promise.all(
-        snapshot.docs.map(async (document) => {
-          const userData = document.data();
-          console.log("Raw user data:", userData);
-          
-          // Handle both string and object deletedBy formats
-          let deletedByUID = typeof userData.deletedBy === 'string' 
-            ? userData.deletedBy 
-            : userData.deletedBy?.id;
-          
-          let deletedByName = typeof userData.deletedBy === 'string'
-            ? userData.deletedBy
-            : userData.deletedBy?.name || userData.deletedBy?.email;
-  
-          // Only fetch user details if we have a UID and need more info
-          if (deletedByUID && !deletedByName) {
-            try {
-              const userDocRef = doc(db, "users", deletedByUID);
-              const userSnapshot = await getDoc(userDocRef);
-              if (userSnapshot.exists()) {
-                const user = userSnapshot.data();
-                deletedByName = 
-                  `${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim() ||
-                  user.email ||
-                  deletedByUID;
+  useEffect(() => {
+    const q = query(collection(db, "deleted_users"));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      try {
+        const users = await Promise.all(
+          snapshot.docs.map(async (document) => {
+            const userData = document.data();
+            
+            let deletedByUID = typeof userData.deletedBy === 'string' 
+              ? userData.deletedBy 
+              : userData.deletedBy?.id;
+            
+            let deletedByName = typeof userData.deletedBy === 'string'
+              ? userData.deletedBy
+              : userData.deletedBy?.name || userData.deletedBy?.email;
+
+            if (deletedByUID && !deletedByName) {
+              try {
+                const userDocRef = doc(db, "users", deletedByUID);
+                const userSnapshot = await getDoc(userDocRef);
+                if (userSnapshot.exists()) {
+                  const user = userSnapshot.data();
+                  deletedByName = 
+                    `${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim() ||
+                    user.email ||
+                    deletedByUID;
+                }
+              } catch (err) {
+                console.warn("Couldn't fetch deleter details:", err);
               }
-            } catch (err) {
-              console.warn("Couldn't fetch deleter details:", err);
             }
-          }
-  
-          return { 
-            id: document.id, 
-            ...userData,
-            deletedByName: deletedByName || "System",
-            // Convert Firestore Timestamp to JS Date
-            deletedAt: userData.deletedAt?.toDate?.() || null
-          };
-        })
-      );
-      setDeletedUsers(users);
-    } catch (err) {
-      console.error("Error fetching deleted users:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+            return { 
+              id: document.id, 
+              ...userData,
+              deletedByName: deletedByName || "Unknown",
+              deletedAt: userData.deletedAt?.toDate?.() || null
+            };
+          })
+        );
+        setDeletedUsers(users);
+      } catch (err) {
+        console.error("Error fetching deleted users:", err);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Clean up the listener when component unmounts
+    return () => unsubscribe();
+  }, []);
+
   const handleRestoreUser = async (user: any) => {
     try {
-      // Remove archive-specific fields before restoring
       const { deletedAt, deletedBy, originalCollection, ...userData } = user;
       
       await setDoc(doc(db, "users", user.id), {
         ...userData,
         restoredAt: new Date(),
-        // Preserve original createdAt if it exists
         createdAt: userData.createdAt || serverTimestamp()
       });
-  
+
       await deleteDoc(doc(db, "deleted_users", user.id));
-      setDeletedUsers((prev) => prev.filter((u) => u.id !== user.id));
       setShowConfirm(false);
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
@@ -89,13 +88,9 @@ const DeletedUsers = () => {
       console.error("Failed to restore user:", error);
     }
   };
-  useEffect(() => {
-    fetchDeletedUsers();
-  }, []);
 
   return (
     <div className="dashboard-container">
-      {/* ✅ Success Message Display */}
       {showSuccessMessage && (
         <div className="restore-success-message">
           User Restored Successfully!
@@ -129,60 +124,65 @@ const DeletedUsers = () => {
             </div>
           ) : (
             <div className="table-wrapper">
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Password</th>
-                    <th>Deleted At</th>
-                    <th>Deleted By</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deletedUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td>
-                        {`${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim()}
-                      </td>
-                      <td>{user.email}</td>
-                      <td>{user.role}</td>
-                      <td>{user.password}</td>
-                      <td>
-                        {user.deletedAt
-                          ? user.deletedAt.toLocaleString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "numeric",
-                              minute: "numeric",
-                            })
-                          : "Unknown"}
-                      </td>
-                      <td>{user.deletedByName || "N/A"}</td>
-                      <td>
-                        <button
-                          className="btn btn-success"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setShowConfirm(true);
-                          }}
-                        >
-                          Restore
-                        </button>
-                      </td>
+              {deletedUsers.length === 0 ? (
+                <div className="no-deleted-users">
+                  <p>No Deleted Users</p>
+                </div>
+              ) : (
+                <table className="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Full Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Password</th>
+                      <th>Deleted At</th>
+                      <th>Deleted By</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {deletedUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td>
+                          {`${user.fname || ""} ${user.mname || ""} ${user.lname || ""}`.trim()}
+                        </td>
+                        <td>{user.email}</td>
+                        <td>{user.role}</td>
+                        <td>{user.password}</td>
+                        <td>
+                          {user.deletedAt
+                            ? user.deletedAt.toLocaleString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "numeric",
+                              })
+                            : "Unknown"}
+                        </td>
+                        <td>{user.deletedByName || "N/A"}</td>
+                        <td>
+                          <button
+                            className="btn btn-success"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowConfirm(true);
+                            }}
+                          >
+                            Restore
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </main>
       </section>
 
-      {/* Confirmation Modal */}
       {showConfirm && selectedUser && (
         <div
           className="modal show fade d-block"
