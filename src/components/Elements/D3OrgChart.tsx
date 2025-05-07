@@ -290,7 +290,7 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
         <TransformComponent>
           <div ref={svgRef} />
         </TransformComponent>
-        \
+        
       </>
     );
   }}
