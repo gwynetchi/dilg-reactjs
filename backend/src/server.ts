@@ -6,12 +6,12 @@ const app = express();
 
 // Enable CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // Your Vite frontend
+  origin: 'http://localhost:5173',
   credentials: true
 }));
 
 app.use(express.json());
-app.use('/api', userRoutes); // This creates /api/update-credentials endpoint
+app.use('/api/users', userRoutes); // Only mount once
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

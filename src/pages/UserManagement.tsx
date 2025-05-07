@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, doc, deleteDoc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { db, secondaryAuth } from "../firebase";
+import { auth, db, secondaryAuth } from "../firebase";
 import { softDelete } from "../pages/modules/inbox-modules/softDelete";
+
+interface EditUserData {
+  fname: string;
+  mname: string;
+  lname: string;
+  role: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
+}
 
 type UserType = {
   id: string;
@@ -22,15 +32,16 @@ const UserManagement = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [editData, setEditData] = useState({
+  const [editData, setEditData] = useState<EditUserData>({
     fname: "",
     mname: "",
     lname: "",
     role: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
-  
+    
   const [showPassword, setShowPassword] = useState(false);
   const [updatedRole, setUpdatedRole] = useState<string>("");
   const [filter, setFilter] = useState("All");
@@ -109,7 +120,6 @@ const UserManagement = () => {
   }
 };
 
-
   const handleCreateUser = async () => {
     const { email, password, role, fname, mname, lname } = newUser;
 
@@ -187,6 +197,7 @@ const UserManagement = () => {
       showNotification("❌ Failed to Delete User! " + (error as any).message, "error");
     }
   };
+
   const handleEditClick = (user: UserType) => {
     setEditingUser(user);
     setEditData({
@@ -195,81 +206,117 @@ const UserManagement = () => {
       lname: user.lname || "",
       role: user.role || "",
       email: user.email || "",
-      password: user.password || "",
+      password: "", // Don't pre-fill password for security
+      confirmPassword: "",
     });
   };
-
+  
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setEditData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const updateUserAuth = async (uid: string, email: string, password: string) => {
-    const response = await fetch('http://localhost:5000/update-user-auth', {
+  const validateEditForm = (): boolean => {
+    if (!editData.fname.trim() || !editData.lname.trim()) {
+      showNotification("First name and last name are required", "warning");
+      return false;
+    }
+  
+    if (!editData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      showNotification("Please enter a valid email address", "warning");
+      return false;
+    }
+  
+    // Only validate password if it's being changed
+    if (editData.password) {
+      if (editData.password.length < 6) {
+        showNotification("Password must be at least 6 characters", "warning");
+        return false;
+      }
+  
+      if (editData.password !== editData.confirmPassword) {
+        showNotification("Passwords do not match", "warning");
+        return false;
+      }
+    }
+  
+    return true;
+  };
+  
+  
+// Replace updateUserAuth function with:
+const updateUserAuth = async (uid: string, email: string, password: string) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('Not authenticated');
+
+    const token = await currentUser.getIdToken();
+    
+    const response = await fetch('http://localhost:5000/api/users/update-credentials', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ uid, email, password }),
     });
 
-    let data = null;
-    try {
-      data = await response.json();
-    } catch (err) {
-      throw new Error("❌ Failed to parse response from server. Make sure backend is returning JSON.");
-    }
+    const data = await response.json();
 
-    if (!response.ok || !data?.success) {
-      throw new Error(data?.error || "❌ Unknown error occurred while updating user.");
+    if (!response.ok) {
+      throw new Error(data.error || `Request failed with status ${response.status}`);
     }
 
     return data;
-  };
+  } catch (error) {
+    console.error('Error updating auth:', error);
+    throw error;
+  }
+};
+const handleUpdate = async () => {
+  if (!editingUser || !validateEditForm()) return;
 
-  const handleUpdate = async () => {
-    if (!editingUser) return;
+  try {
+    // Prepare updates for Firestore
+    const updates: Partial<UserType> = {
+      fname: editData.fname,
+      mname: editData.mname,
+      lname: editData.lname,
+      role: editData.role,
+      email: editData.email,
+      password: editData.password,
+    };
 
-    if (!editData.fname.trim() || !editData.lname.trim() || !editData.email.trim()) {
-      showNotification("❗ Please fill in all required fields: First Name, Last Name, and Email.", "warning");
-      return;
+    // Only update auth if email or password changed
+    if (editData.email !== editingUser.email || editData.password) {
+      await updateUserAuth(
+        editingUser.id,
+        editData.email,
+        editData.password || '' // Send empty string if no password change
+      );
     }
 
-    try {
-      let authResponse = null;
-      const isPasswordChanged = editData.password !== editingUser.password;
+    // Update Firestore
+    await updateDoc(doc(db, "users", editingUser.id), updates);
 
-      if (isPasswordChanged) {
-        authResponse = await updateUserAuth(editingUser.id, editData.email, editData.password);
-        if (!authResponse || !authResponse.success) {
-          showNotification("❌ Failed to Update Firebase Auth Credentials", "error");
-          return;
-        }
-      }
-
-      const userRef = doc(db, "users", editingUser.id);
-
-      const updatedData: any = {
-        fname: editData.fname,
-        mname: editData.mname,
-        lname: editData.lname,
-        role: editData.role,
-        email: editData.email,
-      };
-
-      if (isPasswordChanged) {
-        updatedData.password = editData.password;
-      }
-
-      await updateDoc(userRef, updatedData);
-
-      showNotification("✅ User Updated Successfully!", "success");
-      fetchUsers();
-      setEditingUser(null);
-    } catch (error) {
-      console.error("Error updating user:", error);
-      showNotification("❌ Failed to Update User Credentials", "error");
+    showNotification("✅ User updated successfully!", "success");
+    setEditingUser(null);
+    fetchUsers();
+  } catch (error: any) {
+    console.error("Update error:", error);
+    let errorMessage = "Failed to update user";
+    if (error.message.includes("email-already-in-use")) {
+      errorMessage = "Email already in use by another account";
+    } else if (error.message) {
+      errorMessage = error.message;
     }
-  };
+    showNotification(`❌ ${errorMessage}`, "error");
+  }
+};
+
 
   const handleCancelEdit = () => {
     setEditingUser(null);
@@ -494,31 +541,125 @@ const UserManagement = () => {
           </div>
 
           {editingUser && (
-            <div className="modal-backdrop">
-              <div className="modal-content">
-                <h3>Edit User</h3>
-                <input type="text" name="fname" placeholder="First Name" value={editData.fname} onChange={handleEditChange} className="form-control mb-2" />
-                <input type="text" name="mname" placeholder="Middle Name" value={editData.mname} onChange={handleEditChange} className="form-control mb-2" />
-                <input type="text" name="lname" placeholder="Last Name" value={editData.lname} onChange={handleEditChange} className="form-control mb-2" />
-                <input type="email" name="email" placeholder="Email" value={editData.email} onChange={handleEditChange} className="form-control mb-2" />
-                <div className="input-group mb-2">
-                  <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={editData.password} onChange={handleEditChange} className="form-control" />
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPassword((prev) => !prev)}>{showPassword ? "Hide" : "Show"}</button>
-                </div>
-                <select name="role" value={editData.role} onChange={handleEditChange} className="form-select mb-2">
-                  <option value="Admin">Admin</option>
-                  <option value="LGU">LGU</option>
-                  <option value="Evaluator">Evaluator</option>
-                  <option value="Viewer">Viewer</option>
-                </select>
-                <div className="d-flex justify-content-end">
-                  <button className="btn btn-secondary me-2" onClick={handleCancelEdit}>Cancel</button>
-                  <button className="btn btn-success" onClick={handleUpdate}>Save Changes</button>
-                </div>
-              </div>
+  <div className="modal show fade d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+    <div className="modal-dialog modal-lg">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Edit User: {editingUser.email}</h5>
+          <button type="button" className="btn-close" onClick={handleCancelEdit}></button>
+        </div>
+        <div className="modal-body">
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label className="form-label">First Name</label>
+              <input
+                type="text"
+                name="fname"
+                className="form-control"
+                value={editData.fname}
+                onChange={handleEditChange}
+                required
+              />
             </div>
-          )}
-
+            <div className="col-md-4">
+              <label className="form-label">Middle Name</label>
+              <input
+                type="text"
+                name="mname"
+                className="form-control"
+                value={editData.mname}
+                onChange={handleEditChange}
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Last Name</label>
+              <input
+                type="text"
+                name="lname"
+                className="form-control"
+                value={editData.lname}
+                onChange={handleEditChange}
+                required
+              />
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                name="email"
+                className="form-control"
+                value={editData.email}
+                onChange={handleEditChange}
+                required
+              />
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label">Role</label>
+              <select
+                name="role"
+                className="form-select"
+                value={editData.role}
+                onChange={handleEditChange}
+              >
+                <option value="Admin">Admin</option>
+                <option value="Evaluator">Evaluator</option>
+                <option value="LGU">LGU</option>
+                <option value="Viewer">Viewer</option>
+              </select>
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label">New Password</label>
+              <div className="input-group">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  className="form-control"
+                  value={editData.password}
+                  onChange={handleEditChange}
+                  placeholder="Leave blank to keep current"
+                />
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+              <small className="text-muted">Minimum 6 characters</small>
+            </div>
+            
+            <div className="col-md-6">
+              <label className="form-label">Confirm Password</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="confirmPassword"
+                className="form-control"
+                value={editData.confirmPassword}
+                onChange={handleEditChange}
+                placeholder="Confirm new password"
+                disabled={!editData.password}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={handleCancelEdit}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={handleUpdate}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+  
+            {/* Confirmation Modal for Deletion */}
           {showConfirm && (
             <div className="modal show fade d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
               <div className="modal-dialog modal-dialog-centered" role="document">
