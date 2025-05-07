@@ -142,7 +142,6 @@ const DeletedCommunications = () => {
 
   return (
     <div className="dashboard-container">
-      <main>
         <div className="head-title">
           <div className="left">
             <h1>Deleted Communications</h1>
@@ -151,59 +150,57 @@ const DeletedCommunications = () => {
                 <li className="breadcrumb-item">
                   <a href="/dashboards">Home</a>
                 </li>
-                <li className="breadcrumb-item active">Deleted Communication</li>
+                <li className="breadcrumb-item active">Deleted Communications</li>
               </ol>
             </nav>
           </div>
         </div>
-      </main>
 
-      {/* Status Messages */}
-      {successMessage && (
-        <div className="alert alert-success alert-dismissible fade show">
-          {successMessage}
-          <button 
-            type="button" 
-            className="btn-close" 
-            onClick={() => setSuccessMessage("")}
-            aria-label="Close"
-          />
-        </div>
-      )}
-      
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show">
-          {error}
-          <button 
-            type="button" 
-            className="btn-close" 
-            onClick={() => setError("")}
-            aria-label="Close"
-          />
-        </div>
-      )}
-
-      {userRole !== "Admin" && (
-        <div className="alert alert-info mb-3">
-          You're only seeing communications you deleted. Admins can view all deleted communications.
-        </div>
-      )}
-
-      {loading ? (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+        {/* Status Messages */}
+        {successMessage && (
+          <div className="alert alert-success d-flex align-items-center gap-2 mb-3">
+            <i className="bx bx-check-circle fs-4"></i>
+            <div>{successMessage}</div>
           </div>
-        </div>
-      ) : communications.length === 0 ? (
-        <div className="alert alert-info">
-          {userRole === "Admin" 
-            ? "No deleted communications found" 
-            : "You haven't deleted any communications"}
-        </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-striped table-hover">
+        )}
+        
+        {error && (
+          <div className="alert alert-danger d-flex align-items-center gap-2 mb-3">
+            <i className="bx bx-error-circle fs-4"></i>
+            <div>{error}</div>
+          </div>
+        )}
+
+        {userRole !== "Admin" && (
+          <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
+            <i className="bx bx-info-circle fs-4"></i>
+            <div>You're only seeing communications you deleted. Admins can view all deleted communications.</div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-center my-5 py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        ) : communications.length === 0 ? (
+          <div className="empty-state text-center py-5">
+            <i className="bx bx-message-square-x fs-1 text-muted mb-3"></i>
+            <h4 className="text-muted">
+              {userRole === "Admin" 
+                ? "No Deleted Communications" 
+                : "No Communications Deleted By You"}
+            </h4>
+            <p className="text-muted">
+              {userRole === "Admin" 
+                ? "There are currently no deleted communications in the system" 
+                : "You haven't deleted any communications yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-striped table-hover">
             <thead className="table-dark">
               <tr>
                 <th>Subject</th>

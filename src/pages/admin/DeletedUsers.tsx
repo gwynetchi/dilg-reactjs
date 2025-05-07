@@ -13,7 +13,7 @@ import { db } from "../../firebase";
 
 const DeletedUsers = () => {
   const [deletedUsers, setDeletedUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true); // Start with loading true
+  const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -66,7 +66,6 @@ const DeletedUsers = () => {
       }
     });
 
-    // Clean up the listener when component unmounts
     return () => unsubscribe();
   }, []);
 
@@ -92,8 +91,9 @@ const DeletedUsers = () => {
   return (
     <div className="dashboard-container">
       {showSuccessMessage && (
-        <div className="restore-success-message">
-          User Restored Successfully!
+        <div className="alert alert-success d-flex align-items-center gap-2 mb-3">
+          <i className="bx bx-check-circle fs-4"></i>
+          <div>User restored successfully!</div>
         </div>
       )}
 
@@ -123,10 +123,12 @@ const DeletedUsers = () => {
               <div className="spinner"></div>
             </div>
           ) : (
-            <div className="table-wrapper">
+            <div className="inbox-container">
               {deletedUsers.length === 0 ? (
-                <div className="no-deleted-users">
-                  <p>No Deleted Users</p>
+                <div className="empty-state text-center py-5">
+                  <i className="bx bx-user-x fs-1 text-muted mb-3"></i>
+                  <h4 className="text-muted">No Deleted Users</h4>
+                  <p className="text-muted">There are currently no deleted users in the system</p>
                 </div>
               ) : (
                 <table className="table table-bordered">
@@ -135,7 +137,6 @@ const DeletedUsers = () => {
                       <th>Full Name</th>
                       <th>Email</th>
                       <th>Role</th>
-                      <th>Password</th>
                       <th>Deleted At</th>
                       <th>Deleted By</th>
                       <th>Actions</th>
@@ -149,7 +150,6 @@ const DeletedUsers = () => {
                         </td>
                         <td>{user.email}</td>
                         <td>{user.role}</td>
-                        <td>{user.password}</td>
                         <td>
                           {user.deletedAt
                             ? user.deletedAt.toLocaleString("en-US", {
@@ -161,7 +161,7 @@ const DeletedUsers = () => {
                               })
                             : "Unknown"}
                         </td>
-                        <td>{user.deletedByName || "N/A"}</td>
+                        <td>{user.deletedByName || "System"}</td>
                         <td>
                           <button
                             className="btn btn-success"
@@ -170,7 +170,7 @@ const DeletedUsers = () => {
                               setShowConfirm(true);
                             }}
                           >
-                            Restore
+                            <i className="bx bx-undo me-1"></i> Restore
                           </button>
                         </td>
                       </tr>
@@ -201,7 +201,8 @@ const DeletedUsers = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <p>Are you sure you want to restore this user?</p>
+                <p>Are you sure you want to restore user: <strong>{selectedUser.fname} {selectedUser.lname}</strong>?</p>
+                <p className="text-muted">This will move them back to the active users list.</p>
               </div>
               <div className="modal-footer">
                 <button
@@ -216,7 +217,7 @@ const DeletedUsers = () => {
                   className="btn btn-success"
                   onClick={() => handleRestoreUser(selectedUser)}
                 >
-                  Restore
+                  <i className="bx bx-undo me-1"></i> Restore
                 </button>
               </div>
             </div>
