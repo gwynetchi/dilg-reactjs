@@ -69,6 +69,12 @@ const Profile = () => {
       return;
     }
   
+    // Add password validation
+    if (password.trim() !== "" && password.length <= 6) {
+      showAlert("Password must be greater than 6 characters!", "warning");
+      return;
+    }
+  
     setLoading(true);
     setUploadingImage(true);
   
@@ -138,7 +144,7 @@ const Profile = () => {
       setUploadingImage(false);
     }
   };
-
+  
   const showAlert = (message: string, type: string) => {
     setAlert({ message, type });
     setTimeout(() => setAlert(null), 5000);
