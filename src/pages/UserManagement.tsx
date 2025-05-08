@@ -32,7 +32,6 @@ const UserManagement = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [editData, setEditData] = useState<EditUserData>({
@@ -46,7 +45,6 @@ const UserManagement = () => {
   });
     
   const [showPassword, setShowPassword] = useState(false);
-  const [updatedRole, setUpdatedRole] = useState<string>("");
   const [filter, setFilter] = useState("All");
   const [newUser, setNewUser] = useState<Omit<UserType, "id"> & { password: string }>({
     email: "",
@@ -108,20 +106,6 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
-
-  const handleSaveRole = async (userId: string) => {
-  try {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { role: updatedRole });
-
-    setUsers(prev => prev.map(user => user.id === userId ? { ...user, role: updatedRole } : user));
-    setEditingUserId(null);
-    showNotification("✅ Role updated successfully!", "success");
-  } catch (error) {
-    console.error("Error updating role:", error);
-    showNotification("❌ Failed to update role.", "error");
-  }
-};
 
   const handleCreateUser = async () => {
     const { email, password, role, fname, mname, lname } = newUser;
@@ -502,33 +486,6 @@ const handleUpdate = async () => {
                               <td>{user.password}</td>
                               <td>{user.role}</td>
                               <td>
-                                {editingUserId === user.id ? (
-                                  <>
-                                    <select
-                                      value={updatedRole}
-                                      onChange={(e) => setUpdatedRole(e.target.value)}
-                                      className="form-select form-select-sm d-inline-block w-auto me-2"
-                                    >
-                                      <option value="Admin">Admin</option>
-                                      <option value="Evaluator">Evaluator</option>
-                                      <option value="LGU">LGU</option>
-                                      <option value="Viewer">Viewer</option>
-                                    </select>
-                                    <button className="btn btn-success btn-sm me-1" onClick={() => handleSaveRole(user.id)}>
-                                      Save
-                                    </button>
-                                    <button className="btn btn-secondary btn-sm" onClick={() => setEditingUserId(null)}>
-                                      Cancel
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button className="btn btn-primary btn-sm me-1" onClick={() => {
-                                      setEditingUserId(user.id);
-                                      setUpdatedRole(user.role);
-                                    }}>
-                                      Edit Role
-                                    </button>
                                     <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
                                       Edit Info
                                     </button>
@@ -540,9 +497,6 @@ const handleUpdate = async () => {
                                 >
                                   Delete
                                 </button>
-
-                                  </>
-                                )}
                               </td>
                             </tr>
                           ))
