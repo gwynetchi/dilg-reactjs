@@ -21,10 +21,22 @@ type UserType = {
   email: string;
   password?: string;
   role: string;
+  createdAt?: string;
   fname?: string;
   mname?: string;
   lname?: string;
   profileImage?: string;
+};
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 const UserManagement = () => {
@@ -74,6 +86,11 @@ const UserManagement = () => {
           id: docSnap.id,
           ...docSnap.data(),
         })) as UserType[];
+        userList.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
         setUsers(userList);
         setLoading(false);
       }, (error) => {
@@ -131,6 +148,7 @@ const UserManagement = () => {
         lname,
         password,
         profileImage: "",
+        createdAt: new Date().toISOString() 
       });
 
       showNotification("✅ User created successfully!");
@@ -457,6 +475,7 @@ const handleUpdate = async () => {
                           <th>Email</th>
                           <th>Password</th>
                           <th>Role</th>
+                          <th>Created At</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
@@ -485,6 +504,7 @@ const handleUpdate = async () => {
                               <td>{user.email}</td>
                               <td>{user.password}</td>
                               <td>{user.role}</td>
+                              <td>{formatDate(user.createdAt)}</td>
                               <td>
                                     <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
                                       Edit Info
