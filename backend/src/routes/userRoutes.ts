@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, Router } from 'express';
 import { auth, db } from "../firebaseAdmin";
+import * as admin from "firebase-admin";
 import { UserRecord } from "firebase-admin/auth";
 
 // 1. Type Augmentation for Express Request
@@ -13,6 +14,84 @@ declare module 'express' {
 }
 
 const router = Router();
+
+interface DeleteUserRequest {
+  uid: string;
+  permanent: boolean; // true for permanent delete, false for soft delete
+}
+
+const deleteUserHandler = async (
+  req: Request,
+  res: Response<ResponseBody>
+) => {
+  const { uid, permanent } = req.body as DeleteUserRequest;
+
+  try {
+    // Validate inputs
+    if (!uid) {
+      return res.status(400).json({
+        success: false,
+        error: "User ID is required"
+      });
+    }
+
+    // Check if target user exists
+    try {
+      await auth.getUser(uid);
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    if (permanent) {
+      // Permanent deletion - remove from Auth and Firestore
+      await auth.deleteUser(uid);
+      await db.collection("users").doc(uid).delete();
+      
+      // Optional: Move to deleted_users collection for records
+      // const userDoc = await db.collection("users").doc(uid).get();
+      // if (userDoc.exists) {
+      //   await db.collection("deleted_users").doc(uid).set({
+      //     ...userDoc.data(),
+      //     deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+      //     deletedBy: req.adminUser?.uid
+      //   });
+      // }
+      
+      return res.status(200).json({
+        success: true,
+        message: "User permanently deleted from system"
+      });
+    } else {
+      // Soft delete - disable account and move to deleted_users
+      await auth.updateUser(uid, { disabled: true });
+      
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        await db.collection("deleted_users").doc(uid).set({
+          ...userDoc.data(),
+          deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+          deletedBy: req.adminUser?.uid
+        });
+        await db.collection("users").doc(uid).delete();
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "User account disabled and moved to deleted users"
+      });
+    }
+
+  } catch (error: any) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to delete user"
+    });
+  }
+};
 
 interface UpdateCredentialsRequest {
   uid: string;
@@ -187,6 +266,15 @@ router.post("/update-credentials",
   }, 
   (req: Request, res: Response, next: NextFunction) => {
     updateCredentialsHandler(req, res).catch(next);
+  }
+);
+
+router.post("/delete", 
+  (req: Request, res: Response, next: NextFunction) => {
+    verifyAdmin(req, res, next).catch(next);
+  }, // Only admins can delete users
+  (req: Request, res: Response, next: NextFunction) => {
+    deleteUserHandler(req, res).catch(next);
   }
 );
 

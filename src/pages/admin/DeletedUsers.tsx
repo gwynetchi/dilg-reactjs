@@ -10,13 +10,16 @@ import {
   query
 } from "firebase/firestore";
 import { db } from "../../firebase";
+import { deleteUserAccount } from "../../utils/api";
 
 const DeletedUsers = () => {
   const [deletedUsers, setDeletedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "deleted_users"));
@@ -81,10 +84,38 @@ const DeletedUsers = () => {
 
       await deleteDoc(doc(db, "deleted_users", user.id));
       setShowConfirm(false);
+      setSuccessMessage("User restored successfully!");
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
     } catch (error) {
       console.error("Failed to restore user:", error);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      // Call the API endpoint that handles both Auth and Firestore deletion
+      const response = await deleteUserAccount(selectedUser.id, true);
+      
+      if (response.success) {
+        setShowDeleteConfirm(false);
+        setSuccessMessage(response.message || "User permanently deleted from both database and authentication!");
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+        
+        // Optional: Refresh the list by filtering out the deleted user
+        setDeletedUsers(prevUsers => prevUsers.filter(user => user.id !== selectedUser.id));
+      } else {
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      console.error("Failed to permanently delete user:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      setSuccessMessage("Error deleting user: " + errorMessage);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 5000);
     }
   };
 
@@ -93,7 +124,7 @@ const DeletedUsers = () => {
       {showSuccessMessage && (
         <div className="alert alert-success d-flex align-items-center gap-2 mb-3">
           <i className="bx bx-check-circle fs-4"></i>
-          <div>User restored successfully!</div>
+          <div>{successMessage}</div>
         </div>
       )}
 
@@ -162,7 +193,7 @@ const DeletedUsers = () => {
                             : "Unknown"}
                         </td>
                         <td>{user.deletedByName || "System"}</td>
-                        <td>
+                        <td className="d-flex gap-2">
                           <button
                             className="btn btn-success"
                             onClick={() => {
@@ -171,6 +202,15 @@ const DeletedUsers = () => {
                             }}
                           >
                             <i className="bx bx-undo me-1"></i> Restore
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowDeleteConfirm(true);
+                            }}
+                          >
+                            <i className="bx bx-trash me-1"></i> Delete
                           </button>
                         </td>
                       </tr>
@@ -183,6 +223,7 @@ const DeletedUsers = () => {
         </main>
       </section>
 
+      {/* Restore Confirmation Modal */}
       {showConfirm && selectedUser && (
         <div
           className="modal show fade d-block"
@@ -218,6 +259,53 @@ const DeletedUsers = () => {
                   onClick={() => handleRestoreUser(selectedUser)}
                 >
                   <i className="bx bx-undo me-1"></i> Restore
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedUser && (
+        <div
+          className="modal show fade d-block"
+          tabIndex={-1}
+          role="dialog"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Permanent Deletion</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowDeleteConfirm(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-danger">
+                  <i className="bx bx-error-circle me-2"></i>
+                  <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>Are you sure you want to permanently delete user: <strong>{selectedUser.fname} {selectedUser.lname}</strong>?</p>
+                <p className="text-muted">All user data will be permanently removed from the system.</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handlePermanentDelete}
+                >
+                  <i className="bx bx-trash me-1"></i> Delete Permanently
                 </button>
               </div>
             </div>

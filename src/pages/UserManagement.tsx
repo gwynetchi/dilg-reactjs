@@ -26,6 +26,7 @@ type UserType = {
 };
 
 const UserManagement = () => {
+  const currentUserId = auth.currentUser?.uid || null; // Get the current user's ID
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
@@ -523,9 +524,15 @@ const handleUpdate = async () => {
       <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
         Edit Info
       </button>
-      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteClick(user.id)}>
-        Delete
-      </button>
+      <button 
+    className="btn btn-danger btn-sm" 
+    onClick={() => handleDeleteClick(user.id)}
+    disabled={user.id === currentUserId}
+    title={user.id === currentUserId ? "Cannot delete your own account" : ""}
+  >
+    Delete
+  </button>
+
     </>
   )}
 </td>
