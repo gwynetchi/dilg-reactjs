@@ -5,7 +5,7 @@ import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
-import { useIdleTimer } from 'react-idle-timer'; // Add this import
+import { useIdleTimer } from 'react-idle-timer'; 
 
 
 import DeletedCommunications from "./pages/DeletedCommunications";

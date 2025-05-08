@@ -122,7 +122,7 @@ const Calendar: React.FC = () => {
             </div>
           </div>
 
-          <div className="full-calendar-container"></div>
+          <div className="calendar-container"></div>
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
