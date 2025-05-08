@@ -7,7 +7,7 @@ import { getDoc, doc, getDocs, collection, query, where } from "firebase/firesto
 import styles from "../styles/components/NewAuthForm.module.css";
 // Adding icons for enhanced UI
 import { FaEye, FaEyeSlash, FaHome, FaExclamationCircle, FaCheck } from "react-icons/fa";
-
+import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
 const AuthForm = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState("");
@@ -74,55 +74,47 @@ const AuthForm = () => {
       setResetLoading(false);
     } catch (err: any) {
       console.error(err);
-      
-      if (err.code === "auth/user-not-found") {
-        setError("No account found with this email.");
-      } else if (err.code === "auth/invalid-email") {
-        setError("Invalid email format.");
-      } else {
-        setError("Error sending password reset email. Please try again.");
-      }
-      
+      setError(getFirebaseErrorMessage(err.code || err.message));
       setResetLoading(false);
     }
   };
-
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccessMessage("");
     setResetEmailSent(false);
-
+  
     try {
       const q = query(collection(db, "deleted_users"), where("email", "==", email.toLowerCase()));
       const querySnapshot = await getDocs(q);
-
+  
       if (!querySnapshot.empty) {
         setError("This email belongs to a deleted account. Please contact an administrator.");
         setLoading(false);
         return;
       }
-
+  
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+  
       if (!user) {
         setError("User authentication failed.");
         setLoading(false);
         return;
       }
-
+  
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
-
+  
       if (userDoc.exists()) {
         const userRole = userDoc.data().role;
         console.log(`User role: ${userRole}`);
-
+  
         setSuccessMessage("Logged in successfully!");
         setLoading(false);
-
+  
         setTimeout(() => {
           resetForm();
           navigate(`/${userRole.toLowerCase()}/dashboard`);
@@ -134,23 +126,10 @@ const AuthForm = () => {
       }
     } catch (err: any) {
       console.error(err);
-
-      if (err.code === "auth/user-not-found") {
-        setError("No account found with this email.");
-      } else if (err.code === "auth/wrong-password") {
-        setError("Incorrect password.");
-      } else if (err.code === "auth/invalid-email") {
-        setError("Invalid email format.");
-      } else if (err.code === "auth/invalid-credential") {
-        setError("Invalid credentials. Please check your email and password.");
-      } else {
-        setError("Error logging in. Please try again.");
-      }
-
+      setError(getFirebaseErrorMessage(err.code || err.message));
       setLoading(false);
     }
   };
-
   return (
     <div className={styles.authWrapper}>
       <AnimatePresence>

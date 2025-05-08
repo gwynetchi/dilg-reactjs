@@ -4,6 +4,7 @@ import { auth, db } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import "../styles/components/dashboard.css";
 import { updateUserCredentials } from "../utils/api";
+import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -135,16 +136,15 @@ const Profile = () => {
         setProfileImage(originalProfileImage);
       }
   
-      showAlert(
-        error.message || "Failed to update profile. Please try again.",
-        "danger"
-      );
+      // Use the Firebase error message utility
+      const errorMessage = getFirebaseErrorMessage(error.code || error.message);
+      showAlert(errorMessage || "Failed to update profile. Please try again.", "danger");
     } finally {
       setLoading(false);
       setUploadingImage(false);
     }
   };
-  
+    
   const showAlert = (message: string, type: string) => {
     setAlert({ message, type });
     setTimeout(() => setAlert(null), 5000);

@@ -3,6 +3,7 @@ import { collection, getDocs, doc, deleteDoc, getDoc, setDoc, updateDoc, onSnaps
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db, secondaryAuth } from "../firebase";
 import { softDelete } from "../pages/modules/inbox-modules/softDelete";
+import { getFirebaseErrorMessage } from "../utils/firebaseErrors";
 
 interface EditUserData {
   fname: string;
@@ -160,7 +161,8 @@ const UserManagement = () => {
       fetchUsers();
     } catch (error: any) {
       console.error("Error creating user:", error.message);
-      showNotification("❌ Failed to create user: " + error.message);
+      const errorMessage = getFirebaseErrorMessage(error.code || error.message);
+      showNotification(`❌ ${errorMessage}`, "error");
     }
   };
 
@@ -195,8 +197,9 @@ const UserManagement = () => {
       showNotification("✅ User Deleted and Archived Successfully!", "success");
     } catch (error) {
       console.error("Error in user deletion process:", error);
-      showNotification("❌ Failed to Delete User! " + (error as any).message, "error");
-    }
+      const errorMessage = getFirebaseErrorMessage((error as any).code || (error as any).message);
+      showNotification(`❌ Failed to Delete User! ${errorMessage}`, "error");
+    }      
   };
 
   const handleEditClick = (user: UserType) => {
@@ -308,12 +311,7 @@ const handleUpdate = async () => {
     fetchUsers();
   } catch (error: any) {
     console.error("Update error:", error);
-    let errorMessage = "Failed to update user";
-    if (error.message.includes("email-already-in-use")) {
-      errorMessage = "Email already in use by another account";
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
+    const errorMessage = getFirebaseErrorMessage(error.code || error.message);
     showNotification(`❌ ${errorMessage}`, "error");
   }
 };
@@ -494,48 +492,48 @@ const handleUpdate = async () => {
                               <td>{user.password}</td>
                               <td>{user.role}</td>
                               <td>
-  {editingUserId === user.id ? (
-    <>
-      <select
-        value={updatedRole}
-        onChange={(e) => setUpdatedRole(e.target.value)}
-        className="form-select form-select-sm d-inline-block w-auto me-2"
-      >
-        <option value="Admin">Admin</option>
-        <option value="Evaluator">Evaluator</option>
-        <option value="LGU">LGU</option>
-        <option value="Viewer">Viewer</option>
-      </select>
-      <button className="btn btn-success btn-sm me-1" onClick={() => handleSaveRole(user.id)}>
-        Save
-      </button>
-      <button className="btn btn-secondary btn-sm" onClick={() => setEditingUserId(null)}>
-        Cancel
-      </button>
-    </>
-  ) : (
-    <>
-      <button className="btn btn-primary btn-sm me-1" onClick={() => {
-        setEditingUserId(user.id);
-        setUpdatedRole(user.role);
-      }}>
-        Edit Role
-      </button>
-      <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
-        Edit Info
-      </button>
-      <button 
-    className="btn btn-danger btn-sm" 
-    onClick={() => handleDeleteClick(user.id)}
-    disabled={user.id === currentUserId}
-    title={user.id === currentUserId ? "Cannot delete your own account" : ""}
-  >
-    Delete
-  </button>
+                                {editingUserId === user.id ? (
+                                  <>
+                                    <select
+                                      value={updatedRole}
+                                      onChange={(e) => setUpdatedRole(e.target.value)}
+                                      className="form-select form-select-sm d-inline-block w-auto me-2"
+                                    >
+                                      <option value="Admin">Admin</option>
+                                      <option value="Evaluator">Evaluator</option>
+                                      <option value="LGU">LGU</option>
+                                      <option value="Viewer">Viewer</option>
+                                    </select>
+                                    <button className="btn btn-success btn-sm me-1" onClick={() => handleSaveRole(user.id)}>
+                                      Save
+                                    </button>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => setEditingUserId(null)}>
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button className="btn btn-primary btn-sm me-1" onClick={() => {
+                                      setEditingUserId(user.id);
+                                      setUpdatedRole(user.role);
+                                    }}>
+                                      Edit Role
+                                    </button>
+                                    <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
+                                      Edit Info
+                                    </button>
+                                    <button 
+                                  className="btn btn-danger btn-sm" 
+                                  onClick={() => handleDeleteClick(user.id)}
+                                  disabled={user.id === currentUserId}
+                                  title={user.id === currentUserId ? "Cannot delete your own account" : ""}
+                                >
+                                  Delete
+                                </button>
 
-    </>
-  )}
-</td>
+                                  </>
+                                )}
+                              </td>
                             </tr>
                           ))
                         )}
