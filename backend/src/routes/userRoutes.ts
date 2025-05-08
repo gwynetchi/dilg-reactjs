@@ -20,52 +20,41 @@ interface DeleteUserRequest {
   permanent: boolean; // true for permanent delete, false for soft delete
 }
 
-const deleteUserHandler = async (
-  req: Request,
-  res: Response<ResponseBody>
-) => {
+const deleteUserHandler = async (req: Request, res: Response<ResponseBody>) => {
   const { uid, permanent } = req.body as DeleteUserRequest;
 
   try {
     // Validate inputs
     if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: "User ID is required"
-      });
+      return res.status(400).json({ success: false, error: "User ID is required" });
     }
 
     // Check if target user exists
     try {
       await auth.getUser(uid);
     } catch (error) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found"
-      });
+      return res.status(404).json({ success: false, error: "User not found" });
     }
 
     if (permanent) {
-      // Permanent deletion - remove from Auth and Firestore
+      // For permanent delete, first check if user exists in deleted_users
+      const deletedUserDoc = await db.collection("deleted_users").doc(uid).get();
+      
+      // Delete from Auth first
       await auth.deleteUser(uid);
+      
+      // Then delete from all collections
       await db.collection("users").doc(uid).delete();
-      
-      // Optional: Move to deleted_users collection for records
-      // const userDoc = await db.collection("users").doc(uid).get();
-      // if (userDoc.exists) {
-      //   await db.collection("deleted_users").doc(uid).set({
-      //     ...userDoc.data(),
-      //     deletedAt: admin.firestore.FieldValue.serverTimestamp(),
-      //     deletedBy: req.adminUser?.uid
-      //   });
-      // }
-      
+      if (deletedUserDoc.exists) {
+        await db.collection("deleted_users").doc(uid).delete();
+      }
+
       return res.status(200).json({
         success: true,
         message: "User permanently deleted from system"
       });
     } else {
-      // Soft delete - disable account and move to deleted_users
+      // Soft delete logic remains the same
       await auth.updateUser(uid, { disabled: true });
       
       const userDoc = await db.collection("users").doc(uid).get();
@@ -83,7 +72,6 @@ const deleteUserHandler = async (
         message: "User account disabled and moved to deleted users"
       });
     }
-
   } catch (error: any) {
     console.error("Delete user error:", error);
     return res.status(500).json({
@@ -105,47 +93,6 @@ interface ResponseBody {
   error?: string;
   code?: string;
 }
-
-// 2. Fixed verifyAdmin Middleware
-const verifyAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized - No token provided"
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decodedToken = await auth.verifyIdToken(token);
-    
-    // Get user document
-    const userDoc = await db.collection("users").doc(decodedToken.uid).get();
-    
-    if (!userDoc.exists || userDoc.data()?.role !== "Admin") {
-      return res.status(403).json({
-        success: false,
-        error: "Forbidden - Admin privileges required"
-      });
-    }
-
-    // Attach admin info to request
-    req.adminUser = {
-      uid: decodedToken.uid,
-      role: userDoc.data()?.role || ""
-    };
-    
-    next();
-  } catch (error) {
-    console.error("Admin verification error:", error);
-    return res.status(401).json({
-      success: false,
-      error: "Invalid or expired token"
-    });
-  }
-};
 
 const updateCredentialsHandler = async (
   req: Request,
@@ -271,7 +218,7 @@ router.post("/update-credentials",
 
 router.post("/delete", 
   (req: Request, res: Response, next: NextFunction) => {
-    verifyAdmin(req, res, next).catch(next);
+    verifyUserOrAdmin(req, res, next).catch(next);
   }, // Only admins can delete users
   (req: Request, res: Response, next: NextFunction) => {
     deleteUserHandler(req, res).catch(next);

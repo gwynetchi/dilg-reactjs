@@ -58,15 +58,25 @@ export const deleteUserAccount = async (uid: string, permanent: boolean = false)
         const responseData = await response.json();
 
         if (!response.ok) {
+            // Handle specific error cases
+            if (response.status === 404) {
+                throw new Error('The user was not found in the system');
+            } else if (response.status === 403) {
+                throw new Error('You do not have permission to perform this action');
+            }
             throw new Error(responseData.error || `Request failed with status ${response.status}`);
         }
 
         return responseData;
     } catch (error: any) {
         console.error('Error deleting user:', error);
-        throw new Error(
-            error.message || 
-            'Failed to delete user. Please check your network connection.'
-        );
+        // Provide more user-friendly messages
+        const message = error.message.includes('Not authenticated') 
+            ? 'You need to be logged in to perform this action'
+            : error.message.includes('not found')
+                ? 'The user account could not be found'
+                : 'Failed to delete user. Please try again later';
+        
+        throw new Error(message);
     }
 };

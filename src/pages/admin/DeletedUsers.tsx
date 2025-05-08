@@ -96,29 +96,25 @@ const DeletedUsers = () => {
     if (!selectedUser) return;
     
     try {
-      // Call the API endpoint that handles both Auth and Firestore deletion
+      // Call the permanent delete API directly
       const response = await deleteUserAccount(selectedUser.id, true);
       
       if (response.success) {
         setShowDeleteConfirm(false);
-        setSuccessMessage(response.message || "User permanently deleted from both database and authentication!");
+        setSuccessMessage(response.message || "User permanently deleted from system");
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
         
-        // Optional: Refresh the list by filtering out the deleted user
-        setDeletedUsers(prevUsers => prevUsers.filter(user => user.id !== selectedUser.id));
-      } else {
-        throw new Error(response.error);
+        // Remove from local state
+        setDeletedUsers(prev => prev.filter(u => u.id !== selectedUser.id));
       }
     } catch (error) {
-      console.error("Failed to permanently delete user:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      setSuccessMessage("Error deleting user: " + errorMessage);
+      console.error("Permanent delete failed:", error);
+      setSuccessMessage(error instanceof Error ? error.message : "Deletion failed");
       setShowSuccessMessage(true);
-      setTimeout(() => setShowSuccessMessage(false), 5000);
     }
   };
-
+  
   return (
     <div className="dashboard-container">
       {showSuccessMessage && (
