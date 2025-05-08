@@ -28,10 +28,11 @@ type UserType = {
 };
 
 const UserManagement = () => {
-  const currentUserId = auth.currentUser?.uid || null;
+  const currentUserId = auth.currentUser?.uid || null; // Get the current user's ID
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [editData, setEditData] = useState<EditUserData>({
@@ -45,6 +46,7 @@ const UserManagement = () => {
   });
     
   const [showPassword, setShowPassword] = useState(false);
+  const [updatedRole, setUpdatedRole] = useState<string>("");
   const [filter, setFilter] = useState("All");
   const [newUser, setNewUser] = useState<Omit<UserType, "id"> & { password: string }>({
     email: "",
@@ -58,6 +60,7 @@ const UserManagement = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
+  // Notification state
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "warning" } | null>(null);
 
   const showNotification = (message: string, type: "success" | "error" | "warning" = "success") => {
@@ -65,23 +68,25 @@ const UserManagement = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  useEffect(() => {
-    setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const userList: UserType[] = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      })) as UserType[];
-      setUsers(userList);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error listening to users:", error);
-      showNotification("❌ Failed to listen to users updates.", "error");
-      setLoading(false);
-    });
+    // Set up real-time listener for users collection
+    useEffect(() => {
+      setLoading(true);
+      const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+        const userList: UserType[] = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as UserType[];
+        setUsers(userList);
+        setLoading(false);
+      }, (error) => {
+        console.error("Error listening to users:", error);
+        showNotification("❌ Failed to listen to users updates.", "error");
+        setLoading(false);
+      });
   
-    return () => unsubscribe();
-  }, []);
+      // Clean up the listener when component unmounts
+      return () => unsubscribe();
+    }, []);
   
   useEffect(() => {
     fetchUsers();
@@ -103,6 +108,20 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
+
+  const handleSaveRole = async (userId: string) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, { role: updatedRole });
+
+    setUsers(prev => prev.map(user => user.id === userId ? { ...user, role: updatedRole } : user));
+    setEditingUserId(null);
+    showNotification("✅ Role updated successfully!", "success");
+  } catch (error) {
+    console.error("Error updating role:", error);
+    showNotification("❌ Failed to update role.", "error");
+  }
+};
 
   const handleCreateUser = async () => {
     const { email, password, role, fname, mname, lname } = newUser;
@@ -192,7 +211,7 @@ const UserManagement = () => {
       lname: user.lname || "",
       role: user.role || "",
       email: user.email || "",
-      password: user.password || "", // Don't pre-fill password for security
+      password: "", // Don't pre-fill password for security
       confirmPassword: "",
     });
   };
@@ -273,7 +292,6 @@ const handleUpdate = async () => {
       lname: editData.lname,
       role: editData.role,
       email: editData.email,
-      password: editData.password,
     };
 
     // Only update auth if email or password changed
@@ -391,7 +409,7 @@ const handleUpdate = async () => {
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-            </div>
+            </div>              
             <div className="col">
                 <select
                   className="form-select"
@@ -484,20 +502,47 @@ const handleUpdate = async () => {
                               <td>{user.password}</td>
                               <td>{user.role}</td>
                               <td>
-                                <button 
-                                    className="btn btn-warning btn-sm me-1" 
-                                    onClick={() => handleEditClick(user)}
-                                  >
-                                    Edit Info
-                                  </button>
-                                  <button 
-                                    className="btn btn-danger btn-sm" 
-                                    onClick={() => handleDeleteClick(user.id)}
-                                    disabled={user.id === currentUserId}
-                                    title={user.id === currentUserId ? "Cannot delete your own account" : ""}
-                                  >
-                                    Delete
+                                {editingUserId === user.id ? (
+                                  <>
+                                    <select
+                                      value={updatedRole}
+                                      onChange={(e) => setUpdatedRole(e.target.value)}
+                                      className="form-select form-select-sm d-inline-block w-auto me-2"
+                                    >
+                                      <option value="Admin">Admin</option>
+                                      <option value="Evaluator">Evaluator</option>
+                                      <option value="LGU">LGU</option>
+                                      <option value="Viewer">Viewer</option>
+                                    </select>
+                                    <button className="btn btn-success btn-sm me-1" onClick={() => handleSaveRole(user.id)}>
+                                      Save
+                                    </button>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => setEditingUserId(null)}>
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button className="btn btn-primary btn-sm me-1" onClick={() => {
+                                      setEditingUserId(user.id);
+                                      setUpdatedRole(user.role);
+                                    }}>
+                                      Edit Role
+                                    </button>
+                                    <button className="btn btn-warning btn-sm me-1" onClick={() => handleEditClick(user)}>
+                                      Edit Info
+                                    </button>
+                                    <button 
+                                  className="btn btn-danger btn-sm" 
+                                  onClick={() => handleDeleteClick(user.id)}
+                                  disabled={user.id === currentUserId}
+                                  title={user.id === currentUserId ? "Cannot delete your own account" : ""}
+                                >
+                                  Delete
                                 </button>
+
+                                  </>
+                                )}
                               </td>
                             </tr>
                           ))
