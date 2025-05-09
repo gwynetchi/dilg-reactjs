@@ -188,11 +188,10 @@ const UserManagement = () => {
       lname: user.lname || "",
       role: user.role || "",
       email: user.email || "",
-      password: "",
+      password: "", // Start with empty password field
       confirmPassword: "",
     });
   }, []);
-
   const handleEditChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEditData(prev => ({
@@ -212,6 +211,7 @@ const UserManagement = () => {
       return false;
     }
   
+    // Only validate password if it's being changed (not empty)
     if (editData.password) {
       if (editData.password.length < 6) {
         showNotification("Password must be at least 6 characters", "warning");
@@ -226,7 +226,7 @@ const UserManagement = () => {
   
     return true;
   }, [editData, showNotification]);
-
+  
   const updateUserAuth = useCallback(async (uid: string, email: string, password: string) => {
     try {
       const currentUser = auth.currentUser;
@@ -257,27 +257,37 @@ const UserManagement = () => {
 
   const handleUpdate = useCallback(async () => {
     if (!editingUser || !validateEditForm()) return;
-
+  
     try {
+      // Prepare updates for Firestore
       const updates: Partial<UserType> = {
         fname: editData.fname,
         mname: editData.mname,
         lname: editData.lname,
         role: editData.role,
         email: editData.email,
-        password: editData.password,
       };
-
+  
+      // Only include password in updates if it was changed
+      if (editData.password) {
+        updates.password = editData.password;
+      } else {
+        // If password wasn't changed, keep the original password
+        updates.password = editingUser.password;
+      }
+  
+      // Only update auth if email or password changed
       if (editData.email !== editingUser.email || editData.password) {
         await updateUserAuth(
           editingUser.id,
           editData.email,
-          editData.password || ''
+          editData.password || editingUser.password || '' // Use original password if not changed
         );
       }
-
+  
+      // Update Firestore
       await updateDoc(doc(db, "users", editingUser.id), updates);
-
+  
       showNotification("✅ User updated successfully!", "success");
       setEditingUser(null);
     } catch (error: any) {
@@ -286,28 +296,28 @@ const UserManagement = () => {
       showNotification(`❌ ${errorMessage}`, "error");
     }
   }, [editingUser, editData, validateEditForm, updateUserAuth, showNotification]);
-
+  
   const handleCancelEdit = useCallback(() => {
     setEditingUser(null);
     setEditData(DEFAULT_EDIT_DATA);
   }, []);
 
-  const searchUsers = useCallback((users: UserType[], term: string) => {
-    if (!term.trim()) return users;
-  
-    const lowerTerm = term.toLowerCase();
-    return users.filter(user => {
-      return (
-        (user.fname?.toLowerCase().includes(lowerTerm)) || 
-        (user.mname?.toLowerCase().includes(lowerTerm)) || 
-        (user.lname?.toLowerCase().includes(lowerTerm)) ||
-        (user.email.toLowerCase().includes(lowerTerm)) ||
-        (user.role.toLowerCase().includes(lowerTerm)) ||
-        (user.createdAt?.toLowerCase().includes(lowerTerm)) ||
-        (user.password?.toLowerCase().includes(lowerTerm))
-      );
-    });
-  }, []);
+const searchUsers = useCallback((users: UserType[], term: string) => {
+  if (!term.trim()) return users;
+
+  const lowerTerm = term.toLowerCase();
+  return users.filter(user => {
+    return (
+      (user.fname?.toLowerCase().includes(lowerTerm)) || 
+      (user.mname?.toLowerCase().includes(lowerTerm)) || 
+      (user.lname?.toLowerCase().includes(lowerTerm)) ||
+      (user.email.toLowerCase().includes(lowerTerm)) ||
+      (user.role.toLowerCase().includes(lowerTerm)) ||
+      (user.createdAt?.toLowerCase().includes(lowerTerm)) ||
+      (user.password?.toLowerCase().includes(lowerTerm))
+    );
+  });
+}, []);
 
   const filteredUsers = useMemo(() => {
     const filteredByRole = filter === "All" ? users : users.filter(user => user.role === filter);
