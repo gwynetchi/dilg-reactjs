@@ -69,6 +69,7 @@ const MENU_ITEMS = {
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
     { name: "Deleted Users", icon: "bx bx-user-x", path: "/admin/DeletedUsers" },
     { name: "User Management", icon: "bxs-user-plus", path: "/admin/userManagement" },
+    { name: "Organizational Chart", icon: "bx-sitemap", path: "/admin/OrganizationalChart" },
   ],
 };
 

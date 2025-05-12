@@ -9,7 +9,7 @@ import {
   updateDoc,
   getDoc,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 import Swal from "sweetalert2";
 import { formatDistanceToNow } from "date-fns";
 
@@ -221,10 +221,12 @@ const ViewProgramLinks: React.FC = () => {
     
     await updateSubmissionStatus([date], false);
   };
+  
 
   const handleBatchSubmit = async () => {
     if (selectedItems.length === 0) {
       showToast("Please select items to mark", "warning");
+      
       return;
     }
     
@@ -240,64 +242,121 @@ const ViewProgramLinks: React.FC = () => {
     
     if (!result.isConfirmed) return;
     
+    
     await updateSubmissionStatus(selectedItems, true);
     setSelectedItems([]);
   };
+  
+  const handleSubmit = async (programId: string, occurrenceDateStr: string) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+  
+    try {
+      const now = new Date();
+
+      
+      const occurrenceDate = new Date(occurrenceDateStr);
+      const isLate = now > occurrenceDate;
+  
+      const autoStatus = isLate ? "Late" : "On Time";
+      const status = "submitted";
+
+  
+      const submissionsRef = collection(db, "programsubmission");
+      const q = query(
+        submissionsRef,
+        where("submittedBy", "==", currentUser.uid),
+        where("programId", "==", programId)
+      );
+  
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        console.error("No programsubmission document found.");
+        return;
+      }
+  
+      const docRef = snapshot.docs[0].ref;
+      const docData = snapshot.docs[0].data();
+  
+      const updatedSubmissions = (docData.submissions || []).map((occ: any) => {
+        if (occ.occurrence === occurrenceDateStr) {
+          return {
+            ...occ,
+            evaluatorStatus: "Pending",
+            autoStatus,
+            status,
+          };
+        }
+        return occ;
+      });
+  
+      await updateDoc(docRef, { submissions: updatedSubmissions });
+      console.log("Updated occurrence in programsubmission.");
+    } catch (error) {
+      console.error("Error saving submission:", error);
+    }
+  };
+  
+  
 
   const updateSubmissionStatus = async (dates: string[], submitted: boolean) => {
-    if (!documentId) return;
-    
+    if (!programId) return;
+  
     setSubmittingId(dates[0]);
-    
+  
     try {
-      const docRef = doc(db, "programlinks", documentId);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const updatedOccurrences = data.occurrences.map((occ: any) => {
-          if (dates.includes(occ.date)) {
-            return { 
-              ...occ, 
-              submitted,
-              submittedAt: submitted ? new Date() : null 
-            };
-          }
-          return occ;
-        });
-        
-        await updateDoc(docRef, { occurrences: updatedOccurrences });
-        
-        setOccurrences(prev => 
-          prev.map(occ => 
-            dates.includes(occ.date) 
-              ? { ...occ, submitted, submittedAt: submitted ? new Date() : null }
-              : occ
-          )
-        );
-        
-        // Update cache
-        const cachedData = localStorage.getItem(`programLinks-${programId}`);
-        if (cachedData) {
-          const parsedData = JSON.parse(cachedData);
-          const updatedCache = {
-            ...parsedData,
-            occurrences: parsedData.occurrences.map((occ: any) => 
-              dates.includes(occ.date)
-                ? { ...occ, submitted, submittedAt: submitted ? new Date() : null }
-                : occ
-            )
-          };
-          localStorage.setItem(`programLinks-${programId}`, JSON.stringify(updatedCache));
-        }
-        
-        showToast(
-          submitted 
-            ? `Successfully marked ${dates.length} item(s) as submitted`
-            : `Successfully unmarked ${dates.length} item(s)`,
-          "success"
-        );
+      // Query for the programsubmission document
+      const submissionsRef = collection(db, "programsubmission");
+      const q = query(
+        submissionsRef,
+        where("submittedBy", "==", auth.currentUser?.uid),
+        where("programId", "==", programId)
+      );
+  
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        console.error("No programsubmission document found.");
+        return;
       }
+  
+      const docRef = snapshot.docs[0].ref;
+      const docData = snapshot.docs[0].data();
+  
+      const updatedSubmissions = (docData.submissions || []).map((occ: any) => {
+        if (dates.includes(occ.occurrence)) {
+          return {
+            ...occ,
+            submitted,
+            submittedAt: submitted ? new Date() : null,
+          };
+        }
+        return occ;
+      });
+  
+      await updateDoc(docRef, { submissions: updatedSubmissions });
+  
+      // Call handleSubmit for each submitted date
+      if (submitted) {
+        for (const date of dates) {
+          await handleSubmit(programId, date);
+        }
+      }
+  
+      // Update UI state
+      setOccurrences(prev =>
+        prev.map(occ =>
+          dates.includes(occ.date)
+            ? { ...occ, submitted, submittedAt: submitted ? new Date() : null }
+            : occ
+        )
+      );
+  
+      showToast(
+        submitted
+          ? `Successfully marked ${dates.length} item(s) as submitted`
+          : `Successfully unmarked ${dates.length} item(s)`,
+        "success"
+      );
     } catch (error) {
       console.error("Error updating submission status:", error);
       showToast("Failed to update submission status", "error");
@@ -305,6 +364,8 @@ const ViewProgramLinks: React.FC = () => {
       setSubmittingId(null);
     }
   };
+  
+  
 
   const handleAddNote = async (date: string, currentNote: string) => {
     const { value: notes } = await Swal.fire({

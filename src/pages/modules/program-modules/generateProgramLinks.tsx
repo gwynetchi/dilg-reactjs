@@ -87,4 +87,6 @@ export const generateProgramLinks = async (
       createdAt: Timestamp.now(),
     });
   }
+
+  return links;
 };
