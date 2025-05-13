@@ -166,8 +166,8 @@ const ScoreboardWidget: React.FC = () => {
   );
 
   return (
-    <div className="dashboard-widget scoreboard-widget">
-      <div className="widget-header">
+    <div className="card mb-3">
+      <div className="card-header d-flex justify-content-between align-items-center">
         <h3 className="widget-title">Top LGUs</h3>
         <button 
           className="btn btn-sm btn-primary view-all-btn"
@@ -188,7 +188,7 @@ const ScoreboardWidget: React.FC = () => {
           height: '100%',
         }}
       />
-      <div className="top-users-container">
+      <div className="card-body">
         {topUsers.length > 0 ? (
           topUsers.map((user, index) => {
             let medal = '';
