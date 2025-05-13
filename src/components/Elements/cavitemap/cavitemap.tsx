@@ -227,7 +227,7 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
                 (e.target as HTMLImageElement).src = '/images/cities/default.jpg';
               }}
             />
-          )}
+          )}  
           <div className="p-4">
             <h3 className="font-bold text-lg mb-1 text-gray-800">{hoveredCity.name}</h3>
             <p className="text-gray-600 text-sm">
