@@ -46,7 +46,7 @@ import ProgramCards from "./pages/ProgramsCards";
 import ProgramMessages from "./pages/ViewProgramLinks";
 import OrgChartAdmin from "./pages/admin/orgchart";
 import ProgramLinksManager from "./pages/modules/program-modules/ProgramLinksManager";
-
+import MayorManagement from "./pages/admin/mayormanagement";
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
@@ -63,7 +63,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/OrganizationalChart", element: <OrgChartAdmin /> }, // ← Added here
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
     { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
-
+    { path: "/admin/MayorManagement", element: <MayorManagement cities={{}} onSave={() => {}} />},
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <Dashboard /> },

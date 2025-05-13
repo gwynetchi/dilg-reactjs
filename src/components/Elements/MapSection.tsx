@@ -1,6 +1,6 @@
 // src/components/MapSection.tsx
 import React from 'react';
-import CaviteMap from './cavitemap'; // Make sure the import path is correct
+import CaviteMap from './cavitemap/cavitemap'; // Make sure the import path is correct
 
 const MapSection: React.FC = () => {
   return (
