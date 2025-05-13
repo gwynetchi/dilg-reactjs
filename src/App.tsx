@@ -34,7 +34,7 @@ import AuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 import SubmissionAnalytics from "./pages/submission-analytics";
 import UserAnalytics from "./pages/user-analytics";
-import MonthlyAnalytics from "./pages/monthly-analytics";
+import MonthlyAnalytics from "./pages/program-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";

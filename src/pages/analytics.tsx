@@ -25,7 +25,7 @@ const Analytics = () => {
           <div className="analytics-navigation">
             <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/submission-analytics")}>
               <FaFileAlt className="analytics-icon" />
-              <span>Submission Compliance</span>
+              <span>One Shot Reports</span>
             </div>
 
             <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/user-analytics")}>
@@ -35,7 +35,7 @@ const Analytics = () => {
 
             <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/monthly-analytics")}>
               <FaChartBar className="analytics-icon" />
-              <span>Monthly Report</span>
+              <span>Program Analytics</span>
             </div>
           </div>
           </main> 

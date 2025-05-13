@@ -67,8 +67,11 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
 
     const buildHierarchy = (node: OrgChartNode): any => ({
       ...node,
-      children: node.subordinates?.map(id => buildHierarchy(nodeMap.get(id)!)) || [],
-    });
+      children: node.subordinates
+      ?.map(id => nodeMap.get(id))
+      .filter((n): n is OrgChartNode => n !== undefined)
+      .map(buildHierarchy) || [],
+        });
 
     const hierarchy = d3.hierarchy(buildHierarchy(rootData!));
     const width = 1160;
