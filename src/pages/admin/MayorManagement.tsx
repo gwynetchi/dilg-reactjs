@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { CityData, MayorManagementProps, MayorData, normalizeCityName } from '../../components/Elements/cavitemap/types';
 import { db } from '../../firebase';
-import { collection, doc, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, writeBatch, deleteDoc } from 'firebase/firestore';
 
 const DEFAULT_MAYOR_DATA: MayorData = {
   name: '',
@@ -30,49 +31,53 @@ const MayorManagement: React.FC<MayorManagementProps> = ({ onSave }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all data from Firestore
+  // Real-time data fetching
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const citiesSnapshot = await getDocs(collection(db, 'cities'));
-        const mayorsSnapshot = await getDocs(collection(db, 'mayors'));
+    setIsLoading(true);
+    setError(null);
 
-        const citiesData: Record<string, CityData> = {};
-        citiesSnapshot.forEach((doc) => {
-          const cityData = doc.data() as CityData;
-          citiesData[normalizeCityName(doc.id)] = cityData;
-        });
+    const unsubscribeCities = onSnapshot(collection(db, 'cities'), (snapshot) => {
+      const updatedCities: Record<string, CityData> = {};
+      
+      snapshot.forEach((doc) => {
+        updatedCities[normalizeCityName(doc.id)] = {
+          ...doc.data() as CityData,
+          name: doc.id
+        };
+      });
 
-        // Merge mayor data into cities
-        mayorsSnapshot.forEach((doc) => {
+      setCities(prev => ({ ...prev, ...updatedCities }));
+      setIsLoading(false);
+    });
+
+    const unsubscribeMayors = onSnapshot(collection(db, 'mayors'), (snapshot) => {
+      setCities(prev => {
+        const newCities = { ...prev };
+        snapshot.forEach((doc) => {
           const cityName = normalizeCityName(doc.id);
-          if (citiesData[cityName]) {
-            citiesData[cityName] = {
-              ...citiesData[cityName],
+          if (newCities[cityName]) {
+            newCities[cityName] = {
+              ...newCities[cityName],
               mayor: doc.data() as MayorData
             };
           }
         });
+        return newCities;
+      });
+    });
 
-        setCities(citiesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Failed to load data. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
+    return () => {
+      unsubscribeCities();
+      unsubscribeMayors();
     };
-
-    fetchData();
   }, []);
 
-  const handleEditMayor = (cityName: string) => {
+  // Event handlers with useCallback for better performance
+  const handleEditMayor = useCallback((cityName: string) => {
     setEditingCity(cityName);
-  };
+  }, []);
 
-  const handleMayorChange = (field: keyof MayorData, value: string, cityName: string) => {
+  const handleMayorChange = useCallback((field: keyof MayorData, value: string, cityName: string) => {
     const normalizedName = normalizeCityName(cityName);
     setCities(prev => ({
       ...prev,
@@ -84,16 +89,16 @@ const MayorManagement: React.FC<MayorManagementProps> = ({ onSave }) => {
         }
       }
     }));
-  };
+  }, []);
 
-  const handleNewCityChange = (field: keyof Omit<CityData, 'coordinates'>, value: string) => {
+  const handleNewCityChange = useCallback((field: keyof Omit<CityData, 'coordinates'>, value: string) => {
     setNewCity(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
-  const handleAddCity = async () => {
+  const handleAddCity = useCallback(async () => {
     const normalizedName = normalizeCityName(newCity.name);
     if (!normalizedName) {
       setError('City name is required');
@@ -128,28 +133,21 @@ const MayorManagement: React.FC<MayorManagementProps> = ({ onSave }) => {
 
       await batch.commit();
 
-      // Update local state
-      const updatedCities = {
-        ...cities,
-        [normalizedName]: {
-          ...cityData,
-          mayor: newCity.mayor
-        }
-      };
-
-      setCities(updatedCities);
+      // Reset form
       setIsAddingCity(false);
       setNewCity({ ...DEFAULT_CITY_DATA });
-      await onSave(updatedCities);
+      
+      // Callback to parent
+      await onSave({ ...cities });
     } catch (error) {
       console.error('Error adding city:', error);
       setError('Failed to add city. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [newCity, cities, onSave]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!editingCity) return;
     
     setIsSaving(true);
@@ -178,16 +176,16 @@ const MayorManagement: React.FC<MayorManagementProps> = ({ onSave }) => {
 
       await batch.commit();
       setEditingCity(null);
-      await onSave(cities);
+      await onSave({ ...cities });
     } catch (error) {
       console.error('Error saving data:', error);
       setError('Failed to save data. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [editingCity, cities, onSave]);
 
-  const handleDeleteCity = async (cityName: string) => {
+  const handleDeleteCity = useCallback(async (cityName: string) => {
     if (!window.confirm(`Are you sure you want to delete ${cityName}?`)) return;
 
     setIsSaving(true);
@@ -201,17 +199,14 @@ const MayorManagement: React.FC<MayorManagementProps> = ({ onSave }) => {
       batch.delete(doc(db, 'mayors', normalizedName));
       await batch.commit();
 
-      // Update local state
-      const { [normalizedName]: _, ...remainingCities } = cities;
-      setCities(remainingCities);
-      await onSave(remainingCities);
+      await onSave({...cities});
     } catch (error) {
       console.error('Error deleting city:', error);
       setError('Failed to delete city. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [onSave]);
 
   if (isLoading) {
     return (

@@ -128,3 +128,16 @@
   .select__option--is-select-all:not(.select__option--is-selected) {
     color: #2684FF; /* Blue when inactive (will select) */
   }
+
+  .city-tooltip {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.city-tooltip:before {
+  border-top-color: #ccc;
+}
