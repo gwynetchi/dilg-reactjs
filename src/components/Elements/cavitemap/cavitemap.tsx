@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, Marker, Popup, GeoJSON } from 'react-leaflet';
+import { MapContainer,LayersControl, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
 import { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { db } from '../../../firebase';
@@ -99,28 +99,29 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
 
   const getCityColor = (name: string) => {
     const colors: { [key: string]: string } = {
-      "City of Trece Martires": "#e6194b",
-      "City of Dasmariñas": "#3cb44b",
-      "City of Imus": "#ffe119",
-      "City of Bacoor": "#4363d8",
-      "City of Cavite": "#f58231",
-      "City of General Trias": "#911eb4",
-      "City of Tagaytay": "#46f0f0",
-      "City of Carmona": "#000075",
-      "Tanza": "#f032e6",
+      "City of Trece Martires": "#bcf60c",
+      "City of Dasmariñas": "#fabebe",
+      "City of Imus": "#fabebe",
+      "City of Bacoor": "#ffe119",
+      "City of Cavite": "#ffe119",
+      "City of General Trias": "#fabebe",
+      "City of Tagaytay": "#008080",
+      "City of Carmona": "#bcf60c",
+      "Tanza": "#bcf60c",
       "Silang": "#bcf60c",
-      "Naic": "#fabebe",
-      "Indang": "#008080",
-      "Ternate": "#e6beff",
-      "Alfonso": "#9a6324",
-      "Maragondon": "#fffac8",
-      "Magallanes": "#800000",
-      "Amadeo": "#aaffc3",
-      "General Emilio Aguinaldo": "#808000",
-      "Mendez": "#ffd8b1",
-      "Rosario": "#808080",
-      "Noveleta": "#a9a9a9",
-      "Kawit": "#ff69b4"
+      "Naic": "#008080",
+      "Indang": "#bcf60c",
+      "Ternate": "#008080",
+      "Alfonso": "#008080",
+      "Maragondon": "#008080",
+      "Magallanes": "#008080",
+      "Amadeo": "#bcf60c",
+      "General Emilio Aguinaldo": "#008080",
+      "Gen. Mariano Alvarez": "#bcf60c",
+      "Mendez": "#008080",
+      "Rosario": "#ffe119",
+      "Noveleta": "#ffe119",
+      "Kawit": "#ffe119"
     };
     return colors[name] || '#cccccc';
   };
@@ -191,11 +192,27 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
       <MapContainer
         center={caviteCenter}
         zoom={10.4}
-        zoomControl={false}
+        minZoom={9}
+        maxZoom={18}
         style={{ height: '600px', width: '100%' }}
         className="rounded-lg shadow-md"
         ref={mapRef}
       >
+
+<LayersControl position="topright">
+  <LayersControl.BaseLayer checked name="OpenStreetMap">
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    />
+  </LayersControl.BaseLayer>
+  <LayersControl.BaseLayer name="Satellite">
+    <TileLayer
+      url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      attribution='Tiles &copy; Esri'
+    />
+  </LayersControl.BaseLayer>
+</LayersControl>
         {geoData && (
           <GeoJSON
             data={geoData}
