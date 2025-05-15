@@ -18,8 +18,7 @@ const AdminOrgChartEditor: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
-  type NewNodeType = Partial<OrgChartNode> & { superiorId?: number; layout?: string };
-  const [newNode, setNewNode] = useState<NewNodeType>({});
+  const [newNode, setNewNode] = useState<Partial<OrgChartNode> & { superiorId?: number }>({});
   const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const { showToast } = useToast();
@@ -38,7 +37,7 @@ const AdminOrgChartEditor: React.FC = () => {
           email: data.email || "",
           status: data.status || "offline",
           icon: data.icon || "",
-          layout: data.layout || "horizontal",
+          layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
         };
       });
@@ -73,12 +72,11 @@ const AdminOrgChartEditor: React.FC = () => {
         icon: newNode.icon || "",
         position1: newNode.position1 || "",
         position2: newNode.position2 || "",
-        layout: newNode.layout || "horizontal",
+        layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
         status: "offline",
         subordinates: [],
       };
 
-      // Use batch write for atomic operations
       const batch = writeBatch(db);
       batch.set(doc(db, "orgdata", newId.toString()), newEntry);
 
@@ -130,10 +128,8 @@ const AdminOrgChartEditor: React.FC = () => {
     
     setLoading(true);
     try {
-      // First remove from any superior's subordinates list
       const batch = writeBatch(db);
       
-      // Find all superiors that have this user as subordinate
       nodes.forEach(node => {
         if (node.subordinates?.includes(selectedId)) {
           const updatedSubordinates = node.subordinates.filter(id => id !== selectedId);
@@ -143,7 +139,6 @@ const AdminOrgChartEditor: React.FC = () => {
         }
       });
 
-      // Delete the user document
       batch.delete(doc(db, "orgdata", selectedId.toString()));
       
       await batch.commit();
@@ -308,8 +303,11 @@ const AdminOrgChartEditor: React.FC = () => {
                   value={editMode === "add" ? newNode.layout || "horizontal" : form.layout || "horizontal"}
                   onChange={(e) =>
                     editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, layout: e.target.value }))
-                      : updateField("layout", e.target.value)
+                      ? setNewNode((prev) => ({ 
+                          ...prev, 
+                          layout: e.target.value as "vertical" | "horizontal" 
+                        }))
+                      : updateField("layout", e.target.value as "vertical" | "horizontal")
                   }
                 >
                   <option value="horizontal">Horizontal</option>
@@ -324,7 +322,10 @@ const AdminOrgChartEditor: React.FC = () => {
                     className="border p-2 rounded w-full"
                     value={newNode.superiorId?.toString() || ""}
                     onChange={(e) =>
-                      setNewNode((prev) => ({ ...prev, superiorId: e.target.value ? +e.target.value : undefined }))
+                      setNewNode((prev) => ({ 
+                        ...prev, 
+                        superiorId: e.target.value ? +e.target.value : undefined 
+                      }))
                     }
                   >
                     <option value="">-- Select Superior --</option>

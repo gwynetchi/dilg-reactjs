@@ -1,10 +1,14 @@
-// OrgChartPage.tsx
 import React, { useEffect, useState } from "react";
 import D3OrgChart, { OrgChartNode } from "./D3OrgChart";
-import { db } from "../../firebase"; // adjust this path if needed
+import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-const OrgChartPage: React.FC = () => {
+interface OrgChartViewerProps {
+  onNodeClick?: (node: OrgChartNode) => void;
+  key?: number;
+}
+
+const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => {
   const [data, setData] = useState<OrgChartNode[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,9 +29,9 @@ const OrgChartPage: React.FC = () => {
             subordinates: (data.subordinates || []).map((s: any) =>
               typeof s === "string" ? parseInt(s) : s
             ),
-            layout: data.layout || "",
-            status: data.status || "active", // default to "active" if not present
-            icon: data.icon || "",           // default to empty string if not present
+            layout: data.layout || "horizontal",
+            status: data.status || "active",
+            icon: data.icon || "",
           };
         });
         setData(items);
@@ -39,16 +43,15 @@ const OrgChartPage: React.FC = () => {
     };
   
     fetchOrgChart();
-  }, []);
-  
+  }, [key]);
   
   if (loading) return <div className="p-6">Loading org chart...</div>;
 
   return (
     <div className="relative p-6">
-      <D3OrgChart data={data} />
+      <D3OrgChart data={data} onNodeClick={onNodeClick} />
     </div>
   );
 };
 
-export default OrgChartPage;
+export default OrgChartViewer;

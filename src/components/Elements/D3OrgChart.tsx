@@ -3,7 +3,6 @@ import * as d3 from "d3";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import ZoomControls from "./ZoomControls";
 
-
 export interface OrgChartNode {
   id: number;
   position1: string;
@@ -13,13 +12,14 @@ export interface OrgChartNode {
   status: string;
   icon: string;
   subordinates?: number[];
-   layout?: "vertical" | "horizontal"; // ✅ Add this line
-  x?: number; // <- add these
+  layout?: "vertical" | "horizontal";
+  x?: number;
   y?: number;
 }
 
 interface D3OrgChartProps {
   data: OrgChartNode[];
+  onNodeClick?: (node: OrgChartNode) => void;
 }
 
 const statusColor = {
@@ -29,26 +29,21 @@ const statusColor = {
   offline: "#6c757d",
 };
 
-const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
+const D3OrgChart: React.FC<D3OrgChartProps> = ({ data, onNodeClick }) => {
   const svgRef = useRef<HTMLDivElement>(null);
-  const setTransformRef = useRef<((x: number, y: number, scale: number, animationTime?: number, animationType?: "linear" | "easeOut" | "easeInQuad" | "easeOutQuad" | "easeInOutQuad" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeInQuart" | "easeOutQuart" | "easeInOutQuart" | "easeInQuint" | "easeOutQuint" | "easeInOutQuint") => void) | null>(null);
-
+  const setTransformRef = useRef<((x: number, y: number, scale: number, animationTime?: number, animationType?: "easeOut" | "linear" | "easeInQuad" | "easeOutQuad" | "easeInOutQuad" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeInQuart" | "easeOutQuart" | "easeInOutQuart" | "easeInQuint" | "easeOutQuint" | "easeInOutQuint" | undefined) => void) | null>(null);
 
   useEffect(() => {
     if (!svgRef.current) return;
     svgRef.current.innerHTML = "";
-    
 
-    // Clone data to avoid mutating original
     const clonedData = JSON.parse(JSON.stringify(data)) as OrgChartNode[];
-
     const nodeMap = new Map<number, OrgChartNode>();
     clonedData.forEach(node => nodeMap.set(node.id, node));
     const rootData = clonedData.find(d => !clonedData.some(n => n.subordinates?.includes(d.id)));
 
-    // Add dummy sibling beside node 26
-    const targetId = 26;
     const dummyId = 999;
+    const targetId = 26;
     const parentNode = clonedData.find(n => n.subordinates?.includes(targetId));
 
     if (parentNode && !parentNode.subordinates?.includes(dummyId)) {
@@ -62,19 +57,18 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
         status: "offline",
         icon: "",
         subordinates: [],
-        
       });
     }
 
     const buildHierarchy = (node: OrgChartNode): any => ({
       ...node,
       children: node.subordinates
-      ?.map(id => nodeMap.get(id))
-      .filter((n): n is OrgChartNode => n !== undefined)
-      .map(buildHierarchy) || [],
-        });
+        ?.map(id => nodeMap.get(id))
+        .filter((n): n is OrgChartNode => n !== undefined)
+        .map(buildHierarchy) || [],
+    });
 
-const hierarchy = d3.hierarchy(buildHierarchy(rootData!)) as d3.HierarchyPointNode<OrgChartNode>;
+    const hierarchy = d3.hierarchy(buildHierarchy(rootData!)) as d3.HierarchyPointNode<OrgChartNode>;
     const width = 1160;
     const height = 800;
 
@@ -86,11 +80,11 @@ const hierarchy = d3.hierarchy(buildHierarchy(rootData!)) as d3.HierarchyPointNo
 
     const g = svg.append("g").attr("transform", "translate(50,50)");
 
-const treeLayout = d3.tree<OrgChartNode>()
-  .size([width - 100, height - 50])
-  .separation((a, b) => a.parent === b.parent ? 2 : 4);
+    const treeLayout = d3.tree<OrgChartNode>()
+      .size([width - 100, height - 50])
+      .separation((a, b) => a.parent === b.parent ? 2 : 4);
 
-treeLayout(hierarchy);
+    treeLayout(hierarchy);
 
     const elbowLink = (d: d3.HierarchyPointLink<OrgChartNode>) => {
       const sx = d.source.x!;
@@ -115,17 +109,18 @@ treeLayout(hierarchy);
       } else {
         const spacingX = 300;
         const baseX = node.x!;
-        node.children.forEach((child, i) => {if (node.children && node.children.length > 0) {
-          child.x = baseX + (i - Math.floor(node.children.length / 2)) * spacingX;}
+        node.children.forEach((child, i) => {
+          if (node.children && node.children.length > 0) {
+            child.x = baseX + (i - Math.floor(node.children.length / 2)) * spacingX;
+          }
         });
       }
     });
 
-const links = hierarchy.links() as d3.HierarchyPointLink<OrgChartNode>[];
+    const links = hierarchy.links() as d3.HierarchyPointLink<OrgChartNode>[];
 
-g.selectAll(".link")
-  .data(links.filter(d => d.target.data.id !== dummyId))
-
+    g.selectAll(".link")
+      .data(links.filter(d => d.target.data.id !== dummyId))
       .enter()
       .append("path")
       .attr("fill", "none")
@@ -139,35 +134,37 @@ g.selectAll(".link")
       .data(filteredData)
       .enter()
       .append("g")
-.attr("transform", (d: d3.HierarchyPointNode<OrgChartNode>) => `translate(${d.x},${d.y})`);
-
+      .attr("transform", (d: d3.HierarchyPointNode<OrgChartNode>) => `translate(${d.x},${d.y})`);
 
     const cardWidth = 290;
     const cardHeight = 110;
-nodeGroup.on("click", (event, d) => {
-  const { x, y } = d;
-  const scale = 1.5;
-  const centeredX = -x * scale + width / 2;
-  const centeredY = -y * scale + height / 2;
 
-  if (setTransformRef.current) {
-    setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
-  }
+    nodeGroup.on("click", (event, d) => {
+      const { x, y } = d;
+      const scale = 1.5;
+      const centeredX = -x * scale + width / 2;
+      const centeredY = -y * scale + height / 2;
 
-  d3.select(event.currentTarget)
-    .select("rect")
-    .transition()
-    .duration(300)
-    .attr("stroke", "#f96332")
-    .attr("stroke-width", 4)
-    .transition()
-    .duration(1000)
-    .attr("stroke", "#001f3f")
-    .attr("stroke-width", 1);
-});
+      if (setTransformRef.current) {
+        setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
+      }
 
-    
-    
+      if (onNodeClick) {
+        onNodeClick(d.data);
+      }
+
+      d3.select(event.currentTarget)
+        .select("rect")
+        .transition()
+        .duration(300)
+        .attr("stroke", "#f96332")
+        .attr("stroke-width", 4)
+        .transition()
+        .duration(1000)
+        .attr("stroke", "#001f3f")
+        .attr("stroke-width", 1);
+    });
+
     nodeGroup.append("rect")
       .attr("x", -cardWidth / 2)
       .attr("y", -cardHeight / 2)
@@ -186,14 +183,13 @@ nodeGroup.on("click", (event, d) => {
       .attr("height", 6)
       .attr("fill", "#f96332");
 
-      nodeGroup.append("image")
+    nodeGroup.append("image")
       .attr("xlink:href", d => d.data.icon || "https://via.placeholder.com/60")
       .attr("x", -cardWidth / 2 + 10)
       .attr("y", -cardHeight / 2 + 10)
       .attr("width", 60)
       .attr("height", 60)
-      .attr("clip-path", "circle(30px at center)");  // <- 30px radius for 60x60 image
-    
+      .attr("clip-path", "circle(30px at center)");
 
     nodeGroup.append("text")
       .attr("x", -cardWidth / 2 + 90)
@@ -211,7 +207,7 @@ nodeGroup.on("click", (event, d) => {
       .attr("font-weight", "bold")
       .text(d => d.data.position1);
 
-      nodeGroup.append("text")
+    nodeGroup.append("text")
       .attr("x", -cardWidth / 2 + 90)
       .attr("y", -cardHeight / 2 + 60)
       .attr("fill", "#cfcfcf")
@@ -242,69 +238,60 @@ nodeGroup.on("click", (event, d) => {
       .append("filter")
       .attr("id", "shadow")
       .html(`<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>`);
-  
-      if (setTransformRef.current) {
-        const nodeToCenterId = 1; // <-- Set the ID of the node you want to center
-        const nodeToCenter = filteredData.find(d => d.data.id === nodeToCenterId);
-  
-        if (nodeToCenter) {
-          const { x, y } = nodeToCenter;
-          const scale = 0.4; // Adjust zoom level as needed
-          const centeredX = -x * scale + width / 2;
-          const centeredY = -y * scale + 100; // Push it higher toward top (smaller = higher)
-          setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
-        }
-        
+
+    if (setTransformRef.current) {
+      const nodeToCenterId = 1;
+      const nodeToCenter = filteredData.find(d => d.data.id === nodeToCenterId);
+
+      if (nodeToCenter) {
+        const { x, y } = nodeToCenter;
+        const scale = 0.4;
+        const centeredX = -x * scale + width / 2;
+        const centeredY = -y * scale + 100;
+        setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
       }
-  
-  }, [data]);
+    }
+  }, [data, onNodeClick]);
 
   return (
     <div className="bg-light rounded shadow position-relative" style={{ height: "800px" }}>
-<TransformWrapper
-  initialScale={0.4}
-  minScale={0.4}
-  maxScale={4}
-  wheel={{ disabled: false }}
-  doubleClick={{ disabled: false }}
-  panning={{ disabled: false }}
-  centerOnInit // disable if you want full freedom
-  limitToBounds={false} // allow free dragging outside edges
->
-
-  {({ zoomIn, zoomOut, setTransform }) => {
-    // Store setTransform in the ref
-    setTransformRef.current = setTransform;
-
-    return (
-      <>  
-<ZoomControls 
-  zoomIn={zoomIn} 
-  zoomOut={zoomOut} 
-  resetTransform={() => {
-    const nodeToCenterId = 1;
-    const nodeToCenter = data.find(d => d.id === nodeToCenterId);
-    if (nodeToCenter && setTransformRef.current) {
-      const x = nodeToCenter.x || 0;
-      const y = nodeToCenter.y || 0;
-      const scale = 0.4;
-      const centeredX = -x * scale + 720 / 2;
-      const centeredY = -y * scale + 100;
-      setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
-    }
-  }} 
-/>
-        <TransformComponent>
-          <div ref={svgRef} />
-        </TransformComponent>
-        
-      </>
-    );
-  }}
-
-</TransformWrapper>
-
-
+      <TransformWrapper
+        initialScale={0.4}
+        minScale={0.4}
+        maxScale={4}
+        wheel={{ disabled: false }}
+        doubleClick={{ disabled: false }}
+        panning={{ disabled: false }}
+        centerOnInit
+        limitToBounds={false}
+      >
+        {({ zoomIn, zoomOut, setTransform }) => {
+          setTransformRef.current = setTransform;
+          return (
+            <>
+              <ZoomControls 
+                zoomIn={zoomIn} 
+                zoomOut={zoomOut} 
+                resetTransform={() => {
+                  const nodeToCenterId = 1;
+                  const nodeToCenter = data.find(d => d.id === nodeToCenterId);
+                  if (nodeToCenter && setTransformRef.current) {
+                    const x = nodeToCenter.x || 0;
+                    const y = nodeToCenter.y || 0;
+                    const scale = 0.4;
+                    const centeredX = -x * scale + 720 / 2;
+                    const centeredY = -y * scale + 100;
+                    setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
+                  }
+                }} 
+              />
+              <TransformComponent>
+                <div ref={svgRef} />
+              </TransformComponent>
+            </>
+          );
+        }}
+      </TransformWrapper>
     </div>
   );
 };
