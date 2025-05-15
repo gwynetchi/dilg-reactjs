@@ -22,6 +22,9 @@ interface Submission {
   evaluatorStatus: "Pending";
   autoStatus: null;
   imageUrl: null;
+  notes: string | null;
+  remarks: string | null;
+  score: number | null;
 }
 
 // Function to create program submissions
@@ -44,6 +47,9 @@ export const createProgramSubmissions = async (
       evaluatorStatus: "Pending",
       autoStatus: null,
       imageUrl: null,
+      notes: null,
+      remarks: null,
+      score: null,
     }));
 
     await setDoc(submissionDocRef, {

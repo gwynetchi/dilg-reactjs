@@ -8,8 +8,8 @@ import {
   updateDoc,
   getDoc,
   onSnapshot,
-  documentId,
   arrayRemove,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -27,23 +27,19 @@ import "../styles/components/pages.css";
 import { Link } from "react-router-dom";
 
 
-interface Communication {
-  id: string;
-  subject: string;
-  recipients: [];
-  deadline?: { seconds: number };
-  submitID:[];
-}
-
 interface Submission {
   id: string;
+  occurrence?: string;
   submittedBy: string;
   submittedAt?: { seconds: number };
   status?: string;
   autoStatus?: string;
   evaluatorStatus?: string;
-  remark?: string; // <-- new field
+  remark?: string;
+  score?: number; // <-- NEW
+  docId: string;
 }
+
 
 interface ChartData {
   status: string;
@@ -157,121 +153,148 @@ useEffect(() => {
 
   setLoading(true);
 
-  const fetchCommunicationData = async () => {
-    const commRef = doc(db, "communications", selectedSubject);
-    const commSnap = await getDoc(commRef);
-    
-    if (commSnap.exists()) {
-      const data = commSnap.data() as Communication;
-      const deadline = data.deadline?.seconds ? data.deadline.seconds * 1000 : null;
-      setSelectedDeadline(
-        deadline
-          ? new Date(deadline).toLocaleString("en-US", {
-              year: "numeric",
-              month: "long", // Converts the month to words like "April"
-              day: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-              hour12: true,
-            }).replace("at", "") // Remove the "at" word
-          : "No Deadline"
-      );      
+  const fetchProgramData = async () => {
+    try {
+      const programRef = doc(db, "programs", selectedSubject);
+      const programSnap = await getDoc(programRef);
 
-      return { deadline, submitIDs: data.submitID || [], recipients: data.recipients || [] };
-    }
+      if (!programSnap.exists()) {
+        setLoading(false);
+        return;
+      }
 
-    return { deadline: null, submitIDs: [], recipients: [] };
-  };
+      const programData = programSnap.data();
+      const recipients = programData.participants || [];
 
-  fetchCommunicationData().then(({ deadline, submitIDs, recipients }) => {
-    if (!recipients.length) {
-      // No recipients assigned, clear submissions
-      setSubmissions({ [selectedSubject]: [] });
-      setLoading(false);
-      return;
-    }
+      setSelectedDeadline(`From ${programData.duration?.from} to ${programData.duration?.to}`);
 
-    if (!submitIDs.length) {
-      // No submissions at all, all recipients get "No Submission"
-      setSubmissions({
-        [selectedSubject]: recipients.map((userId) => ({
-          id: userId,
-          submittedBy: userId,
-          autoStatus: "No Submission",
-        })),
-      });
-      setLoading(false);
-      return;
-    }
+      const submissionsQuery = query(
+        collection(db, "programsubmission"),
+        where("programId", "==", selectedSubject)
+      );
 
-    // Fetch submitted details for given submitIDs
-    const submissionsQuery = query(
-      collection(db, "submittedDetails"),
-      where(documentId(), "in", submitIDs)
-    );
-
-    const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
-      const fetchedSubmissions = snapshot.docs.map((doc) => {
-        const data = doc.data() as Submission;
-        let autoStatus = "No Submission";
-
-        if (data.submittedAt && deadline) {
-          const submittedAt = data.submittedAt.seconds * 1000;
-          autoStatus = submittedAt <= deadline ? "On Time" : "Late";
+      const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
+        if (snapshot.empty) {
+          // No submissions at all
+          const noSubmissions = recipients.map((userId: string) => ({
+            id: userId,
+            submittedBy: userId,
+            autoStatus: "No Submission",
+          }));
+          setSubmissions({ [selectedSubject]: noSubmissions });
+          setLoading(false);
+          return;
         }
 
-        return { ...data, id: doc.id, autoStatus, submittedBy: data.submittedBy };
+        const fetchedSubmissions: Submission[] = [];
+
+        snapshot.docs.forEach((docSnap) => {
+          const data = docSnap.data();
+          const allSubmissions = data.submissions || [];
+          const submittedBy = data.submittedBy;
+
+allSubmissions.forEach((entry: any) => {
+  const autoStatus = entry.submitted
+    ? (entry.autoStatus || "On Time")
+    : "No Submission";
+
+fetchedSubmissions.push({
+  id: `${docSnap.id}_${entry.occurrence}`,
+  docId: docSnap.id, // <-- keep actual Firestore doc ID
+  occurrence: entry.occurrence,
+  submittedBy,
+  submittedAt: entry.submittedAt || null,
+  status: entry.status || null,
+  autoStatus,
+  evaluatorStatus: entry.evaluatorStatus || "Pending",
+  remark: entry.remarks || "",
+});
+
+
+});
+
+        });
+
+        const submittedUserIDs = new Set(fetchedSubmissions.map((sub) => sub.submittedBy));
+        const missingRecipients = recipients
+          .filter((userId: string) => !submittedUserIDs.has(userId))
+          .map((userId: string) => ({
+            id: userId,
+            submittedBy: userId,
+            autoStatus: "No Submission",
+          }));
+
+        setSubmissions({
+          [selectedSubject]: [...fetchedSubmissions, ...missingRecipients],
+        });
+
+        setLoading(false);
       });
 
-      // Extract users who have submitted
-      const submittedUserIDs = fetchedSubmissions.map((sub) => sub.submittedBy);
-
-      // Find recipients who have NOT submitted
-      const missingRecipients = recipients
-        .filter((userId) => !submittedUserIDs.includes(userId))
-        .map((userId) => ({
-          id: userId,
-          submittedBy: userId,
-          autoStatus: "No Submission",
-        }));
-
-      setSubmissions({ [selectedSubject]: [...fetchedSubmissions, ...missingRecipients] });
+      return unsubscribe;
+    } catch (err) {
+      console.error("Error loading program data:", err);
       setLoading(false);
-    });
+    }
+  };
 
-    return () => unsubscribe();
-  });
+  fetchProgramData();
 }, [selectedSubject]);
 
 
-  const handleStatusUpdate = async (submissionId: string | undefined, newStatus: string) => {
-    if (!submissionId) {
-      console.error("Submission ID is undefined");
-      alert("Error: Submission ID is missing.");
+const handleStatusUpdate = async (
+  userId: string,
+  occurrence: string,
+  newStatus: string
+) => {
+  try {
+    // Get the user's programsubmission document
+    const q = query(
+      collection(db, "programsubmission"),
+      where("submittedBy", "==", userId),
+      where("programId", "==", selectedSubject) // assuming selectedSubject is the selected program ID
+    );
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      console.error("No programsubmission document found");
       return;
     }
-  
-    try {
-      const submissionRef = doc(db, "submittedDetails", submissionId);
-      await updateDoc(submissionRef, { evaluatorStatus: newStatus });
-  
-      setSubmissions((prev) => {
-        if (!selectedSubject || !prev[selectedSubject]) return prev;
-        return {
-          ...prev,
-          [selectedSubject]: prev[selectedSubject].map((sub) =>
-            sub.id === submissionId ? { ...sub, evaluatorStatus: newStatus } : sub
-          ),
-        };
-      });
-  
-      console.log(`Updated evaluator status for submission ${submissionId} to ${newStatus}`);
-    } catch (error) {
-      console.error("Error updating evaluator status:", error);
-      alert("Failed to update evaluator status.");
-    }
-  };
-  
+
+    const docRef = snapshot.docs[0].ref;
+    const data = snapshot.docs[0].data();
+
+    // Update the matching occurrence inside the submissions array
+    const updatedSubmissions = data.submissions.map((sub: any) =>
+      sub.occurrence === occurrence
+        ? { ...sub, evaluatorStatus: newStatus }
+        : sub
+    );
+
+    await updateDoc(docRef, { submissions: updatedSubmissions });
+
+    // Update local state
+    setSubmissions((prev) => {
+      if (!selectedSubject || !prev[selectedSubject]) return prev;
+
+      return {
+        ...prev,
+[selectedSubject]: prev[selectedSubject].map((sub) =>
+  sub.submittedBy === userId && sub.occurrence === occurrence // <-- FIXED
+    ? { ...sub, evaluatorStatus: newStatus }
+    : sub
+),
+
+      };
+    });
+
+    console.log(`Evaluator status updated for ${userId} - ${occurrence}`);
+  } catch (error) {
+    console.error("Failed to update evaluator status:", error);
+    alert("Error updating evaluator status.");
+  }
+};
+
   
 
   return (
@@ -280,7 +303,7 @@ useEffect(() => {
       <main>
         <div className="head-title">
           <div className="left">
-            <h2>Submission And Compliance Report</h2>
+            <h2>Program Monitoring and Scheduled Reports</h2>
             <ul className="breadcrumb">
               <li>
                 <Link to="/dashboards" className="active">Home</Link>
@@ -295,7 +318,7 @@ useEffect(() => {
                 <i className="bx bx-chevron-right"></i>
               </li>
               <li>
-                <Link to="/evaluator/analytics/submission-analytics">Submissions and Compliance</Link>
+                <Link to="/evaluator/analytics/submission-analytics">Program Monitoring and Scheduled Reports</Link>
               </li>
             </ul>
           </div>
@@ -341,7 +364,7 @@ useEffect(() => {
           </ResponsiveContainer>
         )}
   
-        <h3>Modify Submission Status</h3>
+        <h3>Evaluate Submission</h3>
         <Table striped bordered hover>
           <thead>
             <tr>
@@ -386,7 +409,8 @@ useEffect(() => {
                       onChange={(selectedOption) => {
                         if (!selectedOption) return;
                         setPendingStatus((prev) => ({ ...prev, [sub.id]: selectedOption.value }));
-                        handleStatusUpdate(sub.id, selectedOption.value);
+                        handleStatusUpdate(sub.submittedBy, sub.occurrence || "", selectedOption.value);
+
                       }}
                       styles={{
                         control: (base) => ({
@@ -448,27 +472,67 @@ useEffect(() => {
     <Button variant="secondary" onClick={() => setShowRemarkModal(false)}>
       Cancel
     </Button>
-    <Button variant="primary" onClick={async () => {
-  if (currentSubmissionId) {
-    const submissionRef = doc(db, "submittedDetails", currentSubmissionId);
-    
-    // Get the submission to access submittedBy
-    const submissionSnap = await getDoc(submissionRef);
-    if (submissionSnap.exists()) {
-      const submittedBy = submissionSnap.data().submittedBy;
+<Button
+  variant="primary"
+  onClick={async () => {
+    if (!currentSubmissionId) return;
 
-      // Update the remark
-      await updateDoc(submissionRef, { remark: remarkText });
+const currentSubmission = submissions[selectedSubject]?.find(sub => sub.id === currentSubmissionId);
 
-      // Remove user from 'seenBy' in 'communications'
-      const commsRef = doc(db, "communications", selectedSubject); // Adjust ID if needed
-      await updateDoc(commsRef, {
-        seenBy: arrayRemove(submittedBy)
+if (!currentSubmission) {
+  console.error("Submission not found in state");
+  return;
+}
+
+const { docId, occurrence } = currentSubmission;
+
+
+    try {
+      // Fetch the programsubmission document by docId
+      const docRef = doc(db, "programsubmission", docId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        console.error("Submission document not found");
+        return;
+      }
+
+      const data = docSnap.data();
+      const submissionsArray = data.submissions || [];
+
+      // Update the correct submission entry by occurrence
+      const updatedSubmissions = submissionsArray.map((entry: any) =>
+        entry.occurrence === occurrence
+          ? { ...entry, remarks: remarkText }
+          : entry
+      );
+
+      // Save the updated array
+      await updateDoc(docRef, { submissions: updatedSubmissions });
+
+      // Optionally update local state
+      setSubmissions((prev) => {
+        if (!selectedSubject || !prev[selectedSubject]) return prev;
+
+        return {
+          ...prev,
+          [selectedSubject]: prev[selectedSubject].map((sub) =>
+            sub.id === currentSubmissionId
+              ? { ...sub, remark: remarkText }
+              : sub
+          ),
+        };
       });
+
+      console.log("Remark successfully updated.");
+    } catch (error) {
+      console.error("Error updating remark:", error);
+      alert("Failed to save remark.");
     }
-  }
-  setShowRemarkModal(false);
-}}>
+
+    setShowRemarkModal(false);
+  }}
+>
   Save Remark
 </Button>
   </Modal.Footer>
