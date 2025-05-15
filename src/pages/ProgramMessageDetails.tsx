@@ -178,7 +178,8 @@ const ProgramMessageDetails: React.FC = () => {
               <>
                 <div className="alert alert-info">You already submitted this message.</div>
                 <div><strong>Evaluator Status:</strong> {submissionStatus.evaluatorStatus}</div>
-                {evaluatorRemark && <div><strong>Remark:</strong> {evaluatorRemark}</div>}
+                {remark && <div><strong>Your Remark:</strong> {remark}</div>}
+                {evaluatorRemark && <div><strong>Evaluator Remark:</strong> {evaluatorRemark}</div>}
               </>
             ) : (
               <button className="btn btn-success" onClick={handleMarkAsSubmitted}>
