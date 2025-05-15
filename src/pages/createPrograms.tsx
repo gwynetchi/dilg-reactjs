@@ -300,7 +300,6 @@ const CreatePrograms: React.FC = () => {
       // Create one programsubmission document per participant
     // Generate occurrences based on the program's frequency and duration
     const occurrences = await generateProgramLinks(programRef.id, frequency, details, duration);
-
     // Now pass occurrences to createProgramSubmissions
     await createProgramSubmissions(programRef, participants, occurrences);
       showAlert("Program successfully added!", "success");

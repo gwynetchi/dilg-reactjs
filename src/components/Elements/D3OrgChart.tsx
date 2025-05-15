@@ -13,6 +13,7 @@ export interface OrgChartNode {
   status: string;
   icon: string;
   subordinates?: number[];
+   layout?: "vertical" | "horizontal"; // ✅ Add this line
   x?: number; // <- add these
   y?: number;
 }
@@ -30,7 +31,7 @@ const statusColor = {
 
 const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
   const svgRef = useRef<HTMLDivElement>(null);
-  const setTransformRef = useRef<((x: number, y: number, scale: number, animationTime?: number, animationType?: string) => void) | null>(null);
+  const setTransformRef = useRef<((x: number, y: number, scale: number, animationTime?: number, animationType?: "linear" | "easeOut" | "easeInQuad" | "easeOutQuad" | "easeInOutQuad" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeInQuart" | "easeOutQuart" | "easeInOutQuart" | "easeInQuint" | "easeOutQuint" | "easeInOutQuint") => void) | null>(null);
 
 
   useEffect(() => {
@@ -73,7 +74,7 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
       .map(buildHierarchy) || [],
         });
 
-    const hierarchy = d3.hierarchy(buildHierarchy(rootData!));
+const hierarchy = d3.hierarchy(buildHierarchy(rootData!)) as d3.HierarchyPointNode<OrgChartNode>;
     const width = 1160;
     const height = 800;
 
@@ -85,11 +86,11 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
 
     const g = svg.append("g").attr("transform", "translate(50,50)");
 
-    const treeLayout = d3.tree<OrgChartNode>()
-      .size([width - 100, height - 50])
-      .separation((a, b) => a.parent === b.parent ? 2 : 4);
+const treeLayout = d3.tree<OrgChartNode>()
+  .size([width - 100, height - 50])
+  .separation((a, b) => a.parent === b.parent ? 2 : 4);
 
-    treeLayout(hierarchy);
+treeLayout(hierarchy);
 
     const elbowLink = (d: d3.HierarchyPointLink<OrgChartNode>) => {
       const sx = d.source.x!;
@@ -120,8 +121,11 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
       }
     });
 
-    g.selectAll(".link")
-      .data(hierarchy.links().filter(d => d.target.data.id !== dummyId))
+const links = hierarchy.links() as d3.HierarchyPointLink<OrgChartNode>[];
+
+g.selectAll(".link")
+  .data(links.filter(d => d.target.data.id !== dummyId))
+
       .enter()
       .append("path")
       .attr("fill", "none")
@@ -135,33 +139,33 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
       .data(filteredData)
       .enter()
       .append("g")
-      .attr("transform", d => `translate(${d.x},${d.y})`);
+.attr("transform", (d: d3.HierarchyPointNode<OrgChartNode>) => `translate(${d.x},${d.y})`);
+
 
     const cardWidth = 290;
     const cardHeight = 110;
-    nodeGroup.on("click", function (event, d) {
-      const { x, y } = d;
-      const scale = 1.5;
-      const centeredX = -x * scale + width / 2;
-      const centeredY = -y * scale + height / 2;
-    
-      if (setTransformRef.current) {
-        // Animate transform with easeOut
-        setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
-      }
-    
-      // Add highlight effect to clicked node
-      d3.select(this)
-        .select("rect")
-        .transition()
-        .duration(300)
-        .attr("stroke", "#f96332")
-        .attr("stroke-width", 4)
-        .transition()
-        .duration(1000)
-        .attr("stroke", "#001f3f")
-        .attr("stroke-width", 1);
-    });
+nodeGroup.on("click", (event, d) => {
+  const { x, y } = d;
+  const scale = 1.5;
+  const centeredX = -x * scale + width / 2;
+  const centeredY = -y * scale + height / 2;
+
+  if (setTransformRef.current) {
+    setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
+  }
+
+  d3.select(event.currentTarget)
+    .select("rect")
+    .transition()
+    .duration(300)
+    .attr("stroke", "#f96332")
+    .attr("stroke-width", 4)
+    .transition()
+    .duration(1000)
+    .attr("stroke", "#001f3f")
+    .attr("stroke-width", 1);
+});
+
     
     
     nodeGroup.append("rect")
@@ -268,7 +272,7 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data }) => {
   limitToBounds={false} // allow free dragging outside edges
 >
 
-  {({ zoomIn, zoomOut, resetTransform, setTransform }) => {
+  {({ zoomIn, zoomOut, setTransform }) => {
     // Store setTransform in the ref
     setTransformRef.current = setTransform;
 
