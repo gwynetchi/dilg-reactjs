@@ -46,23 +46,29 @@ export const softDelete = async (
 
     // Prepare the deleted document
 // In your softDelete.tsx
+// In softDelete.tsx
 const deletedDoc = {
   ...originalData,
-  deletedBy: { // Store as object with id for consistent permission checking
+  deletedBy: {
     id: user.uid,
     name: deletedByInfo.name,
     email: deletedByInfo.email
   },
   deletedAt: serverTimestamp(),
   originalCollection,
-  // Preserve important fields
-  createdAt: originalData.createdAt,
+  // Only include createdAt if it exists and is valid
+  ...(originalData.createdAt && { createdAt: originalData.createdAt }),
   id: originalData.id
 };
-    // Save to deleted collection
-    const deletedRef = doc(db, deletedCollection, originalData.id);
-    await setDoc(deletedRef, deletedDoc);
 
+// Remove any undefined values from the object
+const cleanDeletedDoc = Object.fromEntries(
+  Object.entries(deletedDoc).filter(([_, value]) => value !== undefined)
+);
+
+// Save to deleted collection
+const deletedRef = doc(db, deletedCollection, originalData.id);
+await setDoc(deletedRef, cleanDeletedDoc);
     console.log("Successfully soft-deleted document:", originalData.id);
     return true;
   } catch (err) {

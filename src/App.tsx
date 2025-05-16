@@ -5,35 +5,23 @@ import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
+import { useIdleTimer } from 'react-idle-timer'; 
 
-import SendDueCommunications from "./pages/SendDuePrograms";
-import CheckFrequency from "./pages/CheckFrequency";
+
 import DeletedCommunications from "./pages/DeletedCommunications";
 import Analytics from "./pages/analytics";
 
 // Import Dashboards
-import AdminDashboard from "./pages/dashboard";
-import LGUDashboard from "./pages/dashboard";
-import EvaluatorDashboard from "./pages/dashboard";
-import ViewerDashboard from "./pages/dashboard";
-
+import Dashboard from "./pages/dashboard";
 
 // Import Message Details
-import EvaluatorMessageDetails from "./pages/messagedetails";
-import LGUMessageDetails from "./pages/messagedetails";
-import ViewerMessageDetails from "./pages/messagedetails";
-import AdminMessageDetails from "./pages/messagedetails";
+import MessageDetails from "./pages/messagedetails";
 
 // Import Sent communications
-import EvaluatorSent from "./pages/sentCommunications";
-import LGUSent from "./pages/sentCommunications";
-import ViewerSent from "./pages/sentCommunications";
-import AdminSent from './pages/sentCommunications';
+import Sent from "./pages/sentCommunications";
+
 // Import Communication Pages
-import EvaluatorCommunication from "./pages/communication";
-import LGUCommunication from "./pages/communication";
-import ViewerCommunication from "./pages/communication";
-import AdminCommunication from "./pages/communication";
+import Communication from "./pages/communication";
 
 // Import Inbox, Calendar, Messaging, and Profile
 import Inbox from "./pages/inbox";
@@ -46,26 +34,27 @@ import AuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 import SubmissionAnalytics from "./pages/submission-analytics";
 import UserAnalytics from "./pages/user-analytics";
-import MonthlyAnalytics from "./pages/monthly-analytics";
+import MonthlyAnalytics from "./pages/program-analytics";
 import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
 import DeletedUsers from "./pages/admin/DeletedUsers";
 
-
+import ProgramMessageDetails from "./pages/ProgramMessageDetails";
 import EvaluatorPrograms from "./pages/managePrograms";
 import ProgramCards from "./pages/ProgramsCards";
-import ProgramMessages from "./pages/ProgramMessages";
+import ProgramMessages from "./pages/ViewProgramLinks";
 import OrgChartAdmin from "./pages/admin/orgchart";
-
+import ProgramLinksManager from "./pages/modules/program-modules/ProgramLinksManager";
+import MayorManagement from "./pages/admin/MayorManagement";
 
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
-    { path: "/admin/dashboard", element: <AdminDashboard /> },
+    { path: "/admin/dashboard", element: <Dashboard /> },
     { path: "/admin/profile", element: <Profile /> },
-    { path: "/admin/inbox/:id", element: <AdminMessageDetails /> },
-    { path: "/admin/communication", element: <AdminCommunication /> },
-    { path: "/admin/sentCommunications/:id", element: <AdminSent /> }, // Added this line
+    { path: "/admin/inbox/:id", element: <MessageDetails /> },
+    { path: "/admin/communication", element: <Communication /> },
+    { path: "/admin/sentCommunications/:id", element: <Sent /> }, // Added this line
     { path: "/admin/inbox", element: <Inbox /> },
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
@@ -74,17 +63,19 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/admin/OrganizationalChart", element: <OrgChartAdmin /> }, // ← Added here
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
     { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
-
+    { path: "/admin/MayorManagement", element: <MayorManagement cities={{}} onSave={function (): Promise<void> {
+      throw new Error("Function not implemented.");
+    } } />},
   ],
   Evaluator: [
-    { path: "/evaluator/dashboard", element: <EvaluatorDashboard /> },
+    { path: "/evaluator/dashboard", element: <Dashboard /> },
     { path: "/evaluator/profile", element: <Profile /> },
     { path: "/evaluator/inbox", element: <Inbox /> },
-    { path: "/evaluator/inbox/:id", element: <EvaluatorMessageDetails /> },
+    { path: "/evaluator/inbox/:id", element: <MessageDetails /> },
     { path: "/evaluator/sentbox", element: <Sentbox /> },
-    { path: "/evaluator/communication", element: <EvaluatorCommunication /> },
+    { path: "/evaluator/communication", element: <Communication /> },
     { path: "/evaluator/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/evaluator/sentCommunications/:id", element: <EvaluatorSent /> }, // Added this line
+    { path: "/evaluator/sentCommunications/:id", element: <Sent /> }, // Added this line
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/evaluator/analytics", element: <Analytics /> },
@@ -98,29 +89,33 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
 
   ],
   LGU: [
-    { path: "/lgu/dashboard", element: <LGUDashboard /> },
+    { path: "/lgu/dashboard", element: <Dashboard /> },
     { path: "/lgu/profile", element: <Profile /> },
     { path: "/lgu/inbox", element: <Inbox /> },
-    { path: "/lgu/inbox/:id", element: <LGUMessageDetails /> },
-    { path: "/lgu/communication", element: <LGUCommunication /> },
+    { path: "/lgu/inbox/:id", element: <MessageDetails /> },
+    { path: "/lgu/communication", element: <Communication /> },
     { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/lgu/sentCommunications/:id", element: <LGUSent /> }, // Added this line
+    { path: "/lgu/sentCommunications/:id", element: <Sent /> }, // Added this line
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
     { path: "/lgu/programs", element: <ProgramCards /> },
-    { path: "/lgu/programs/:programId", element: <ProgramMessages />}
+    { path: "/lgu/programs/:programId", element: <ProgramMessages />},
+    { path: "/lgu/program-inbox/message/:id", element: <ProgramMessageDetails /> },
+
+
+
+    
 
   ],
   Viewer: [
-    { path: "/viewer/dashboard", element: <ViewerDashboard /> },
+    { path: "/viewer/dashboard", element: <Dashboard /> },
     { path: "/viewer/profile", element: <Profile /> },
     { path: "/viewer/inbox", element: <Inbox /> },
-    { path: "/viewer/inbox/:id", element: <ViewerMessageDetails /> },
-    { path: "/viewer/communication", element: <ViewerCommunication /> },
+    { path: "/viewer/inbox/:id", element: <MessageDetails /> },
+    { path: "/viewer/communication", element: <Communication /> },
     { path: "/viewer/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/viewer/sentCommunications/:id", element: <ViewerSent /> }, // Added this line
+    { path: "/viewer/sentCommunications/:id", element: <Sent /> }, // Added this line
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/viewer/scoreBoard", element: <Scoreboard /> },
@@ -132,10 +127,49 @@ const App: React.FC = () => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
-  const [duePrograms, setDuePrograms] = useState<any[]>([]);
   const auth = getAuth();
   const db = getFirestore();
+  const [showWarning, setShowWarning] = useState(false);
 
+
+    // Auto-logout after 12 hours of inactivity (no deletion)
+    const handleAutoLogout = async () => {
+      if (user) {
+        console.log('Auto-logout after 12 hours of inactivity');
+        await signOut(auth); // Just logs out, no deletion
+        setUser(null);
+        setRole(null);
+      }
+    };
+  
+    const { reset } = useIdleTimer({
+      timeout: 1000 * 60 * 60 * 12, // 12 hours
+      onIdle: handleAutoLogout,
+      debounce: 500,
+      events: [
+        'mousedown',
+        'keydown',
+        'wheel',
+        'DOMMouseScroll',
+        'mousewheel',
+        'mousemove',
+        'touchmove',
+        'touchstart',
+        'resize'
+      ],
+      promptBeforeIdle: 1000 * 60 * 5, // 5-minute warning
+      onPrompt: () => setShowWarning(true),
+      onActive: () => setShowWarning(false),
+    });
+    
+    // Add reset to the dependency array of your auth useEffect
+    useEffect(() => {
+      const unsubscribeAuth = onAuthStateChanged(auth, async () => {
+        // ... existing code ...
+      });
+      return () => unsubscribeAuth();
+    }, [reset]); // ← Add reset here
+          
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -208,18 +242,60 @@ const App: React.FC = () => {
             <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
           )}
           <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
-            {user && (
-              <>
-                <CheckFrequency onDuePrograms={setDuePrograms} />
-                {duePrograms.length > 0 && <SendDueCommunications duePrograms={duePrograms} />}
-              </>
+ 
+            {/* Warning Modal */}
+            {showWarning && (
+              <div className="warning-modal" style={{
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                padding: '15px',
+                backgroundColor: '#fff',
+                borderRadius: '8px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                zIndex: 1000
+              }}>
+                <p>Your session will expire in 5 minutes due to inactivity.</p>
+                <button 
+                  onClick={reset}
+                  style={{
+                    padding: '5px 10px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Stay Logged In
+                </button>
+              </div>
             )}
-  
+
             <Routes>
               {/* Public Routes */}
-              <Route path="/dashboard" element={<Landing />} />
-              <Route path="/login" element={<AuthForm />} />
+              <Route
+                path="/dashboard"
+                element={
+                  user ? (
+                    <Navigate to={getDashboardPath()} replace />
+                  ) : (
+                    <Landing />
+                  )
+                }
+              />  
+              <Route
+                path="/login"
+                element={
+                  user ? (
+                    <Navigate to={getDashboardPath()} replace />
+                  ) : (
+                    <AuthForm />
+                  )
+                }
+              />
               <Route path="/register-success" element={<Navigate to="/login" replace />} />
+              <Route path="/program-links/:programId" element={<ProgramLinksManager />} />
   
               {/* Protected Routes (Dynamically Rendered) */}
               {role &&

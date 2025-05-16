@@ -5,7 +5,7 @@ import {
   addDoc, 
   query, 
   where, 
-    doc, 
+  doc, 
   updateDoc, 
   deleteDoc,
   onSnapshot 
@@ -14,11 +14,12 @@ import { onAuthStateChanged } from "firebase/auth";
 
 // Define the Task interface
 interface Task {
-  id: string; // Changed from number to string to match Firestore IDs
+  id: string;
   text: string;
   completed: boolean;
   createdAt: string;
-  userId: string; // Added to track which user owns the task
+  updatedAt?: string;
+  userId: string;
 }
 
 const TodoList: React.FC = () => {
@@ -29,7 +30,7 @@ const TodoList: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isTodoCollapsed, setIsTodoCollapsed] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
   // State for task editing
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editTaskText, setEditTaskText] = useState<string>('');
@@ -39,7 +40,6 @@ const TodoList: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser(user);
-        // Load tasks for this user
         loadTasks(user.uid);
       } else {
         setCurrentUser(null);
@@ -49,13 +49,11 @@ const TodoList: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Load tasks from Firestore for a specific user
   const loadTasks = async (userId: string) => {
     try {
       const tasksRef = collection(db, "tasks");
       const q = query(tasksRef, where("userId", "==", userId));
-      
-      // Set up real-time listener
+
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const tasksData: Task[] = [];
         querySnapshot.forEach((doc) => {
@@ -64,21 +62,20 @@ const TodoList: React.FC = () => {
             ...doc.data()
           } as Task);
         });
-        // Sort by creation date (newest first)
+        // Sort by updatedAt (newest first)
         tasksData.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
         );
         setTasks(tasksData);
       });
 
-      return unsubscribe; // Return the unsubscribe function
+      return unsubscribe;
     } catch (err) {
       console.error("Error loading tasks:", err);
       setError("Failed to load tasks");
     }
   };
 
-  // Clear status messages after 3 seconds
   useEffect(() => {
     if (statusMessage) {
       const timer = setTimeout(() => {
@@ -88,7 +85,6 @@ const TodoList: React.FC = () => {
     }
   }, [statusMessage]);
 
-  // Clear error messages after 3 seconds
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
@@ -98,7 +94,6 @@ const TodoList: React.FC = () => {
     }
   }, [error]);
 
-  // Format date for display
   const formatDate = (date: string): string => {
     const d = new Date(date);
     return d.toLocaleDateString(undefined, { 
@@ -109,12 +104,10 @@ const TodoList: React.FC = () => {
     });
   };
 
-  // Toggle collapse state of the todo list
   const toggleTodo = (): void => {
     setIsTodoCollapsed(prev => !prev);
   };
 
-  // Add a new task to Firestore
   const addTask = async (): Promise<void> => {
     if (!newTask.trim()) {
       setError('Task cannot be empty.');
@@ -127,10 +120,12 @@ const TodoList: React.FC = () => {
     }
 
     try {
+      const now = new Date().toISOString();
       await addDoc(collection(db, "tasks"), {
         text: newTask.trim(),
         completed: false,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now, // Set updatedAt when task is created
         userId: currentUser.uid
       });
       setNewTask('');
@@ -142,7 +137,6 @@ const TodoList: React.FC = () => {
     }
   };
 
-  // Remove a task from Firestore
   const removeTask = async (id: string, completed: boolean): Promise<void> => {
     if (!completed) {
       setError('Please complete the task before removing it.');
@@ -158,7 +152,6 @@ const TodoList: React.FC = () => {
     }
   };
 
-  // Toggle completion status of a task in Firestore
   const toggleTaskCompletion = async (id: string, currentStatus: boolean): Promise<void> => {
     try {
       await updateDoc(doc(db, "tasks", id), {
@@ -171,13 +164,11 @@ const TodoList: React.FC = () => {
     }
   };
 
-  // Start editing a task
   const startEditingTask = (id: string, text: string): void => {
     setEditingTaskId(id);
     setEditTaskText(text);
   };
 
-  // Save the edited task to Firestore
   const saveEditedTask = async (id: string): Promise<void> => {
     if (!editTaskText.trim()) {
       setError('Task cannot be empty.');
@@ -186,7 +177,8 @@ const TodoList: React.FC = () => {
 
     try {
       await updateDoc(doc(db, "tasks", id), {
-        text: editTaskText.trim()
+        text: editTaskText.trim(),
+        updatedAt: new Date().toISOString()
       });
       setEditingTaskId(null);
       setEditTaskText('');
@@ -197,18 +189,15 @@ const TodoList: React.FC = () => {
     }
   };
 
-  // Cancel editing a task
   const cancelEditingTask = (): void => {
     setEditingTaskId(null);
     setEditTaskText('');
   };
 
-  // Handler for text area changes
   const handleTaskTextChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setNewTask(e.target.value);
   };
 
-  // Handler for edit text area changes
   const handleEditTaskTextChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setEditTaskText(e.target.value);
   };
@@ -223,7 +212,6 @@ const TodoList: React.FC = () => {
       </div>
       
       <div className={`card-body ${isTodoCollapsed ? 'd-none' : ''}`}>
-        {/* Add task button that shows when text area is hidden */}
         {!isAddingTask && (
           <button 
             onClick={() => setIsAddingTask(true)} 
@@ -233,7 +221,6 @@ const TodoList: React.FC = () => {
           </button>
         )}
 
-        {/* Text area that appears only when adding a task */}
         {isAddingTask && (
           <div className="mb-3">
             <textarea
@@ -284,10 +271,9 @@ const TodoList: React.FC = () => {
             </div>
           ) : (
             <ul className="list-group list-group-flush">
-              {tasks.map(({ id, text, completed, createdAt }) => (
+              {tasks.map(({ id, text, completed, createdAt, updatedAt }) => (
                 <li key={id} className="list-group-item px-0 py-2">
                   <div className="d-flex">
-                    {/* Non-edit mode */}
                     {editingTaskId !== id && (
                       <>
                         <div className="me-2 pt-1 flex-shrink-0">
@@ -308,8 +294,9 @@ const TodoList: React.FC = () => {
                             {text}
                           </div>
                           <div className="text-muted" style={{ fontSize: "0.7rem" }}>
-                            <i className="bx bx-calendar"></i> {formatDate(createdAt)}
-                          </div>
+                            <div><i className="bx bx-calendar"></i> Created At: {formatDate(createdAt)}</div>
+                            {updatedAt && <div><i className="bx bx-time-five"></i> Updated At: {formatDate(updatedAt)}</div>}
+                            </div>
                         </div>
                         
                         <div className="flex-shrink-0 ms-2 d-flex">
@@ -335,7 +322,6 @@ const TodoList: React.FC = () => {
                       </>
                     )}
                     
-                    {/* Edit mode */}
                     {editingTaskId === id && (
                       <div className="w-100">
                         <textarea

@@ -5,11 +5,12 @@ import {
   collection,
   addDoc,
   serverTimestamp,
-  getDocs,
+  getDocs, 
 } from "firebase/firestore";
 import { db } from "../firebase";
 import "../styles/components/dashboard.css";
-
+import { generateProgramLinks } from "./modules/program-modules/generateProgramLinks";
+import { createProgramSubmissions } from "./modules/program-modules/createProgramSubmissions";
 interface User {
   id: string;
   fullName: string;
@@ -28,6 +29,7 @@ interface FrequencyDetails {
 }
 
 const CreatePrograms: React.FC = () => {
+  
   const [programName, setProgramName] = useState("");
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
@@ -283,7 +285,7 @@ const CreatePrograms: React.FC = () => {
         imageUrl = await uploadImage();
       }
   
-      await addDoc(collection(db, "programs"), {
+      const programRef = await addDoc(collection(db, "programs"), {
         programName,
         link,
         description,
@@ -295,7 +297,11 @@ const CreatePrograms: React.FC = () => {
         createdAt: serverTimestamp(),
         createdBy: getAuth().currentUser?.uid || null,
       });
-  
+      // Create one programsubmission document per participant
+    // Generate occurrences based on the program's frequency and duration
+    const occurrences = await generateProgramLinks(programRef.id, frequency, details, duration);
+    // Now pass occurrences to createProgramSubmissions
+    await createProgramSubmissions(programRef, participants, occurrences);
       showAlert("Program successfully added!", "success");
       setProgramName("");
       setLink("");

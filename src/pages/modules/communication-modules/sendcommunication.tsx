@@ -30,9 +30,9 @@ const CommunicationForm: React.FC<Props> = ({ onClose, onSuccess, editData }) =>
   const [submissionLink, setSubmissionLink] = useState(editData?.submissionLink || "");
   const [monitoringLink, setMonitoringLink] = useState(editData?.monitoringLink || "");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState(editData?.imageUrl || "");
+  const [imageUrl] = useState(editData?.imageUrl || "");
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<{ id: string; fullName: string; role: string }[]>([]);
+  // Removed unused users state
   const [groupedOptions, setGroupedOptions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -46,8 +46,6 @@ const CommunicationForm: React.FC<Props> = ({ onClose, onSuccess, editData }) =>
           role: data.role || "No Role",
         };
       });
-
-      setUsers(usersList);
 
       // Compute groupedOptions here
       const grouped = Object.entries(

@@ -20,15 +20,25 @@ const Scoreboard = () => {
   const [newScore, setNewScore] = useState<number | null>(null);
   const confettiRef = useRef<HTMLCanvasElement>(null);
 
-  const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> => {
-    const userRef = doc(db, "users", uid);
-    const userDoc = await getDoc(userRef);
-    if (userDoc.exists()) {
-      const data = userDoc.data();
-      return `${data.fname} ${data.mname || ""} ${data.lname}`;
+const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> => {
+  const userRef = doc(db, "users", uid);
+  const userDoc = await getDoc(userRef);
+  
+  if (userDoc.exists()) {
+    const data = userDoc.data();
+    const { fname, mname, lname, email } = data;
+
+    const hasName = fname || mname || lname;
+    if (hasName) {
+      const fullName = `${fname || ""} ${mname || ""} ${lname || ""}`.trim();
+      return fullName;
     }
-    return 'Unknown User';
-  }, []);
+
+    return email || uid;
+  }
+
+  return 'Unknown User';
+}, []);
 
   const triggerConfetti = () => {
     const canvas = confettiRef.current;

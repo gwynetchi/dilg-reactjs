@@ -80,6 +80,7 @@ const Inbox: React.FC = () => {
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const [showModal, setShowModal] = useState(false);
   const [urgentCount, setUrgentCount] = useState(0);
+  const [messageCount, setMessageCount] = useState(0);
   const [pastDueCount, setPastDueCount] = useState(0);
 
   const [selectedMessage, setSelectedMessage] = useState<{
@@ -173,13 +174,15 @@ const Inbox: React.FC = () => {
     setCommunications((prevMessages) => {
       const filteredPrev = prevMessages.filter((msg) => msg.source !== source);
       const combined = [...filteredPrev, ...newMessages];
-      return combined.sort((a, b) => {
+      const sorted = combined.sort((a, b) => {
         const aTime = a.createdAt?.seconds || 0;
         const bTime = b.createdAt?.seconds || 0;
         return bTime - aTime;
       });
+      setMessageCount(sorted.length); // Update message count
+      return sorted;
     });
-
+  
     newMessages.forEach((msg) => {
       if (!senderNames[msg.createdBy]) {
         listenToSenderProfile(msg.createdBy);
@@ -344,22 +347,28 @@ useEffect(() => {
                 setSortOrder={setSortOrder}
               />
               <div className="inbox-container">
-                {loading ? (
-                  <div className="spinner-overlay">
-                    <div className="spinner"></div>
-                  </div>
-                ) : (
-                  <MessageTable
-                    messages={filteredCommunications}
-                    userId={userId}
-                    senderNames={senderNames}
-                    openMessage={openMessage}
-                    handleDeleteRequest={handleDeleteRequest}
-                    getDeadlineStatus={getDeadlineStatus}
-                    getStatusStyles={getStatusStyles}
-                  />
-                )}
+              {loading ? (
+              <div className="spinner-overlay">
+                <div className="spinner"></div>
               </div>
+            ) : messageCount === 0 ? (
+              <div className="empty-inbox-message text-center py-5">
+                <i className="bx bx-envelope-open fs-1 text-muted mb-3"></i>
+                <h4 className="text-muted">No Communications</h4>
+                <p className="text-muted">Your inbox is currently empty</p>
+              </div>
+            ) : (
+              <MessageTable
+                messages={filteredCommunications}
+                userId={userId}
+                senderNames={senderNames}
+                openMessage={openMessage}
+                handleDeleteRequest={handleDeleteRequest}
+                getDeadlineStatus={getDeadlineStatus}
+                getStatusStyles={getStatusStyles}
+              />
+            )}
+            </div>
             </div>
           </div>
         </main>

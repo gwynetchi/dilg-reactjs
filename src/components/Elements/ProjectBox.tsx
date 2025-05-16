@@ -10,7 +10,7 @@ interface ProjectBoxProps {
 export default function ProjectBox({ img, title, text, action }: ProjectBoxProps) {
   return (
     <Wrapper>
-      <ImgBtn className="aniamte pointer" onClick={action ? () => action() : undefined}>
+      <ImgBtn className="animate pointer" onClick={action ? () => action() : undefined}>
         <img className="radius8" src={img} alt="project"></img>
       </ImgBtn>
       <h3 className="font20 extraBold">{title}</h3>

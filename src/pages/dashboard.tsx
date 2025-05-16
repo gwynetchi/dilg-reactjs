@@ -12,6 +12,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import ReportMetricsChart from "../pages/ReportMetricsChart";
 import ResultsFramework from '../components/framework/Outcomes';
 import TodoList from '../pages/TodoList';
+import ScoreboardWidget from '../pages/ScoreboardWidget';
 
 // Component styles with reduced sizes
 const dashboardStyles = {
@@ -745,6 +746,8 @@ const Dashboard = () => {
           
           {/* Sidebar - 3 columns */}
           <div className="col-lg-3 col-md-4">
+            {/* Scoreboard Widget */}
+            <ScoreboardWidget />
             {/* To-Do List Section in Sidebar */}
             <TodoList />
 

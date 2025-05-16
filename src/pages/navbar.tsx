@@ -69,7 +69,8 @@ const MENU_ITEMS = {
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
     { name: "Deleted Users", icon: "bx bx-user-x", path: "/admin/DeletedUsers" },
     { name: "User Management", icon: "bxs-user-plus", path: "/admin/userManagement" },
-    { name: "Programs", icon: "bxs-doughnut-chart", path: "/admin/programs" },
+    { name: "Organizational Chart", icon: "bx-sitemap", path: "/admin/OrganizationalChart" },
+    { name: "Mayor Management", icon: "bxr bx-man", path: "/admin/MayorManagement" },
   ],
 };
 
@@ -331,15 +332,15 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           <div className="d-flex justify-content-end align-items-center">
             <div className="position-relative" ref={notificationMenuRef}>
             <button 
-  className="btn notification" 
-  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-  aria-label="Notifications"
->
-  <i className="bx bx-md bx-bell bx-tada-hover"></i>
-  {unreadCounts.inbox + unreadCounts.programs > 0 && (
-    <span className="num">{unreadCounts.inbox + unreadCounts.programs}</span>
-  )}
-</button>
+              className="btn notification" 
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              aria-label="Notifications"
+            >
+              <i className="bx bx-md bx-bell bx-tada-hover"></i>
+              {unreadCounts.inbox + unreadCounts.programs > 0 && (
+                <span className="num">{unreadCounts.inbox + unreadCounts.programs}</span>
+              )}
+            </button>
 
               {isNotificationOpen && unreadMessages.length > 0 && (
   <div className="notification-dropdown">

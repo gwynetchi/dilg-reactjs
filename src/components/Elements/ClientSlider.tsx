@@ -32,7 +32,7 @@ import ClientLogo27 from "../../assets/img/clients/cindang.png";
 import ClientLogo28 from "../../assets/img/clients/cindang.png";
 
 const logos = [
-  { src: ClientLogo01, alt: "client logo", link: "https://calabarzon.dilg.gov.ph" },
+  { src: ClientLogo01, alt: "DILG-Cavite", link: "https://calabarzon.dilg.gov.ph" },
   { src: ClientLogo02, alt: "Bagong Pilipinas", link: "https://www.bagongpilipinastayo.com/" },
   { src: ClientLogo03, alt: "LGRC", link: "https://calabarzon.dilg.gov.ph" },
   { src: ClientLogo04, alt: "CALABARZON", link: "https://calabarzon.dilg.gov.ph" },

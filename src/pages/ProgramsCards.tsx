@@ -13,6 +13,7 @@ interface Program {
     from: string;
     to: string;
   };
+  description:string;
   frequencyDetails?: {
     weeklyDay?: string;
     monthlyDate?: string;
@@ -64,6 +65,7 @@ const ProgramCards: React.FC = () => {
           programName: data.programName,
           frequency: data.frequency,
           duration: data.duration,
+          description: data.description,
           frequencyDetails: data.frequencyDetails,
           participants: data.participants,
           imageUrl: data.imageUrl || '', // ✅ Ensure fallback
@@ -97,6 +99,7 @@ const ProgramCards: React.FC = () => {
                 style={{ cursor: 'pointer', height: '100%' }}
                 className="shadow-sm h-100"
               >
+                
               <Card.Img
                 variant="top"
                 src={program.imageUrl || "/images/logo.png"} // ✅ Use image from Firestore or fallback
@@ -105,6 +108,7 @@ const ProgramCards: React.FC = () => {
                 <Card.Body>
                   <Card.Title>{program.programName}</Card.Title>
                   <Card.Text>
+                    <p><strong>Description:</strong> {program.description}</p>
                     <p><strong>Frequency:</strong> {program.frequency}</p>
                     <p><strong>From:</strong> {program.duration?.from}</p>
                     <p><strong>To:</strong> {program.duration?.to}</p>

@@ -1,7 +1,85 @@
 import { Request, Response, NextFunction, Router } from 'express';
 import { auth, db } from "../firebaseAdmin";
+import * as admin from "firebase-admin";
+import { UserRecord } from "firebase-admin/auth";
+
+// 1. Type Augmentation for Express Request
+declare module 'express' {
+  interface Request {
+    adminUser?: {
+      uid: string;
+      role: string;
+    };
+  }
+}
 
 const router = Router();
+
+interface DeleteUserRequest {
+  uid: string;
+  permanent: boolean; // true for permanent delete, false for soft delete
+}
+
+const deleteUserHandler = async (req: Request, res: Response<ResponseBody>) => {
+  const { uid, permanent } = req.body as DeleteUserRequest;
+
+  try {
+    // Validate inputs
+    if (!uid) {
+      return res.status(400).json({ success: false, error: "User ID is required" });
+    }
+
+    // Check if target user exists
+    try {
+      await auth.getUser(uid);
+    } catch (error) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    if (permanent) {
+      // For permanent delete, first check if user exists in deleted_users
+      const deletedUserDoc = await db.collection("deleted_users").doc(uid).get();
+      
+      // Delete from Auth first
+      await auth.deleteUser(uid);
+      
+      // Then delete from all collections
+      await db.collection("users").doc(uid).delete();
+      if (deletedUserDoc.exists) {
+        await db.collection("deleted_users").doc(uid).delete();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "User permanently deleted from system"
+      });
+    } else {
+      // Soft delete logic remains the same
+      await auth.updateUser(uid, { disabled: true });
+      
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        await db.collection("deleted_users").doc(uid).set({
+          ...userDoc.data(),
+          deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+          deletedBy: req.adminUser?.uid
+        });
+        await db.collection("users").doc(uid).delete();
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "User account disabled and moved to deleted users"
+      });
+    }
+  } catch (error: any) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to delete user"
+    });
+  }
+};
 
 interface UpdateCredentialsRequest {
   uid: string;
@@ -18,86 +96,133 @@ interface ResponseBody {
 
 const updateCredentialsHandler = async (
   req: Request,
-  res: Response,
-  next: NextFunction
+  res: Response<ResponseBody>
 ) => {
   const { uid, email, password } = req.body as UpdateCredentialsRequest;
-
-  const sendResponse = (statusCode: number, responseBody: ResponseBody) => {
-    res.status(statusCode).json(responseBody);
-  };
-
-  const authHeader: string | undefined = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return sendResponse(401, {
-      success: false,
-      error: "Unauthorized - No token provided",
-    });
-  }
-
-  const token = authHeader.split("Bearer ")[1];
+  const currentUserUid = req.adminUser?.uid;
 
   try {
-    const decodedToken = await auth.verifyIdToken(token);
-    const requestingUid = decodedToken.uid;
-
-    if (requestingUid !== uid) {
-      return sendResponse(403, {
+    // Validate inputs
+    if (!uid) {
+      return res.status(400).json({
         success: false,
-        error: "Forbidden - You can only update your own credentials",
+        error: "User ID is required"
       });
     }
 
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return sendResponse(400, {
+    // Check if target user exists
+    let targetUser: UserRecord;
+    try {
+      targetUser = await auth.getUser(uid);
+    } catch (error) {
+      return res.status(404).json({
         success: false,
-        error: "Invalid email format",
+        error: "User not found"
       });
     }
 
-    if (password && password.length < 6) {
-      return sendResponse(400, {
-        success: false,
-        error: "Password must be at least 6 characters",
-      });
+    // Prepare update data for Firebase Auth
+    const authUpdateData: { email?: string; password?: string } = {};
+    if (email && email !== targetUser.email) authUpdateData.email = email;
+    if (password) authUpdateData.password = password;
+
+    // Prepare update data for Firestore
+    const firestoreUpdateData: { [key: string]: any } = {};
+    if (email && email !== targetUser.email) firestoreUpdateData.email = email;
+    if (password) firestoreUpdateData.password = password; // Storing plain password as requested
+
+    // Update Firebase Auth if there are changes
+    if (Object.keys(authUpdateData).length > 0) {
+      await auth.updateUser(uid, authUpdateData);
     }
 
-    const updateData: { email?: string; password?: string } = {};
-    if (email) updateData.email = email;
-    if (password) updateData.password = password;
+    // Update Firestore if there are changes
+    if (Object.keys(firestoreUpdateData).length > 0) {
+      await db.collection("users").doc(uid).update(firestoreUpdateData);
+    }
 
-    // 🔐 Update Firebase Auth credentials
-    await auth.updateUser(uid, updateData);
-
-    // ⚠️ Store raw email & password in Firestore (NOT secure — dev only)
-    const userDocRef = db.collection("users").doc(uid);
-    await userDocRef.update({
-      ...(email && { email }),
-      ...(password && { password }), // storing raw password
-    });
-
-    return sendResponse(200, {
+    return res.status(200).json({
       success: true,
-      message: "Credentials updated successfully",
+      message: "Credentials updated successfully"
     });
-  } catch (error: any) {
-    console.error("Admin Update Error:", error);
 
-    let errorMessage = "Failed to update credentials";
-    if (error.code === 'auth/email-already-exists') {
-      errorMessage = "Email already in use by another account";
-    } else if (error.code === 'auth/invalid-password') {
-      errorMessage = "Password must be at least 6 characters";
+  } catch (error: any) {
+    console.error("Update credentials error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to update credentials"
+    });
+  }
+};
+// Add this new middleware
+const verifyUserOrAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized - No token provided"
+      });
     }
 
-    return sendResponse(500, {
+    const token = authHeader.split(" ")[1];
+    const decodedToken = await auth.verifyIdToken(token);
+    
+    // Get user document
+    const userDoc = await db.collection("users").doc(decodedToken.uid).get();
+    
+    if (!userDoc.exists) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden - User not found"
+      });
+    }
+
+    const userRole = userDoc.data()?.role;
+    const isAdmin = userRole === "Admin";
+    const isEditingSelf = decodedToken.uid === req.body.uid;
+
+    // Allow if admin or user editing themselves
+    if (isAdmin || isEditingSelf) {
+      req.adminUser = {
+        uid: decodedToken.uid,
+        role: userRole || ""
+      };
+      return next();
+    }
+
+    return res.status(403).json({
       success: false,
-      error: errorMessage,
-      code: error.code,
+      error: "Forbidden - You can only edit your own credentials"
+    });
+
+  } catch (error) {
+    console.error("User verification error:", error);
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired token"
     });
   }
 };
 
-router.post("/update-credentials", updateCredentialsHandler);
+// Apply middleware and route
+router.post("/update-credentials", 
+  (req: Request, res: Response, next: NextFunction) => {
+    verifyUserOrAdmin(req, res, next).catch(next);
+  }, 
+  (req: Request, res: Response, next: NextFunction) => {
+    updateCredentialsHandler(req, res).catch(next);
+  }
+);
+
+router.post("/delete", 
+  (req: Request, res: Response, next: NextFunction) => {
+    verifyUserOrAdmin(req, res, next).catch(next);
+  }, // Only admins can delete users
+  (req: Request, res: Response, next: NextFunction) => {
+    deleteUserHandler(req, res).catch(next);
+  }
+);
 
 export default router;

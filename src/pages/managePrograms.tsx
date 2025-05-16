@@ -352,50 +352,62 @@ const ManagePrograms: React.FC = () => {
         </thead>
         <tbody>
           {filteredPrograms.map((program) => (
-            <tr key={program.id}>
-              <td>
-                {program.imageUrl && (
-                  <img 
-                    src={program.imageUrl} 
-                    alt={program.programName}
-                    style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                    className="img-thumbnail"
-                  />
-                )}
-              </td>
-              <td>{program.programName}</td>
-              <td>{program.description}</td>
-              <td>
-                {program.link && (
-                  <a href={program.link} target="_blank" rel="noopener noreferrer">
-                    View Link
-                  </a>
-                )}
-              </td>
-              <td>
-                {formatFullDate(program.duration.from)} - {formatFullDate(program.duration.to)}
-              </td>
-              <td>{program.frequency}</td>
-              <td>{program.participants.length}</td>
-              <td>
-                <div className="d-flex gap-2">
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#editModal"
-                    onClick={() => handleEditClick(program)}
-                  >
-                    <i className="bi bi-pencil-fill"></i> Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={() => deleteProgram(program.id)}
-                  >
-                    <i className="bi bi-trash-fill"></i> Delete
-                  </button>
-                </div>
-              </td>
-            </tr>
+            <tr
+  key={program.id}
+  style={{ cursor: "pointer" }}
+  onClick={() => window.location.href = `/program-links/${program.id}`}
+  title="Click to manage links"
+>
+  <td>
+    {program.imageUrl && (
+      <img 
+        src={program.imageUrl} 
+        alt={program.programName}
+        style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+        className="img-thumbnail"
+      />
+    )}
+  </td>
+  <td>{program.programName}</td>
+  <td>{program.description}</td>
+  <td>
+    {program.link && (
+      <a href={program.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+        View Link
+      </a>
+    )}
+  </td>
+  <td>
+    {formatFullDate(program.duration.from)} - {formatFullDate(program.duration.to)}
+  </td>
+  <td>{program.frequency}</td>
+  <td>{program.participants.length}</td>
+  <td>
+    <div className="d-flex gap-2">
+      <button
+        className="btn btn-sm btn-outline-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#editModal"
+        onClick={(e) => {
+          e.stopPropagation(); // prevent redirect
+          handleEditClick(program);
+        }}
+      >
+        <i className="bi bi-pencil-fill"></i> Edit
+      </button>
+      <button
+        className="btn btn-sm btn-outline-danger"
+        onClick={(e) => {
+          e.stopPropagation(); // prevent redirect
+          deleteProgram(program.id);
+        }}
+      >
+        <i className="bi bi-trash-fill"></i> Delete
+      </button>
+    </div>
+  </td>
+</tr>
+
           ))}
         </tbody>
       </table>
