@@ -4,7 +4,6 @@ import {
   collection,
   getDocs,
   doc,
-  updateDoc,
   writeBatch,
 } from "firebase/firestore";
 import OrgChartViewer from "../../components/Elements/OrgChartViewer";
@@ -14,7 +13,7 @@ import { useToast } from "../../components/context/ToastContext";
 const AdminOrgChartEditor: React.FC = () => {
   const [nodes, setNodes] = useState<OrgChartNode[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [form, setForm] = useState<Partial<OrgChartNode>>({});
+  const [form, setForm] = useState<Partial<OrgChartNode> & { superiorId?: number }>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
@@ -35,10 +34,15 @@ const AdminOrgChartEditor: React.FC = () => {
           position1: data.position1 || "",
           position2: data.position2 || "",
           email: data.email || "",
+          contact: data.contact || "",
+          img: data.img || "",
+          city: data.city || "",
+          cluster: data.cluster || "",
           status: data.status || "offline",
           icon: data.icon || "",
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
+          superiorId: data.superiorId || "",
         };
       });
       setNodes(items);
@@ -69,6 +73,10 @@ const AdminOrgChartEditor: React.FC = () => {
         id: newId,
         name: newNode.name || "",
         email: newNode.email || "",
+        contact: newNode.contact || "",
+        img: newNode.contact || "",
+        city: newNode.city || "",
+        cluster: newNode.cluster || "",
         icon: newNode.icon || "",
         position1: newNode.position1 || "",
         position2: newNode.position2 || "",
@@ -105,23 +113,51 @@ const AdminOrgChartEditor: React.FC = () => {
     }
   };
 
-  const handleUpdateUser = async () => {
-    if (!selectedId || !form) return;
+const handleUpdateUser = async () => {
+  if (!selectedId || !form) return;
+  
+  setLoading(true);
+  try {
+    const batch = writeBatch(db);
     
-    setLoading(true);
-    try {
-      await updateDoc(doc(db, "orgdata", selectedId.toString()), form);
-      showToast("User updated successfully", "success");
-      setShowModal(false);
-      await fetchNodes();
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error("Error updating user:", error);
-      showToast("Failed to update user", "error");
-    } finally {
-      setLoading(false);
+    // Get the current node data
+    
+    // If superior is being changed
+    if (form.superiorId !== undefined) {
+      // Remove from old superior's subordinates
+      const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
+      if (oldSuperior) {
+        batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
+          subordinates: oldSuperior.subordinates?.filter(id => id !== selectedId) || []
+        });
+      }
+      
+      // Add to new superior's subordinates
+      if (form.superiorId) {
+        const newSuperior = nodes.find(n => n.id === form.superiorId);
+        if (newSuperior) {
+          batch.update(doc(db, "orgdata", newSuperior.id.toString()), {
+            subordinates: [...(newSuperior.subordinates || []), selectedId]
+          });
+        }
+      }
     }
-  };
+    
+    // Update the node itself
+    batch.update(doc(db, "orgdata", selectedId.toString()), form);
+    
+    await batch.commit();
+    showToast("User updated successfully", "success");
+    setShowModal(false);
+    await fetchNodes();
+    setRefreshKey((prev) => prev + 1);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    showToast("Failed to update user", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteUser = async () => {
     if (!selectedId) return;
@@ -155,14 +191,19 @@ const AdminOrgChartEditor: React.FC = () => {
     }
   };
 
-  const updateField = (field: keyof OrgChartNode, value: string) => {
+  const updateField = (field: keyof OrgChartNode | "superiorId", value: string | number | undefined) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleNodeClick = (node: OrgChartNode) => {
-    setSelectedId(node.id);
-    setForm(node);
-  };
+const handleNodeClick = (node: OrgChartNode) => {
+  setSelectedId(node.id);
+  // Find the current superior (if any)
+  const superior = nodes.find(n => n.subordinates?.includes(node.id));
+  setForm({
+    ...node,
+    superiorId: superior?.id
+  });
+};
 
   const resetForm = () => {
     setShowModal(false);
@@ -295,7 +336,54 @@ const AdminOrgChartEditor: React.FC = () => {
                   }
                 />
               </div>
-              
+                            
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input
+                  placeholder="e.g., New York"
+                  className="border p-2 rounded w-full"
+                  value={editMode === "add" ? newNode.city || "" : form.city || ""}
+                  onChange={(e) =>
+                    editMode === "add"
+                      ? setNewNode((prev) => ({ ...prev, city: e.target.value }))
+                      : updateField("city", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cluster</label>
+                <input
+                  placeholder="e.g., North America"
+                  className="border p-2 rounded w-full"
+                  value={editMode === "add" ? newNode.cluster || "" : form.cluster || ""}
+                  onChange={(e) =>
+                    editMode === "add"
+                      ? setNewNode((prev) => ({ ...prev, cluster: e.target.value }))
+                      : updateField("cluster", e.target.value)
+                  }
+                />
+              </div>
+              {editMode === "edit" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Superior</label>
+                  <select
+                    className="border p-2 rounded w-full"
+                    value={form.superiorId?.toString() || ""}
+                    onChange={(e) => updateField("superiorId", e.target.value ? +e.target.value : undefined)}
+                  >
+                    <option value="">-- No Superior --</option>
+                    {nodes
+                      .filter(n => n.id !== selectedId) // Can't be your own superior
+                      .map((n) => (
+                        <option key={n.id} value={n.id}>
+                          {n.name} ({n.position1})
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
                 <select
