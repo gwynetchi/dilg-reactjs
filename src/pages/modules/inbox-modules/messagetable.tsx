@@ -210,7 +210,7 @@ const MessageTable: React.FC<Props> = ({
                 <td>{createdDate}</td>
                 <td>
                   <button
-                    className="delete-btn"
+                    className="btn btn-sm btn-outline-danger"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteRequest(msg.id, msg.recipients, msg.source);

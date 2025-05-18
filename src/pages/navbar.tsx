@@ -343,75 +343,76 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
             </button>
 
               {isNotificationOpen && unreadMessages.length > 0 && (
-  <div className="notification-dropdown">
-    <ul>
-      {unreadMessages.map((message) => {
-        // Determine if it's a communication or program
-        const isCommunication = message.hasOwnProperty('subject');
-        const isProgram = message.hasOwnProperty('programName');
-        
-        return (
-          <li key={message.id}>
-            <Link
-              to={isCommunication ? `/inbox/${message.id}` : `/programs/${message.id}`}
-              className="notification-item"
-              onClick={(e) => {
-                e.preventDefault();
-                handleEventClick({
-                  event: { extendedProps: { messageId: message.id } },
-                });
-              }}
-            >
-              <div>
-                {isCommunication && (
-                  <>
-                    <strong>New Communication</strong>
-                    <p><strong>Subject:</strong> {message.subject}</p>
-                    <p>{message.content?.substring(0, 100)}...</p>
-                    {message.deadline && (
-                      <p>
-                        <strong>Deadline:</strong> {message.deadline?.toDate ? 
-                          new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}
-                      </p>
-                    )}
-                    <span>
-                      <strong>Sent: </strong> 
-                      {message.createdAt?.seconds ? 
-                        new Date(message.createdAt.seconds * 1000).toLocaleString() : 
-                        "No Timestamp"}
-                    </span>
-                  </>
-                )}
-                
-                {isProgram && (
-                  <>
-                    <strong>New Program Notification</strong>
-                    <p><strong>Program:</strong> {message.programName}</p>
-                    <p><strong>Description:</strong> {message.description?.substring(0, 100)}...</p>
-                    {message.frequency && (
-                      <p><strong>Frequency:</strong> {message.frequency}</p>
-                    )}
-                    {message.duration && (
-                      <p>
-                        <strong>Duration:</strong> {message.duration.from} to {message.duration.to}
-                      </p>
-                    )}
-                    <span>
-                      <strong>Created: </strong>
-                      {message.createdAt?.seconds ? 
-                        new Date(message.createdAt.seconds * 1000).toLocaleString() : 
-                        "No Timestamp"}
-                    </span>
-                  </>
-                )}
-              </div>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  </div>
-)}            </div>
+                <div className="notification-dropdown">
+                  <ul>
+                    {unreadMessages.map((message) => {
+                      // Determine if it's a communication or program
+                      const isCommunication = message.hasOwnProperty('subject');
+                      const isProgram = message.hasOwnProperty('programName');
+                      
+                      return (
+                        <li key={message.id}>
+                          <Link
+                            to={isCommunication ? `/inbox/${message.id}` : `/programs/${message.id}`}
+                            className="notification-item"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleEventClick({
+                                event: { extendedProps: { messageId: message.id } },
+                              });
+                            }}
+                          >
+                            <div>
+                              {isCommunication && (
+                                <>
+                                  <strong>New Communication</strong>
+                                  <p><strong>Subject:</strong> {message.subject}</p>
+                                  <p>{message.content?.substring(0, 100)}...</p>
+                                  {message.deadline && (
+                                    <p>
+                                      <strong>Deadline:</strong> {message.deadline?.toDate ? 
+                                        new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}
+                                    </p>
+                                  )}
+                                  <span>
+                                    <strong>Sent: </strong> 
+                                    {message.createdAt?.seconds ? 
+                                      new Date(message.createdAt.seconds * 1000).toLocaleString() : 
+                                      "No Timestamp"}
+                                  </span>
+                                </>
+                              )}
+                              
+                              {isProgram && (
+                                <>
+                                  <strong>New Program Notification</strong>
+                                  <p><strong>Program:</strong> {message.programName}</p>
+                                  <p><strong>Description:</strong> {message.description?.substring(0, 100)}...</p>
+                                  {message.frequency && (
+                                    <p><strong>Frequency:</strong> {message.frequency}</p>
+                                  )}
+                                  {message.duration && (
+                                    <p>
+                                      <strong>Duration:</strong> {message.duration.from} to {message.duration.to}
+                                    </p>
+                                  )}
+                                  <span>
+                                    <strong>Created: </strong>
+                                    {message.createdAt?.seconds ? 
+                                      new Date(message.createdAt.seconds * 1000).toLocaleString() : 
+                                      "No Timestamp"}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}            
+          </div>
             
             <div className="position-relative" ref={profileMenuRef}>
               <button

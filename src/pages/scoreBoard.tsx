@@ -261,7 +261,7 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
                     <td>{user.score}</td>
                     {isEvaluator && (
                       <td>
-                        <button className="btn btn-sm btn-primary me-2"
+                        <button className="btn btn-sm btn-outline-primary me-2"
                           onClick={() => toggleEditMode(user.id, user.score)}
                           style={{ marginRight: '10px' }}
                         >

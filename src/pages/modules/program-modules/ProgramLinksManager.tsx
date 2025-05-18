@@ -127,7 +127,7 @@ const ProgramLinksManager: React.FC = () => {
                 </td>
                 <td>
                   <button
-                    className="btn btn-sm btn-primary"
+                    className="btn btn-sm btn-outline-primary"
                     onClick={() => saveLink(index)}
                     disabled={loadingIndex === index}
                   >

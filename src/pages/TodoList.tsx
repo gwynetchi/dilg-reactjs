@@ -215,7 +215,7 @@ const TodoList: React.FC = () => {
         {!isAddingTask && (
           <button 
             onClick={() => setIsAddingTask(true)} 
-            className="btn btn-primary btn-sm w-100 mb-3"
+            className="btn btn-outline-primary btn-sm w-100 mb-3"
           >
             <i className="bx bx-plus"></i> Add New Task
           </button>
