@@ -43,6 +43,8 @@ const AdminOrgChartEditor: React.FC = () => {
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
           superiorId: data.superiorId || "",
+          x: data.x ?? null, // Convert undefined to null
+          y: data.y ?? null, // Convert undefined to null
         };
       });
       setNodes(items);
@@ -121,9 +123,9 @@ const handleUpdateUser = async () => {
     const currentNode = nodes.find(n => n.id === selectedId);
     if (!currentNode) return;
 
-    // 1. Handle superior changes (if superiorId was modified)
+    // 1. Handle superior changes if they were modified
     if (form.superiorId !== undefined) {
-      // Remove from old superior's subordinates (if existed)
+      // Remove from old superior's subordinates
       const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
       if (oldSuperior) {
         batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
@@ -131,7 +133,7 @@ const handleUpdateUser = async () => {
         });
       }
 
-      // Add to new superior's subordinates (if new superior exists)
+      // Add to new superior's subordinates
       if (form.superiorId) {
         const newSuperior = nodes.find(n => n.id === form.superiorId);
         if (newSuperior) {
@@ -142,23 +144,33 @@ const handleUpdateUser = async () => {
       }
     }
 
-    // 2. Update ALL fields (name, position, email, etc.)
-    const updatedData = {
-      ...currentNode,  // Keep existing data
-      ...form,         // Apply new changes
-      id: selectedId,  // Ensure ID doesn't change
+    // 2. Prepare update data without position fields and undefined values
+    const updateData: Partial<OrgChartNode> = {
+      name: form.name ?? currentNode.name,
+      position1: form.position1 ?? currentNode.position1,
+      position2: form.position2 ?? currentNode.position2,
+      email: form.email ?? currentNode.email,
+      img: form.img ?? currentNode.img,
+      city: form.city ?? currentNode.city,
+      cluster: form.cluster ?? currentNode.cluster,
+      status: form.status ?? currentNode.status,
+      icon: form.icon ?? currentNode.icon,
+      layout: form.layout ?? currentNode.layout,
+      subordinates: currentNode.subordinates // Keep existing subordinates
     };
 
-    // Remove 'superiorId' from Firestore update (since it's stored in the node's data)
-    const { superiorId, ...firestoreData } = updatedData;
+    // Remove undefined values
+    const cleanUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, v]) => v !== undefined)
+    );
 
-    batch.update(doc(db, "orgdata", selectedId.toString()), firestoreData);
+    batch.update(doc(db, "orgdata", selectedId.toString()), cleanUpdateData);
 
     await batch.commit();
     showToast("User updated successfully", "success");
     setShowModal(false);
-    await fetchNodes(); // Refresh data to reflect changes
-    setRefreshKey((prev) => prev + 1); // Force UI update
+    await fetchNodes(); // Refresh the data
+    setRefreshKey(prev => prev + 1); // Force UI update
   } catch (error) {
     console.error("Error updating user:", error);
     showToast("Failed to update user", "error");
@@ -166,7 +178,6 @@ const handleUpdateUser = async () => {
     setLoading(false);
   }
 };
-
   const handleDeleteUser = async () => {
     if (!selectedId) return;
     

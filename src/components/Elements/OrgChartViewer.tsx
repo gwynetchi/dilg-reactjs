@@ -23,8 +23,7 @@ const DEFAULT_NODE: Partial<OrgChartNode> = {
   icon: "",
 };
 
-const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => {
-  const [data, setData] = useState<OrgChartNode[]>([]);
+const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refreshKey }) => {  const [data, setData] = useState<OrgChartNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,7 +115,7 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => 
     return () => {
       isMounted = false;
     };
-  }, [key]);
+  }, [refreshKey]);
 
   const handleNodeClick = (node: OrgChartNode) => {
     try {
@@ -125,7 +124,7 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => 
       }
     } catch (e) {
       console.error("Error handling node click:", e);
-    }
+    } 
   };
 
   if (loading) {

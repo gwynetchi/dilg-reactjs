@@ -35,18 +35,30 @@ const statusColor = {
 const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
   const svgRef = useRef<HTMLDivElement>(null);
   const setTransformRef = useRef<((x: number, y: number, scale: number, animationTime?: number, animationType?: "linear" | "easeOut" | "easeInQuad" | "easeOutQuad" | "easeInOutQuad" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeInQuart" | "easeOutQuart" | "easeInOutQuart" | "easeInQuint" | "easeOutQuint" | "easeInOutQuint") => void) | null>(null);
+  const previousNodesRef = useRef<OrgChartNode[]>([]);
 
   useEffect(() => {
-    if (!svgRef.current) {
-      console.error("SVG container reference is not available");
-      return;
-    }
-
+    if (!svgRef.current) return;
     if (!Array.isArray(data) || data.length === 0) {
       console.error("Invalid or empty data provided");
       svgRef.current.innerHTML = "";
       return;
     }
+
+// Modify the nodesWithPositions logic
+const nodesWithPositions = data.map(node => {
+  const prevNode = previousNodesRef.current.find(n => n.id === node.id);
+  return prevNode ? { 
+    ...node, 
+    x: prevNode.x ?? node.x, 
+    y: prevNode.y ?? node.y 
+  } : node;
+});
+
+    // Store current nodes for next render
+    previousNodesRef.current = nodesWithPositions;
+
+
 
     // Clear previous content
     svgRef.current.innerHTML = "";
@@ -83,6 +95,8 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
         
         return {
           ...node,
+          x: node.x,
+          y: node.y,
           children: (node.subordinates || [])
             .map(id => nodeMap.get(id))
             .filter((n): n is OrgChartNode => n !== undefined)
@@ -139,6 +153,12 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
         const layout = node.data.layout || "horizontal";
 
         if (layout === "vertical") {
+
+          const dataNode = nodesWithPositions.find(n=> n.id === node.data.id);
+          if (dataNode && dataNode.x !== undefined && dataNode.y !== undefined) {
+            node.x = dataNode.x;
+            node.y = dataNode.y;
+          }
           const spacingY = 150;
           const baseY = (node.y || 0) + spacingY;
           node.children.forEach((child, i) => {
