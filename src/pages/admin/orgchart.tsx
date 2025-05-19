@@ -73,8 +73,7 @@ const AdminOrgChartEditor: React.FC = () => {
         id: newId,
         name: newNode.name || "",
         email: newNode.email || "",
-        contact: newNode.contact || "",
-        img: newNode.contact || "",
+        img: newNode.img || "",
         city: newNode.city || "",
         cluster: newNode.cluster || "",
         icon: newNode.icon || "",
@@ -119,20 +118,20 @@ const handleUpdateUser = async () => {
   setLoading(true);
   try {
     const batch = writeBatch(db);
-    
-    // Get the current node data
-    
-    // If superior is being changed
+    const currentNode = nodes.find(n => n.id === selectedId);
+    if (!currentNode) return;
+
+    // 1. Handle superior changes (if superiorId was modified)
     if (form.superiorId !== undefined) {
-      // Remove from old superior's subordinates
+      // Remove from old superior's subordinates (if existed)
       const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
       if (oldSuperior) {
         batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
           subordinates: oldSuperior.subordinates?.filter(id => id !== selectedId) || []
         });
       }
-      
-      // Add to new superior's subordinates
+
+      // Add to new superior's subordinates (if new superior exists)
       if (form.superiorId) {
         const newSuperior = nodes.find(n => n.id === form.superiorId);
         if (newSuperior) {
@@ -142,15 +141,24 @@ const handleUpdateUser = async () => {
         }
       }
     }
-    
-    // Update the node itself
-    batch.update(doc(db, "orgdata", selectedId.toString()), form);
-    
+
+    // 2. Update ALL fields (name, position, email, etc.)
+    const updatedData = {
+      ...currentNode,  // Keep existing data
+      ...form,         // Apply new changes
+      id: selectedId,  // Ensure ID doesn't change
+    };
+
+    // Remove 'superiorId' from Firestore update (since it's stored in the node's data)
+    const { superiorId, ...firestoreData } = updatedData;
+
+    batch.update(doc(db, "orgdata", selectedId.toString()), firestoreData);
+
     await batch.commit();
     showToast("User updated successfully", "success");
     setShowModal(false);
-    await fetchNodes();
-    setRefreshKey((prev) => prev + 1);
+    await fetchNodes(); // Refresh data to reflect changes
+    setRefreshKey((prev) => prev + 1); // Force UI update
   } catch (error) {
     console.error("Error updating user:", error);
     showToast("Failed to update user", "error");
