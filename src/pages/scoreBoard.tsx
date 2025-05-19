@@ -1,7 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { db, auth } from '../firebase';
-import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db,  } from '../firebase';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  getDoc,
+  getDocs,
+} from 'firebase/firestore';
+
 
 interface User {
   id: string;
@@ -10,35 +18,29 @@ interface User {
   lateReports: number;
   pendingReports: number;
   score: number;
+  averageScore: number;
 }
+
+const TOP_N = 10; // show top 10 users
 
 const Scoreboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [editingScore, setEditingScore] = useState<string | null>(null);
-  const [newScore, setNewScore] = useState<number | null>(null);
   const confettiRef = useRef<HTMLCanvasElement>(null);
+const [source, setSource] = useState<'program' | 'details' | 'all'>('program');
+const [month, setMonth] = useState<number | 'all'>('all');
+const [year, setYear] = useState<number | 'all'>('all');
 
-const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> => {
-  const userRef = doc(db, "users", uid);
-  const userDoc = await getDoc(userRef);
-  
-  if (userDoc.exists()) {
-    const data = userDoc.data();
-    const { fname, mname, lname, email } = data;
-
-    const hasName = fname || mname || lname;
-    if (hasName) {
-      const fullName = `${fname || ""} ${mname || ""} ${lname || ""}`.trim();
-      return fullName;
+  const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> => {
+    const userRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      const { fname, mname, lname, email } = userDoc.data();
+      const fullName = `${fname || ''} ${mname || ''} ${lname || ''}`.trim();
+      return fullName || email || uid;
     }
-
-    return email || uid;
-  }
-
-  return 'Unknown User';
-}, []);
+    return 'Unknown User';
+  }, []);
 
   const triggerConfetti = () => {
     const canvas = confettiRef.current;
@@ -59,11 +61,9 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
     }));
 
     let angle = 0;
-
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       angle += 0.01;
-
       for (const p of particles) {
         p.y += Math.cos(angle + p.d) + 1 + p.r / 2;
         p.x += Math.sin(angle);
@@ -76,44 +76,91 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
       }
     };
 
-    let animationFrame: number;
-    const animate = () => {
+    let animationFrame = requestAnimationFrame(function animate() {
       draw();
       animationFrame = requestAnimationFrame(animate);
-    };
-
-    animate();
+    });
 
     setTimeout(() => {
       cancelAnimationFrame(animationFrame);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }, 6000);
   };
-
+ 
   useEffect(() => {
-    const fetchScoreboardData = async () => {
-      try {
-        const usersRef = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersRef);
-
-        const usersList: User[] = await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
+    const unsubscribeUsers = onSnapshot(collection(db, 'users'), async (usersSnapshot) => {
+      const usersList: User[] = await Promise.all(
+        usersSnapshot.docs.map(async (userDoc) => {
           const userId = userDoc.id;
 
-          const reportsRef = collection(db, 'submittedDetails');
-          const totalReportsQuery = query(reportsRef, where('submittedBy', '==', userId));
-          const totalReportsSnapshot = await getDocs(totalReportsQuery);
-          const totalReports = totalReportsSnapshot.size;
-
-          const lateReportsQuery = query(reportsRef, where('submittedBy', '==', userId), where('evaluatorStatus', '==', 'Late'));
-          const lateReportsSnapshot = await getDocs(lateReportsQuery);
-          const lateReports = lateReportsSnapshot.size;
-
-          const pendingReportsQuery = query(reportsRef, where('submittedBy', '==', userId), where('evaluatorStatus', '==', 'Pending'));
-          const pendingReportsSnapshot = await getDocs(pendingReportsQuery);
-          const pendingReports = pendingReportsSnapshot.size;
-
           const fullName = await fetchRecipientDetails(userId);
-          const score = totalReports - lateReports - pendingReports;
+
+let totalReports = 0;
+let lateReports = 0;
+let pendingReports = 0;
+let scores: number[] = [];
+
+if (source === 'details' || source === 'all') {
+  const submittedDetailsRef = collection(db, 'submittedDetail');
+  const queryRef = query(submittedDetailsRef, where('submittedBy', '==', userId));
+  const detailsSnap = await getDocs(queryRef);
+
+  let filteredDetails = detailsSnap.docs.map(doc => doc.data());
+
+  // Apply month/year filter
+  if (month !== 'all' || year !== 'all') {
+    filteredDetails = filteredDetails.filter(d => {
+      const date = d.submittedAt?.toDate?.();
+      if (!date) return false;
+      const m = date.getMonth() + 1;
+      const y = date.getFullYear();
+      return (month === 'all' || m === month) && (year === 'all' || y === year);
+    });
+  }
+
+  totalReports += filteredDetails.length;
+  lateReports += filteredDetails.filter(d => d.autoStatus === 'Late' || d.evaluatorStatus === 'Late').length;
+  pendingReports += filteredDetails.filter(d => d.evaluatorStatus === 'Pending').length;
+
+  scores.push(
+    ...filteredDetails
+      .map(d => d.score)
+      .filter((s): s is number => typeof s === 'number')
+  );
+}
+
+
+if (source === 'program' || source === 'all') {
+  const programSubmissionRef = collection(db, 'programsubmission');
+  const programSubQuery = query(programSubmissionRef, where('submittedBy', '==', userId));
+  const submissionSnap = await getDocs(programSubQuery);
+
+  let allSubmissions = submissionSnap.docs.flatMap((doc) => {
+    const data = doc.data();
+    return Array.isArray(data.submissions) ? data.submissions : [];
+  });
+
+  if (month !== 'all' || year !== 'all') {
+    allSubmissions = allSubmissions.filter((s) => {
+      const date = s.timestamp?.toDate?.();
+      if (!date) return false;
+      const m = date.getMonth() + 1;
+      const y = date.getFullYear();
+      return (month === 'all' || m === month) && (year === 'all' || y === year);
+    });
+  }
+
+  totalReports += allSubmissions.length;
+  lateReports += allSubmissions.filter(s => s.autoStatus === 'Late' || s.evaluatorStatus === 'Late').length;
+  pendingReports += allSubmissions.filter(s => s.evaluatorStatus === 'Pending').length;
+  scores.push(...allSubmissions
+    .map((s) => s.score)
+    .filter((s): s is number => typeof s === 'number'));
+}
+
+
+const totalScore = scores.reduce((sum, val) => sum + val, 0);
+const averageScore = scores.length > 0 ? totalScore / scores.length : 0;
 
           return {
             id: userId,
@@ -121,90 +168,35 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
             totalReports,
             lateReports,
             pendingReports,
-            score,
+            score: totalScore,
+            averageScore: parseFloat(averageScore.toFixed(2)),
           };
-        }));
+        })
+      );
 
-        usersList.sort((a, b) => b.score - a.score);
-        setUsers(usersList);
-      } catch (error) {
-        console.error('Error fetching scoreboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      // sort by total score descending
+      usersList.sort((a, b) => b.score - a.score);
+      setUsers(usersList.slice(0, TOP_N));
+      setLoading(false);
+    });
 
-    fetchScoreboardData();
-  }, [fetchRecipientDetails]);
+    return () => unsubscribeUsers();
+  }, [fetchRecipientDetails, source, month, year]);
 
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          setCurrentUser(user);
-          const userRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userRef);
-          if (userDoc.exists()) {
-            const role = userDoc.data()?.role;
-            if (role) {
-              setCurrentUser((prevUser: any) => ({ ...prevUser, role }));
-            }
-          }
-        } else {
-          setCurrentUser(null);
-        }
-      });
-      return () => unsubscribe();
-    };
 
-    fetchCurrentUser();
-  }, []);
 
-  const handleScoreChange = (_uid: string, newScore: number) => {
-    setNewScore(newScore);
-  };
-
-  const handleSaveScore = async (uid: string) => {
-    try {
-      if (newScore !== null) {
-        const userRef = doc(db, 'users', uid);
-        await updateDoc(userRef, { score: newScore });
-        setUsers((prevUsers) =>
-          prevUsers.map((user) =>
-            user.id === uid ? { ...user, score: newScore } : user
-          )
-        );
-        setEditingScore(null);
-        setNewScore(null);
-      }
-    } catch (error) {
-      console.error('Error updating score in Firestore:', error);
-      alert('Failed to update score!');
-    }
-  };
-
-  const toggleEditMode = (uid: string, score: number) => {
-    if (editingScore === uid) {
-      setEditingScore(null);
-    } else {
-      setEditingScore(uid);
-      setNewScore(score);
-    }
-  };
-
-  const isEvaluator = currentUser?.role === 'Evaluator' || currentUser?.role === 'evaluator';
 
   const handleMedalClick = (index: number) => {
-    if (index <= 2) {
-      triggerConfetti();
-    }
+    if (index <= 2) triggerConfetti();
   };
 
-  if (loading) return (
-    <div className="spinner-overlay">
-      <div className="spinner"></div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="spinner-overlay">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
 
   return (
     <main>
@@ -218,18 +210,50 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
           zIndex: 9999,
         }}
       />
+
       <div className="dashboard-container">
-        <h1>Scoreboard</h1>
+        <h1>Top {TOP_N} Scoreboard</h1>
+        <div className="filters">
+  <label>
+    Source:
+    <select value={source} onChange={(e) => setSource(e.target.value as any)}>
+      <option value="program">Program Submissions</option>
+      <option value="details">Submitted Details</option>
+      <option value="all">All</option>
+    </select>
+  </label>
+
+  <label>
+    Month:
+    <select value={month} onChange={(e) => setMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}>
+      <option value="all">All</option>
+      {[...Array(12)].map((_, i) => (
+        <option key={i} value={i + 1}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
+      ))}
+    </select>
+  </label>
+
+  <label>
+    Year:
+    <select value={year} onChange={(e) => setYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}>
+      <option value="all">All</option>
+      {[2023, 2024, 2025].map((y) => (
+        <option key={y} value={y}>{y}</option>
+      ))}
+    </select>
+  </label>
+</div>
+
         <table className="scoreboard-table">
           <thead>
             <tr>
               <th>Rank</th>
               <th>User</th>
               <th>Total Reports</th>
-              <th>Late Reports</th>
-              <th>Pending Reports</th>
-              <th>Score</th>
-              {isEvaluator && <th>Actions</th>}
+              <th>Late</th>
+              <th>Pending</th>
+              <th>Total Score</th>
+              <th>Average Score</th>
             </tr>
           </thead>
           <tbody>
@@ -247,8 +271,6 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
                 } else if (index === 2) {
                   medal = ' 🥉';
                   rowStyle = { backgroundColor: '#ffe0b2' };
-                } else {
-                  rowStyle = { backgroundColor: 'transparent' };
                 }
 
                 return (
@@ -259,28 +281,7 @@ const fetchRecipientDetails = useCallback(async (uid: string): Promise<string> =
                     <td>{user.lateReports}</td>
                     <td>{user.pendingReports}</td>
                     <td>{user.score}</td>
-                    {isEvaluator && (
-                      <td>
-                        <button className="btn btn-sm btn-outline-primary me-2"
-                          onClick={() => toggleEditMode(user.id, user.score)}
-                          style={{ marginRight: '10px' }}
-                        >
-                          {editingScore === user.id ? 'Cancel Edit' : 'Edit'}
-                        </button>
-                        {editingScore === user.id && (
-                          <>
-                            <input
-                              type="number"
-                              value={newScore || ''}
-                              onChange={(e) => handleScoreChange(user.id, parseInt(e.target.value))}
-                              min="0"
-                              style={{ width: '60px' }}
-                            />
-                            <button onClick={() => handleSaveScore(user.id)}>Save</button>
-                          </>
-                        )}
-                      </td>
-                    )}
+                    <td>{user.averageScore}</td>
                   </tr>
                 );
               })

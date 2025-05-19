@@ -11,6 +11,7 @@ import { db } from "../firebase";
 import "../styles/components/dashboard.css";
 import { generateProgramLinks } from "./modules/program-modules/generateProgramLinks";
 import { createProgramSubmissions } from "./modules/program-modules/createProgramSubmissions";
+
 interface User {
   id: string;
   fullName: string;
@@ -29,7 +30,7 @@ interface FrequencyDetails {
 }
 
 const CreatePrograms: React.FC = () => {
-  
+  // All state variables remain the same
   const [programName, setProgramName] = useState("");
   const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
@@ -53,7 +54,7 @@ const CreatePrograms: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Fetch users with roles
+  // All functions remain the same
   const fetchUsers = async () => {
     try {
       const usersRef = collection(db, "users");
@@ -77,7 +78,6 @@ const CreatePrograms: React.FC = () => {
     }
   };
 
-  // Group users by roles with counts
   const groupedOptions = Object.entries(
     users.reduce((groups, user) => {
       const role = user.role || "No Role";
@@ -297,11 +297,10 @@ const CreatePrograms: React.FC = () => {
         createdAt: serverTimestamp(),
         createdBy: getAuth().currentUser?.uid || null,
       });
-      // Create one programsubmission document per participant
-    // Generate occurrences based on the program's frequency and duration
-    const occurrences = await generateProgramLinks(programRef.id, frequency, details, duration);
-    // Now pass occurrences to createProgramSubmissions
-    await createProgramSubmissions(programRef, participants, occurrences);
+      
+      const occurrences = await generateProgramLinks(programRef.id, frequency, details, duration);
+      await createProgramSubmissions(programRef, participants, occurrences);
+      
       showAlert("Program successfully added!", "success");
       setProgramName("");
       setLink("");
@@ -354,348 +353,481 @@ const CreatePrograms: React.FC = () => {
 
       {showDetails && (
         <div className="overlay">
-          <div className="modal-container">
-            <div className="container">
-              <div className="row">
-                <div className="col-md-12 mb-3">
-                  <label>Program Name:</label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Enter program name"
-                    value={programName}
-                    onChange={(e) => setProgramName(e.target.value)}
-                    required
-                  />
+          <div className="modal-container" style={{ maxWidth: "90%", width: "1200px" }}>
+            <div className="container-fluid p-4">
+              {/* Form Header */}
+              <div className="row mb-4">
+                <div className="col-12">
+                  <h4 className="text-center">Create New Program</h4>
+                  <p className="text-muted text-center small">Fill in the details to create a new program</p>
                 </div>
-                
-                <div className="col-md-12 mb-3">
-                  <label className="form-label">Participants:</label>
-                  <Select
-                    options={groupedOptions}
-                    isMulti
-                    value={groupedOptions.flatMap(group => group.options).filter((option) => {
-                      if (participants.includes(option.value)) return true;
-                      if ('isSelectAll' in option && option.isSelectAll && option.role) {
-                        const usersInRole = users.filter(user => user.role === option.role);
-                        return usersInRole.every(user => participants.includes(user.id));
-                      }
-                      return false;
-                    })}
-                    onChange={handleParticipantChange}
-                    className="basic-multi-select"
-                    classNamePrefix="select"
-                    placeholder="Select participants by role..."
-                    closeMenuOnSelect={false}
-                    hideSelectedOptions={false}
-                    isClearable={false}
-                    backspaceRemovesValue={true}
-                    escapeClearsValue={false}
-                    getOptionLabel={(option) => {
-                      if ('isSelectAll' in option && option.isSelectAll && option.role) {
-                        const usersInRole = users.filter(u => u.role === option.role);
-                        const allSelected = usersInRole.every(u => participants.includes(u.id));
-                        const someSelected = usersInRole.some(u => participants.includes(u.id));
-                        
-                        return allSelected 
-                          ? `✓ All ${option.role} selected` 
-                          : someSelected
-                            ? `↻ ${usersInRole.filter(u => participants.includes(u.id)).length}/${usersInRole.length} ${option.role} selected`
-                            : `Select all ${option.role}`;
-                      }
-                      return option.label;
-                    }}
-                    formatGroupLabel={(group) => (
-                      <div className="d-flex justify-content-between">
-                        <span>{group.label}</span>
-                        <span className="badge bg-primary rounded-pill">
-                          {group.options.length - 1}
-                        </span>
-                      </div>
-                    )}
-                  />
-                  
-                  <div className="selected-participants-summary mt-2">
-                    <small>
-                      Selected: {participants.length} participants | 
-                      {Object.entries(
-                        participants.reduce((acc, id) => {
-                          const user = users.find(u => u.id === id);
-                          const role = user?.role || 'No Role';
-                          acc[role] = (acc[role] || 0) + 1;
-                          return acc;
-                        }, {} as Record<string, number>)
-                      ).map(([role, count]) => (
-                        <span key={role} className="badge bg-secondary ms-2">
-                          {role}: {count}
-                        </span>
-                      ))}
-                    </small>
+              </div>
+              
+              {/* Basic Program Info Section */}
+              <div className="row g-3 mb-4">
+                <div className="col-12 col-md-6">
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="programName"
+                      className="form-control"
+                      placeholder="Enter program name"
+                      value={programName}
+                      onChange={(e) => setProgramName(e.target.value)}
+                      required
+                    />
+                    <label htmlFor="programName">Program Name</label>
                   </div>
                 </div>
-
-                <div className="col-md-12 mb-3">
-                  <label>Description:</label>
-                  <textarea
-                    className="form-control form-control-sm"
-                    placeholder="Enter program description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  ></textarea>
+                
+                <div className="col-12 col-md-6">
+                  <div className="form-floating mb-3">
+                    <input
+                      type="text"
+                      id="programLink"
+                      className="form-control"
+                      placeholder="Enter program link"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                    />
+                    <label htmlFor="programLink">Program Link</label>
+                  </div>
                 </div>
                 
-                <div className="col-md-12 mb-3">
-                  <label>Link:</label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="Enter program link"
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                  />
+                <div className="col-12">
+                        <div className="form-floating mb-3">
+                          <textarea
+                            id="programDescription"
+                            className="form-control"
+                            placeholder="Enter program description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            style={{ height: "120px" }}
+                          ></textarea>
+                          <label htmlFor="programDescription">Description</label>
+                        </div>
                 </div>
-                
-                <div className="col-md-12 mb-3">
-                  <label>Program Image:</label>
-                  <input
-                    type="file"
-                    className="form-control form-control-sm"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                  {imagePreview && (
-                    <div className="mt-2">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="img-thumbnail" 
-                        style={{ maxWidth: '200px', maxHeight: '200px' }}
-                      />
-                      <button 
-                        className="btn btn-sm btn-danger ms-2"
-                        onClick={() => {
-                          setImage(null);
-                          setImagePreview(null);
+              </div>
+              
+              {/* Participants Section */}
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card">
+                    <div className="card-header bg-light d-flex justify-content-between align-items-center">
+                      <h5 className="mb-0">Program Participants</h5>
+                      <span className="badge bg-primary">{participants.length} selected</span>
+                    </div>
+                    <div className="card-body">
+                      <label className="form-label">Select Participants:</label>
+                      <Select
+                        options={groupedOptions}
+                        isMulti
+                        value={groupedOptions.flatMap(group => group.options).filter((option) => {
+                          if (participants.includes(option.value)) return true;
+                          if ('isSelectAll' in option && option.isSelectAll && option.role) {
+                            const usersInRole = users.filter(user => user.role === option.role);
+                            return usersInRole.every(user => participants.includes(user.id));
+                          }
+                          return false;
+                        })}
+                        onChange={handleParticipantChange}
+                        className="basic-multi-select"
+                        classNamePrefix="select"
+                        placeholder="Select participants by role..."
+                        closeMenuOnSelect={false}
+                        hideSelectedOptions={false}
+                        isClearable={false}
+                        backspaceRemovesValue={true}
+                        escapeClearsValue={false}
+                        getOptionLabel={(option) => {
+                          if ('isSelectAll' in option && option.isSelectAll && option.role) {
+                            const usersInRole = users.filter(u => u.role === option.role);
+                            const allSelected = usersInRole.every(u => participants.includes(u.id));
+                            const someSelected = usersInRole.some(u => participants.includes(u.id));
+                            
+                            return allSelected 
+                              ? `✓ All ${option.role} selected` 
+                              : someSelected
+                                ? `↻ ${usersInRole.filter(u => participants.includes(u.id)).length}/${usersInRole.length} ${option.role} selected`
+                                : `Select all ${option.role}`;
+                          }
+                          return option.label;
                         }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  )}
-                  {isUploading && (
-                    <div className="progress mt-2">
-                      <div 
-                        className="progress-bar" 
-                        role="progressbar" 
-                        style={{ width: `${uploadProgress}%` }}
-                        aria-valuenow={uploadProgress}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        {uploadProgress}%
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="col-md-12 mb-3"> 
-                  <div className="mb-3">
-                    <label className="form-label">Frequency</label>
-                    <select
-                      className="form-select"
-                      value={frequency}
-                      onChange={handleFrequencyChange}
-                      required
-                    >
-                      <option value="">Select Frequency</option>
-                      <option value="Yearly">Yearly</option>
-                      <option value="Quarterly">Quarterly</option>
-                      <option value="Monthly">Monthly</option>
-                      <option value="Weekly">Weekly</option>
-                      <option value="Daily">Daily</option>
-                    </select>
-                  </div>
-
-                  {frequency === "Yearly" && (
-                    <div className="mb-3">
-                      <label className="form-label">Select month and day:</label>
-                      <div className="d-flex gap-2">
-                        <select
-                          className="form-select"
-                          value={yearlyMonth}
-                          onChange={(e) => {
-                            setYearlyMonth(e.target.value);
-                            setYearlyDay("");
-                          }}
-                          required
-                        >
-                          <option value="">Month</option>
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <option key={i + 1} value={i + 1}>
-                              {new Date(0, i).toLocaleString("default", { month: "long" })}
-                            </option>
-                          ))}
-                        </select>
-
-                        <select
-                          className="form-select"
-                          value={yearlyDay}
-                          onChange={(e) => setYearlyDay(e.target.value)}
-                          disabled={!yearlyMonth}
-                          required
-                        >
-                          <option value="">Day</option>
-                          {yearlyMonth &&
-                          Array.from({ length: getDaysInMonth(Number(yearlyMonth)) }, (_, i) => (
-                              <option key={i + 1} value={i + 1}>
-                                {i + 1}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                  {frequency === "Quarterly" && (
-                    <div className="mb-3">
-                      <label className="form-label">Select quarter and day:</label>
-                      <div className="d-flex gap-2">
-                        <select
-                          className="form-select"
-                          value={quarter}
-                          onChange={(e) => {
-                            setQuarter(e.target.value);
-                            setQuarterDay("");
-                          }}
-                          required
-                        >
-                          <option value="">Quarter</option>
-                          <option value="1">Q1 (Jan–Mar)</option>
-                          <option value="2">Q2 (Apr–Jun)</option>
-                          <option value="3">Q3 (Jul–Sep)</option>
-                          <option value="4">Q4 (Oct–Dec)</option>
-                        </select>
-
-                        <select
-                          className="form-select"
-                          value={quarterDay}
-                          onChange={(e) => setQuarterDay(e.target.value)}
-                          disabled={!quarter}
-                          required
-                        >
-                          <option value="">Day</option>
-                          {quarter &&
-                            Array.from({ length: getDaysInMonth(Number(quarter) * 3 - 2) }, (_, i) => (
-                              <option key={i + 1} value={i + 1}>
-                                {i + 1}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                  {frequency === "Monthly" && (
-                    <div className="mb-3">
-                      <label className="form-label">Select day of the month:</label>
-                      <select
-                        className="form-select"
-                        value={monthlyDay}
-                        onChange={(e) => setMonthlyDay(e.target.value)}
-                        required
-                      >
-                        <option value="">Day</option>
-                        {Array.from({ length: getDaysInMonth(new Date().getMonth() + 1) }, (_, i) => (
-                          <option key={i + 1} value={i + 1}>
-                            {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  
-                  {frequency === "Weekly" && (
-                    <div className="mb-3">
-                      <label className="form-label">What day of the week?</label>
-                      <select
-                        className="form-select"
-                        value={weeklyDay}
-                        onChange={(e) => setWeeklyDay(e.target.value)}
-                        required
-                      >
-                        <option value="">Select a day</option>
-                        {daysOfWeek.map((day) => (
-                          <option key={day} value={day}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  
-                  {frequency === "Daily" && (
-                    <div className="mb-3">
-                      <label className="form-label">What time of day?</label>
-                      <input
-                        type="time"
-                        className="form-control"
-                        value={dailyTime}
-                        onChange={(e) => setDailyTime(e.target.value)}
-                        required
+                        formatGroupLabel={(group) => (
+                          <div className="d-flex justify-content-between">
+                            <span>{group.label}</span>
+                            <span className="badge bg-primary rounded-pill">
+                              {group.options.length - 1}
+                            </span>
+                          </div>
+                        )}
                       />
+                      
+                      <div className="selected-participants-summary mt-2 overflow-auto" style={{ maxHeight: "100px" }}>
+                        <small>
+                          Selected: {participants.length} participants | 
+                          {Object.entries(
+                            participants.reduce((acc, id) => {
+                              const user = users.find(u => u.id === id);
+                              const role = user?.role || 'No Role';
+                              acc[role] = (acc[role] || 0) + 1;
+                              return acc;
+                            }, {} as Record<string, number>)
+                          ).map(([role, count]) => (
+                            <span key={role} className="badge bg-secondary ms-2 me-1 mb-1">
+                              {role}: {count}
+                            </span>
+                          ))}
+                        </small>
+                      </div>
                     </div>
-                  )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Image Upload Section */}
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card">
+                    <div className="card-header bg-light">
+                      <h5 className="mb-0">Program Image</h5>
+                    </div>
+                    <div className="card-body">
+                      <div className="row align-items-center">
+                        <div className="col-md-6">
+                          <div className="mb-3">
+                            <label htmlFor="programImage" className="form-label">Upload Image:</label>
+                            <input
+                              type="file"
+                              id="programImage"
+                              className="form-control"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                            />
+                            {isUploading && (
+                              <div className="progress mt-2">
+                                <div 
+                                  className="progress-bar" 
+                                  role="progressbar" 
+                                  style={{ width: `${uploadProgress}%` }}
+                                  aria-valuenow={uploadProgress}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                >
+                                  {uploadProgress}%
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="col-md-6 text-center">
+                          {imagePreview ? (
+                            <div className="mb-3">
+                              <img 
+                                src={imagePreview} 
+                                alt="Preview" 
+                                className="img-thumbnail shadow-sm" 
+                                style={{ maxWidth: '150px', maxHeight: '150px' }}
+                              />
+                              <button 
+                                className="btn btn-sm btn-outline-danger ms-2"
+                                onClick={() => {
+                                  setImage(null);
+                                  setImagePreview(null);
+                                }}
+                              >
+                                <i className="bx bx-trash"></i> Remove
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="border rounded p-4 d-flex align-items-center justify-content-center" style={{ height: "150px" }}>
+                              <div className="text-muted">
+                                <i className="bx bx-image bx-lg"></i>
+                                <p className="small">Preview will appear here</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Frequency and Duration Section */}
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card">
+                    <div className="card-header bg-light">
+                      <h5 className="mb-0">Schedule Details</h5>
+                    </div>
+                    <div className="card-body">
+                      <div className="row g-3">
+                        <div className="col-md-6">
+                          <div className="mb-3">
+                            <label className="form-label">Frequency</label>
+                            <select
+                              className="form-select"
+                              value={frequency}
+                              onChange={handleFrequencyChange}
+                              required
+                            >
+                              <option value="">Select Frequency</option>
+                              <option value="Yearly">Yearly</option>
+                              <option value="Quarterly">Quarterly</option>
+                              <option value="Monthly">Monthly</option>
+                              <option value="Weekly">Weekly</option>
+                              <option value="Daily">Daily</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="col-md-6">
+                          <div className="mb-3">
+                            <label className="form-label">Duration</label>
+                            <div className="d-flex gap-2">
+                              <input
+                                type="date"
+                                className="form-control"
+                                value={duration.from}
+                                onChange={(e) => setDuration({ ...duration, from: e.target.value })}
+                                required
+                              />
+                              <span className="align-self-center">to</span>
+                              <input
+                                type="date"
+                                className="form-control"
+                                value={duration.to}
+                                onChange={(e) => setDuration({ ...duration, to: e.target.value })}
+                                required
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Frequency Details */}
+                        {frequency && (
+                          <div className="col-12">
+                            <div className="card bg-light">
+                              <div className="card-body p-3">
+                                <h6 className="mb-3">Frequency Details - {frequency}</h6>
+                                
+                                {frequency === "Yearly" && (
+                                  <div className="row g-2">
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Month:</label>
+                                      <select
+                                        className="form-select"
+                                        value={yearlyMonth}
+                                        onChange={(e) => {
+                                          setYearlyMonth(e.target.value);
+                                          setYearlyDay("");
+                                        }}
+                                        required
+                                      >
+                                        <option value="">Select Month</option>
+                                        {Array.from({ length: 12 }, (_, i) => (
+                                          <option key={i + 1} value={i + 1}>
+                                            {new Date(0, i).toLocaleString("default", { month: "long" })}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Day:</label>
+                                      <select
+                                        className="form-select"
+                                        value={yearlyDay}
+                                        onChange={(e) => setYearlyDay(e.target.value)}
+                                        disabled={!yearlyMonth}
+                                        required
+                                      >
+                                        <option value="">Select Day</option>
+                                        {yearlyMonth &&
+                                        Array.from({ length: getDaysInMonth(Number(yearlyMonth)) }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>
+                                              {i + 1}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
 
-                  <label>Duration:</label>
-                  <div className="d-flex">
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={duration.from}
-                      onChange={(e) => setDuration({ ...duration, from: e.target.value })}
-                      required
-                    />
-                    <span className="mx-2">to</span>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={duration.to}
-                      onChange={(e) => setDuration({ ...duration, to: e.target.value })}
-                      required
-                    />
+                                {frequency === "Quarterly" && (
+                                  <div className="row g-2">
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Quarter:</label>
+                                      <select
+                                        className="form-select"
+                                        value={quarter}
+                                        onChange={(e) => {
+                                          setQuarter(e.target.value);
+                                          setQuarterDay("");
+                                        }}
+                                        required
+                                      >
+                                        <option value="">Select Quarter</option>
+                                        <option value="1">Q1 (Jan–Mar)</option>
+                                        <option value="2">Q2 (Apr–Jun)</option>
+                                        <option value="3">Q3 (Jul–Sep)</option>
+                                        <option value="4">Q4 (Oct–Dec)</option>
+                                      </select>
+                                    </div>
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Day:</label>
+                                      <select
+                                        className="form-select"
+                                        value={quarterDay}
+                                        onChange={(e) => setQuarterDay(e.target.value)}
+                                        disabled={!quarter}
+                                        required
+                                      >
+                                        <option value="">Select Day</option>
+                                        {quarter &&
+                                          Array.from({ length: getDaysInMonth(Number(quarter) * 3 - 2) }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>
+                                              {i + 1}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {frequency === "Monthly" && (
+                                  <div className="row">
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Day of the month:</label>
+                                      <select
+                                        className="form-select"
+                                        value={monthlyDay}
+                                        onChange={(e) => setMonthlyDay(e.target.value)}
+                                        required
+                                      >
+                                        <option value="">Select Day</option>
+                                        {Array.from({ length: getDaysInMonth(new Date().getMonth() + 1) }, (_, i) => (
+                                          <option key={i + 1} value={i + 1}>
+                                            {i + 1}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {frequency === "Weekly" && (
+                                  <div className="row">
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Day of the week:</label>
+                                      <select
+                                        className="form-select"
+                                        value={weeklyDay}
+                                        onChange={(e) => setWeeklyDay(e.target.value)}
+                                        required
+                                      >
+                                        <option value="">Select Day</option>
+                                        {daysOfWeek.map((day) => (
+                                          <option key={day} value={day}>
+                                            {day}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {frequency === "Daily" && (
+                                  <div className="row">
+                                    <div className="col-sm-6">
+                                      <label className="form-label">Time of day:</label>
+                                      <input
+                                        type="time"
+                                        className="form-control"
+                                        value={dailyTime}
+                                        onChange={(e) => setDailyTime(e.target.value)}
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="row">
-                <div className="col-md-12 text-center">
+              {/* Submit Button */}
+              <div className="row mb-4">
+                <div className="col-12 text-center">
                   <button
                     onClick={handleSubmit}
                     disabled={loading || isUploading}
-                    className="btn btn-primary btn-lg"
+                    className="btn btn-primary btn-lg px-5"
                   >
-                    <i className="bx bxs-send bx-tada-hover"></i>
-                    <span className="text">
-                      {loading ? "Creating..." : 
-                       isUploading ? "Uploading..." : 
-                       "Create Program"}
-                    </span>
+                    <i className="bx bxs-send me-2"></i>
+                    {loading ? "Creating..." : 
+                     isUploading ? "Uploading..." : 
+                     "Create Program"}
                   </button>
                 </div>
               </div>
 
-              <button className="close-btn" onClick={() => setShowDetails(false)}>
-                ✖
-              </button>
+              {/* Close Button */}
+              <button 
+                className="btn-close position-absolute top-0 end-0 m-3" 
+                onClick={() => setShowDetails(false)}
+                aria-label="Close"
+              ></button>
+              
+              {/* Add CSS for responsive modal */}
+              <style>{`
+                .modal-container {
+                  background: white;
+                  border-radius: 8px;
+                  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                  margin: 30px auto;
+                  overflow-y: auto;
+                  max-height: 90vh;
+                }
+                
+                .overlay {
+                  background: rgba(0,0,0,0.5);
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  z-index: 1000;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  overflow-y: auto;
+                  padding: 20px;
+                }
+                
+                @media (max-width: 768px) {
+                  .modal-container {
+                    width: 95% !important;
+                    margin: 10px auto;
+                    padding: 10px;
+                  }
+                }
+              `}</style>
             </div>
           </div>
         </div>
       )}
 
       {alert && (
-        <div className={`custom-alert alert-${alert.type}`}>
+        <div className={`custom-alert alert-${alert.type} shadow-sm`} style={{ zIndex: 2000 }}>
           <span className="alert-icon">{getIcon(alert.type)}</span>
           <span>{alert.message}</span>
+          <button className="btn-close ms-3" onClick={() => setAlert(null)}></button>
         </div>
       )}
     </main>
