@@ -16,6 +16,7 @@ export interface OrgChartNode {
   icon: string;
   subordinates?: number[];
   layout?: "vertical" | "horizontal";
+  superiorId?: number;
   x?: number;
   y?: number;
 }
