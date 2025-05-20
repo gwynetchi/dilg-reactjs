@@ -479,7 +479,7 @@ const Analytics: React.FC = () => {
   }, []);
 
   return (
-    <div className="dashboard-container">
+    <div className=" py-3 dashboard-container">
       <section id="content">
         <main>
           <div className="head-title">
