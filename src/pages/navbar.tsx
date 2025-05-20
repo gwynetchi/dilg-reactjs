@@ -12,12 +12,13 @@ import {
   where, 
   onSnapshot, 
   updateDoc, 
-  getDocs
+  getDocs,
+  Timestamp,
+  arrayUnion
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 // Styles
-
 import "bootstrap/dist/css/bootstrap.min.css";
 import "boxicons/css/boxicons.min.css";
 import "../styles/components/navbar.css"
@@ -26,6 +27,34 @@ interface NavbarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 }
+
+// Message types
+interface BaseMessage {
+  id: string;
+  createdAt: Timestamp;
+  seenBy?: string[];
+  type: string;
+}
+
+interface CommunicationMessage extends BaseMessage {
+  subject: string;
+  content: string;
+  deadline?: Timestamp;
+  type: 'communication';
+}
+
+interface ProgramMessage extends BaseMessage {
+  programName: string;
+  description: string;
+  frequency?: string;
+  duration?: {
+    from: string;
+    to: string;
+  };
+  type: 'program';
+}
+
+type Message = CommunicationMessage | ProgramMessage;
 
 // Constants
 const MENU_ITEMS = {
@@ -38,6 +67,7 @@ const MENU_ITEMS = {
     { name: "Message", icon: "bxs-chat", path: "/viewer/message" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
   ],
+  // other menu items remain the same
   Evaluator: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
     { name: "One Shot Reports", icon: "bxs-inbox", path: "/evaluator/inbox" },
@@ -48,7 +78,6 @@ const MENU_ITEMS = {
     { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
     { name: "Message", icon: "bxs-chat", path: "/evaluator/message" },
     { name: "Score Board", icon: "bxs-crown", path: "/evaluator/scoreBoard" },
-    
   ],
   LGU: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
@@ -59,7 +88,6 @@ const MENU_ITEMS = {
     { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
     { name: "Message", icon: "bxs-chat", path: "/lgu/message" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
-    
   ],
   Admin: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
@@ -83,16 +111,38 @@ const ROLE_PATHS = {
   Admin: "admin",
 };
 
+// Helper function to format date
+const formatDate = (timestamp: Timestamp | undefined) => {
+  if (!timestamp || !timestamp.seconds) return "No timestamp";
+  
+  const date = new Date(timestamp.seconds * 1000);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return date.toLocaleDateString();
+};
+
 const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   // State management
   const [unreadCounts, setUnreadCounts] = useState({
     inbox: 0,
     programs: 0
-  });  const [userRole, setUserRole] = useState<keyof typeof MENU_ITEMS | null>(null);
+  });
+  const [userRole, setUserRole] = useState<keyof typeof MENU_ITEMS | null>(null);
   const [userProfilePic, setUserProfilePic] = useState<string>("");
   const [activeMenu, setActiveMenu] = useState("Dashboard");
-  const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState<Message[]>([]);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<"all" | "unread" | "communications" | "programs">("unread");
   
   // Refs and hooks
   const location = useLocation();
@@ -139,7 +189,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
   
     const userId = auth.currentUser.uid;
 
-    const fetchUnreadMessages = async () => {
+    const fetchMessages = async () => {
       try {
         const userId = auth.currentUser?.uid;
         if (!userId) return;
@@ -175,40 +225,51 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           programs: programsUnread
         });
     
-        // Combine all unread messages for notifications
-        const allUnreadMessages = [
-          ...messagesSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...(doc.data() as { seenBy?: string[] }), // Explicitly type the data
-            type: 'communication' 
-          })),
-          ...programMessagesSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...(doc.data() as { seenBy?: string[] }), // Explicitly type the data
-            type: 'program' 
-          }))
-        ].filter(item => !item.seenBy?.includes(userId));
-    
-        setUnreadMessages(allUnreadMessages);
+        // Get all communication messages
+        const communicationMessages = messagesSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...(doc.data() as Omit<CommunicationMessage, 'id' | 'type'>),
+          type: 'communication' 
+        })) as CommunicationMessage[];
+
+        // Get all program messages
+        const programMessages = programMessagesSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...(doc.data() as Omit<ProgramMessage, 'id' | 'type'>),
+          type: 'program' 
+        })) as ProgramMessage[];
+        
+        // All messages
+        const allMessagesData = [...communicationMessages, ...programMessages].sort((a, b) => {
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA; // Sort by newest first
+        });
+        
+        // Unread messages
+        const unreadMessagesData = allMessagesData.filter(item => !item.seenBy?.includes(userId));
+        
+        setAllMessages(allMessagesData);
+        setUnreadMessages(unreadMessagesData);
     
       } catch (error) {
-        console.error("Error fetching unread messages:", error);
+        console.error("Error fetching messages:", error);
       }
     };  
     // Initial fetch
-    fetchUnreadMessages();
+    fetchMessages();
   
-    // Real-time listeners (if needed)
+    // Real-time listeners
     const messagesUnsubscribe = onSnapshot(
       query(collection(db, "communications"), 
       where("recipients", "array-contains", userId)),
-      () => fetchUnreadMessages() // Refetch when changes occur
+      () => fetchMessages()
     );
   
     const programMessagesUnsubscribe = onSnapshot(
       query(collection(db, "programs"), 
       where("participants", "array-contains", userId)),
-      () => fetchUnreadMessages() // Refetch when changes occur
+      () => fetchMessages()
     );
   
     return () => {
@@ -216,6 +277,23 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       programMessagesUnsubscribe();
     };
   }, [userRole, auth.currentUser?.uid]);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationMenuRef.current && 
+        !notificationMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Handlers
   const handleLogout = async () => {
@@ -227,43 +305,24 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   };
 
-  const handleEventClick = async (clickInfo: any) => {
-    const messageId = clickInfo.event.extendedProps.messageId;
-    if (!userRole) return;
+  const handleEventClick = async (messageId: string, messageType: string) => {
+    if (!userRole || !auth.currentUser?.uid) return;
   
     try {
-      // First try to find in communications
-      const commRef = doc(db, "communications", messageId);
-      const commDoc = await getDoc(commRef);
+      const collectionName = messageType === 'communication' ? 'communications' : 'programs';
+      const docRef = doc(db, collectionName, messageId);
+      const docSnap = await getDoc(docRef);
       
-      if (commDoc.exists()) {
+      if (docSnap.exists()) {
         const rolePath = ROLE_PATHS[userRole] || "viewer";
-        navigate(`/${rolePath}/inbox/${messageId}`);
+        const routePath = messageType === 'communication' ? 'inbox' : 'programs';
+        navigate(`/${rolePath}/${routePath}/${messageId}`);
         
-        const data = commDoc.data();
+        const data = docSnap.data();
         const seenBy = data?.seenBy || [];
   
         if (!seenBy.includes(auth.currentUser?.uid)) {
-          await updateDoc(commRef, {
-            seenBy: [...seenBy, auth.currentUser?.uid],
-          });
-        }
-        return;
-      }
-  
-      // If not found in communications, try programs
-      const programRef = doc(db, "programs", messageId);
-      const programDoc = await getDoc(programRef);
-      
-      if (programDoc.exists()) {
-        const rolePath = ROLE_PATHS[userRole] || "viewer";
-        navigate(`/${rolePath}/programs/${messageId}`);
-        
-        const data = programDoc.data();
-        const seenBy = data?.seenBy || [];
-  
-        if (!seenBy.includes(auth.currentUser?.uid)) {
-          await updateDoc(programRef, {
+          await updateDoc(docRef, {
             seenBy: [...seenBy, auth.currentUser?.uid],
           });
         }
@@ -272,6 +331,70 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       console.error("Error marking message as read:", error);
     }
   };
+  
+  const markAsRead = async (messageId: string, messageType: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    if (!auth.currentUser?.uid) return;
+    
+    try {
+      const collectionName = messageType === 'communication' ? 'communications' : 'programs';
+      const docRef = doc(db, collectionName, messageId);
+      
+      await updateDoc(docRef, {
+        seenBy: arrayUnion(auth.currentUser.uid)
+      });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!auth.currentUser?.uid) return;
+    
+    try {
+      const userId = auth.currentUser.uid;
+      
+      // Update all unread communications
+      const unreadCommunications = unreadMessages.filter(msg => msg.type === 'communication');
+      const unreadPrograms = unreadMessages.filter(msg => msg.type === 'program');
+      
+      const communicationUpdates = unreadCommunications.map(msg => 
+        updateDoc(doc(db, "communications", msg.id), {
+          seenBy: arrayUnion(userId)
+        })
+      );
+      
+      const programUpdates = unreadPrograms.map(msg => 
+        updateDoc(doc(db, "programs", msg.id), {
+          seenBy: arrayUnion(userId)
+        })
+      );
+      
+      await Promise.all([...communicationUpdates, ...programUpdates]);
+      
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
+  // Filter messages based on active filter
+  const getFilteredMessages = () => {
+    switch (activeFilter) {
+      case 'all':
+        return allMessages;
+      case 'unread':
+        return unreadMessages;
+      case 'communications':
+        return allMessages.filter(msg => msg.type === 'communication');
+      case 'programs':
+        return allMessages.filter(msg => msg.type === 'program');
+      default:
+        return unreadMessages;
+    }
+  };
+
+  const filteredMessages = getFilteredMessages();
 
   if (!userRole) return null;
 
@@ -292,10 +415,10 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
               <Link to={path} onClick={() => setActiveMenu(name)}>
                 <i className={`bx ${icon} bx-sm`}></i>
                 <span className="text">{name}</span>
-                {name === "Inbox" && unreadCounts.inbox > 0 && (
+                {name === "One Shot Reports" && unreadCounts.inbox > 0 && (
                   <span className="menu-badge">{unreadCounts.inbox}</span>
                 )}
-                {name === "Programs" && unreadCounts.programs > 0 && (
+                {name === "Regular Reports" && unreadCounts.programs > 0 && (
                   <span className="menu-badge">{unreadCounts.programs}</span>
                 )}
               </Link>
@@ -315,7 +438,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
       <section id="contentnav" className={`main-content ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <nav className="d-flex align-items-center justify-content-between px-3 py-2">
-        <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center">
             <button 
               className="btn btn-menu"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -333,88 +456,143 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
           
           <div className="d-flex justify-content-end align-items-center">
             <div className="position-relative" ref={notificationMenuRef}>
-            <button 
-              className="btn notification" 
-              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-              aria-label="Notifications"
-            >
-              <i className="bx bx-md bx-bell bx-tada-hover"></i>
-              {unreadCounts.inbox + unreadCounts.programs > 0 && (
-                <span className="num">{unreadCounts.inbox + unreadCounts.programs}</span>
-              )}
-            </button>
+              <button 
+                className="btn notification" 
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                aria-label="Notifications"
+              >
+                <i className="bx bx-md bx-bell bx-tada-hover"></i>
+                {unreadMessages.length > 0 && (
+                  <span className="num">{unreadMessages.length}</span>
+                )}
+              </button>
 
-              {isNotificationOpen && unreadMessages.length > 0 && (
+              {isNotificationOpen && (
                 <div className="notification-dropdown">
-                  <ul>
-                    {unreadMessages.map((message) => {
-                      // Determine if it's a communication or program
-                      const isCommunication = message.hasOwnProperty('subject');
-                      const isProgram = message.hasOwnProperty('programName');
-                      
-                      return (
-                        <li key={message.id}>
-                          <Link
-                            to={isCommunication ? `/inbox/${message.id}` : `/programs/${message.id}`}
-                            className="notification-item"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleEventClick({
-                                event: { extendedProps: { messageId: message.id } },
-                              });
-                            }}
-                          >
-                            <div>
-                              {isCommunication && (
-                                <>
-                                  <strong>New Communication</strong>
-                                  <p><strong>Subject:</strong> {message.subject}</p>
-                                  <p>{message.content?.substring(0, 100)}...</p>
-                                  {message.deadline && (
-                                    <p>
-                                      <strong>Deadline:</strong> {message.deadline?.toDate ? 
-                                        new Date(message.deadline.toDate()).toLocaleString() : "No Deadline"}
-                                    </p>
-                                  )}
-                                  <span>
-                                    <strong>Sent: </strong> 
-                                    {message.createdAt?.seconds ? 
-                                      new Date(message.createdAt.seconds * 1000).toLocaleString() : 
-                                      "No Timestamp"}
-                                  </span>
-                                </>
-                              )}
+                  <div className="notification-header">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <h6 className="m-0">Notifications</h6>
+                      {unreadMessages.length > 0 && (
+                        <button 
+                          className="btn btn-sm mark-all-read" 
+                          onClick={markAllAsRead}
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="notification-filters mt-2">
+                      <button 
+                        className={`btn btn-sm ${activeFilter === 'unread' ? 'active' : ''}`} 
+                        onClick={() => setActiveFilter('unread')}
+                      >
+                        Unread {unreadMessages.length > 0 && `(${unreadMessages.length})`}
+                      </button>
+                      <button 
+                        className={`btn btn-sm ${activeFilter === 'all' ? 'active' : ''}`} 
+                        onClick={() => setActiveFilter('all')}
+                      >
+                        All
+                      </button>
+                      <button 
+                        className={`btn btn-sm ${activeFilter === 'communications' ? 'active' : ''}`} 
+                        onClick={() => setActiveFilter('communications')}
+                      >
+                        Communications
+                      </button>
+                      <button 
+                        className={`btn btn-sm ${activeFilter === 'programs' ? 'active' : ''}`} 
+                        onClick={() => setActiveFilter('programs')}
+                      >
+                        Programs
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="notification-body">
+                    {filteredMessages.length === 0 ? (
+                      <div className="no-notifications">
+                        <i className="bx bx-bell-off bx-lg"></i>
+                        <p>No {activeFilter === 'unread' ? 'unread' : ''} notifications</p>
+                      </div>
+                    ) : (
+                      <ul>
+                        {filteredMessages.map((message) => {
+                          const isCommunication = message.type === 'communication';
+                          const commMessage = message as CommunicationMessage;
+                          const progMessage = message as ProgramMessage;
+                          const isUnread = !message.seenBy?.includes(auth.currentUser?.uid || '');
+                          
+                          return (
+                            <li 
+                              key={message.id} 
+                              className={`notification-item ${isUnread ? 'unread' : ''}`}
+                              onClick={() => handleEventClick(message.id, message.type)}
+                            >
+                              <div className="notification-icon">
+                                <i className={`bx ${isCommunication ? 'bxs-envelope' : 'bxs-calendar'} ${isUnread ? 'active' : ''}`}></i>
+                              </div>
                               
-                              {isProgram && (
-                                <>
-                                  <strong>New Program Notification</strong>
-                                  <p><strong>Program:</strong> {message.programName}</p>
-                                  <p><strong>Description:</strong> {message.description?.substring(0, 100)}...</p>
-                                  {message.frequency && (
-                                    <p><strong>Frequency:</strong> {message.frequency}</p>
-                                  )}
-                                  {message.duration && (
-                                    <p>
-                                      <strong>Duration:</strong> {message.duration.from} to {message.duration.to}
-                                    </p>
-                                  )}
-                                  <span>
-                                    <strong>Created: </strong>
-                                    {message.createdAt?.seconds ? 
-                                      new Date(message.createdAt.seconds * 1000).toLocaleString() : 
-                                      "No Timestamp"}
+                              <div className="notification-content">
+                                {isCommunication ? (
+                                  <>
+                                    <div className="notification-title">
+                                      {commMessage.subject}
+                                    </div>
+                                    <div className="notification-preview">
+                                      {commMessage.content?.substring(0, 60)}
+                                      {commMessage.content?.length > 60 ? '...' : ''}
+                                    </div>
+                                    {commMessage.deadline && (
+                                      <div className="notification-deadline">
+                                        <i className="bx bx-time-five"></i> 
+                                        {new Date(commMessage.deadline.seconds * 1000).toLocaleDateString()}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="notification-title">
+                                      {progMessage.programName}
+                                    </div>
+                                    <div className="notification-preview">
+                                      {progMessage.description?.substring(0, 60)}
+                                      {progMessage.description?.length > 60 ? '...' : ''}
+                                    </div>
+                                    {progMessage.frequency && (
+                                      <div className="notification-frequency">
+                                        <i className="bx bx-refresh"></i> {progMessage.frequency}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                                
+                                <div className="notification-meta">
+                                  <span className="notification-time">
+                                    {formatDate(message.createdAt)}
                                   </span>
-                                </>
-                              )}
-                            </div>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                                  
+                                  {isUnread && (
+                                    <button 
+                                      className="btn btn-sm btn-mark-read"
+                                      onClick={(e) => markAsRead(message.id, message.type, e)}
+                                      title="Mark as read"
+                                    >
+                                      <i className="bx bx-check"></i>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               )}            
-          </div>
+            </div>
             
             <div className="position-relative" ref={profileMenuRef}>
               <button
