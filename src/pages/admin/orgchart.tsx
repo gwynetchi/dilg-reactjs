@@ -39,20 +39,30 @@ const AdminOrgChartEditor: React.FC = () => {
           city: data.city || "",
           cluster: data.cluster || "",
           status: data.status || "offline",
-          icon: data.icon || "",
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
-          superiorId: data.superiorId || "",
+          superiorId: data.superiorId ?? null,
+          section: data.section as "MES" | "FAS" | "CDS" || undefined,
         };
       });
-      setNodes(items);
-    } catch (error) {
-      console.error("Error loading org chart data:", error);
-      showToast("Failed to load organization data", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+
+    const nodesWithSuperiors = items.map(node => {
+      const superior = items.find(n => n.subordinates?.includes(node.id));
+      return {
+        ...node,
+        superiorId: superior?.id
+      };
+    });
+
+    setNodes(nodesWithSuperiors);
+  } catch (error) {
+    console.error("Error loading org chart data:", error);
+    showToast("Failed to load organization data", "error");
+  } finally {
+    setLoading(false);
+  }
+}, [showToast]);
+
 
   useEffect(() => {
     fetchNodes();
@@ -63,42 +73,44 @@ const AdminOrgChartEditor: React.FC = () => {
       showToast("Name and Position are required fields", "warning");
       return;
     }
-
+  
     setLoading(true);
     try {
       const newId = Math.max(0, ...nodes.map((n) => n.id)) + 1;
-      const superiorId = +(newNode.superiorId || 0);
-
+      const superiorId = newNode.superiorId ? +newNode.superiorId : null;
+  
       const newEntry: OrgChartNode = {
         id: newId,
         name: newNode.name || "",
         email: newNode.email || "",
-        contact: newNode.contact || "",
-        img: newNode.contact || "",
+        img: newNode.img || "",
         city: newNode.city || "",
         cluster: newNode.cluster || "",
-        icon: newNode.icon || "",
         position1: newNode.position1 || "",
         position2: newNode.position2 || "",
         layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
         status: "offline",
+      section: newNode.section as "MES" | "FAS" | "CDS" || undefined, // Add this line
         subordinates: [],
+        superiorId: superiorId || undefined, // Ensure we don't pass undefined
       };
-
+  
       const batch = writeBatch(db);
-      batch.set(doc(db, "orgdata", newId.toString()), newEntry);
-
+      batch.set(doc(db, "orgdata", newId.toString()), {
+        ...newEntry,
+        superiorId: superiorId || null, // Convert undefined to null
+        section: newNode.section || null,
+      });
+  
       if (superiorId) {
         const superior = nodes.find((n) => n.id === superiorId);
         if (superior) {
-          const updatedSuperior = {
-            ...superior,
+          batch.update(doc(db, "orgdata", superiorId.toString()), {
             subordinates: [...(superior.subordinates || []), newId],
-          };
-          batch.update(doc(db, "orgdata", superiorId.toString()), updatedSuperior);
+          });
         }
       }
-
+  
       await batch.commit();
       showToast("User added successfully", "success");
       setShowModal(false);
@@ -119,20 +131,20 @@ const handleUpdateUser = async () => {
   setLoading(true);
   try {
     const batch = writeBatch(db);
-    
-    // Get the current node data
-    
-    // If superior is being changed
-    if (form.superiorId !== undefined) {
-      // Remove from old superior's subordinates
+    const currentNode = nodes.find(n => n.id === selectedId);
+    if (!currentNode) return;
+
+    // 1. Handle superior changes (if superiorId was modified)
+    if (form.superiorId !== undefined && form.superiorId !== currentNode.superiorId) {
+      // Remove from old superior's subordinates (if existed)
       const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
       if (oldSuperior) {
         batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
           subordinates: oldSuperior.subordinates?.filter(id => id !== selectedId) || []
         });
       }
-      
-      // Add to new superior's subordinates
+
+      // Add to new superior's subordinates (if new superior exists)
       if (form.superiorId) {
         const newSuperior = nodes.find(n => n.id === form.superiorId);
         if (newSuperior) {
@@ -142,10 +154,30 @@ const handleUpdateUser = async () => {
         }
       }
     }
-    
-    // Update the node itself
-    batch.update(doc(db, "orgdata", selectedId.toString()), form);
-    
+
+    // 2. Prepare the update data - convert undefined to null or remove the field
+    const updateData: Record<string, any> = {
+      name: form.name ?? currentNode.name,
+      position1: form.position1 ?? currentNode.position1,
+      position2: form.position2 ?? currentNode.position2,
+      email: form.email ?? currentNode.email,
+      img: form.img ?? currentNode.img,
+      city: form.city ?? currentNode.city,
+      cluster: form.cluster ?? currentNode.cluster,
+      status: form.status ?? currentNode.status,
+      layout: form.layout ?? currentNode.layout,
+      section: form.section ?? currentNode.section,
+      subordinates: currentNode.subordinates || [],
+    };
+
+    // Only add superiorId if it's defined (not undefined)
+    if (form.superiorId !== undefined) {
+      updateData.superiorId = form.superiorId !== null ? form.superiorId : null;
+    }
+
+    // 3. Update the node document
+    batch.update(doc(db, "orgdata", selectedId.toString()), updateData);
+
     await batch.commit();
     showToast("User updated successfully", "success");
     setShowModal(false);
@@ -328,11 +360,11 @@ const handleNodeClick = (node: OrgChartNode) => {
                 <input
                   placeholder="https://example.com/photo.jpg"
                   className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.icon || "" : form.icon || ""}
+                  value={editMode === "add" ? newNode.img || "" : form.img || ""}
                   onChange={(e) =>
                     editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, icon: e.target.value }))
-                      : updateField("icon", e.target.value)
+                      ? setNewNode((prev) => ({ ...prev, img: e.target.value }))
+                      : updateField("img", e.target.value)
                   }
                 />
               </div>
@@ -384,6 +416,26 @@ const handleNodeClick = (node: OrgChartNode) => {
                   </select>
                 </div>
               )}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+  <select
+    className="border p-2 rounded w-full"
+    value={editMode === "add" ? newNode.section || "" : form.section || ""}
+    onChange={(e) =>
+      editMode === "add"
+        ? setNewNode((prev) => ({ 
+            ...prev, 
+            section: e.target.value as "MES" | "FAS" | "CDS" 
+          }))
+        : updateField("section", e.target.value as "MES" | "FAS" | "CDS")
+    }
+  >
+    <option value="">-- Select Section --</option>
+    <option value="MES">Monitoring and Evaluation Section (MES)</option>
+    <option value="FAS">Financial and Administrative Section (FAS)</option>
+    <option value="CDS">Capability Development Section (CDS)</option>
+  </select>
+</div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
                 <select

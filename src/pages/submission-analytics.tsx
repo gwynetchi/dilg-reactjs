@@ -14,7 +14,7 @@ import {
 import { db } from "../firebase";
 import { Table, Modal, Button, Form, Card, Badge, Spinner, Container, Row, Col } from "react-bootstrap";
 import "../styles/components/pages.css";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import ChartSwitcher from "../pages/ChartSwitcher";
 
 interface Communication {
@@ -32,6 +32,7 @@ interface Submission {
   status?: string;
   autoStatus?: string;
   evaluatorStatus?: string;
+  score?: number;
   remark?: string;
 }
 
@@ -54,6 +55,9 @@ const statusColors: Record<string, string> = {
 };
 
 const Analytics: React.FC = () => {
+  // Use location to keep track of URL changes that might be caused by sidebar toggling
+  const location = useLocation();
+  
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, Submission[]>>({});
   const [selectedSubject, setSelectedSubject] = useState<string>("");
@@ -73,6 +77,39 @@ const Analytics: React.FC = () => {
     forRevision: 0,
     incomplete: 0,
   });
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [scoreValue, setScoreValue] = useState<number | null>(null);
+
+  // Persist selected subject in sessionStorage to prevent state loss on sidebar toggle
+  useEffect(() => {
+    const savedSubject = sessionStorage.getItem('selectedAnalyticsSubject');
+    if (savedSubject) {
+      setSelectedSubject(savedSubject);
+    }
+  }, []);
+
+  // Save selected subject to sessionStorage whenever it changes
+  useEffect(() => {
+    if (selectedSubject) {
+      sessionStorage.setItem('selectedAnalyticsSubject', selectedSubject);
+    }
+  }, [selectedSubject]);
+
+  // Add event listener to handle sidebar toggle
+  useEffect(() => {
+    const handleSidebarToggle = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.sidebar-toggler')) {
+        e.preventDefault(); // Prevent default behavior
+        // You can add your sidebar toggle logic here if needed
+      }
+    };
+
+    document.addEventListener('click', handleSidebarToggle);
+    return () => {
+      document.removeEventListener('click', handleSidebarToggle);
+    };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "communications"), (snapshot) => {
@@ -318,6 +355,37 @@ const Analytics: React.FC = () => {
     }
   };
 
+  const handleSaveScore = async () => {
+    if (currentSubmissionId === null || scoreValue === null) {
+      alert("Submission ID or score is missing.");
+      return;
+    }
+
+    try {
+      const submissionRef = doc(db, "submittedDetails", currentSubmissionId);
+      await updateDoc(submissionRef, { score: scoreValue });
+
+      setSubmissions((prev) => {
+        if (!selectedSubject || !prev[selectedSubject]) return prev;
+        return {
+          ...prev,
+          [selectedSubject]: prev[selectedSubject].map((sub) =>
+            sub.id === currentSubmissionId ? { ...sub, score: scoreValue } : sub
+          ),
+        };
+      });
+
+      setShowScoreModal(false);
+      setScoreValue(null);
+      setCurrentSubmissionId(null);
+
+      console.log(`Score updated for submission ${currentSubmissionId}`);
+    } catch (error) {
+      console.error("Error updating score:", error);
+      alert("Failed to update score.");
+    }
+  };
+
   const getStatusBadge = (status: string | undefined) => {
     if (!status) return <Badge bg="secondary">Pending</Badge>;
     
@@ -386,13 +454,37 @@ const Analytics: React.FC = () => {
     );
   };
 
+  // Prevent sidebar toggle from causing full page reloads
+  useEffect(() => {
+    const handleSidebarToggleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Find if the clicked element or its parents have a sidebar-toggle related class
+      const toggleElement = target.closest('.sidebar-toggle, .bx-menu, [data-sidebar-toggle]');
+      
+      if (toggleElement) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Instead of letting default behavior happen, you can dispatch a custom event
+        // that your sidebar component is listening for
+        document.dispatchEvent(new CustomEvent('toggle-sidebar'));
+      }
+    };
+    
+    document.addEventListener('click', handleSidebarToggleClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handleSidebarToggleClick, true);
+    };
+  }, []);
+
   return (
-    <div className="dashboard-container">
+    <div className=" py-3 dashboard-container">
       <section id="content">
         <main>
           <div className="head-title">
             <div className="left">
-              <h2>Submission And Compliance Report</h2>
+              <h2>One-Shot Reports and Communications</h2>
               <ul className="breadcrumb">
                 <li>
                   <Link to="/dashboards" className="active">Home</Link>
@@ -436,6 +528,14 @@ const Analytics: React.FC = () => {
                       }
                     })
                   }}
+                  value={
+                    selectedSubject 
+                      ? { 
+                          value: selectedSubject, 
+                          label: communications.find(c => c.id === selectedSubject)?.subject || selectedSubject 
+                        } 
+                      : null
+                  }
                 />
                 
                 {selectedSubject && (
@@ -478,6 +578,7 @@ const Analytics: React.FC = () => {
                         <th>Auto Status</th>
                         <th>Evaluator Status</th>
                         <th>Actions</th>
+                        <th>Score</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -570,25 +671,42 @@ const Analytics: React.FC = () => {
                               />
                             </td>
                             <td>
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                className="d-flex align-items-center"
-                                onClick={() => {
-                                  setCurrentSubmissionId(sub.id);
-                                  setRemarkText(sub.remark || "");
-                                  setShowRemarkModal(true);
-                                }}
-                              >
-                                <i className="bx bx-message-square-edit me-1"></i> 
-                                {sub.remark ? "Edit Remark" : "Add Remark"}
-                              </Button>
+                              {/* Stacked buttons with margin between them */}
+                              <div className="d-flex flex-column">
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  className="d-flex align-items-center mb-2"
+                                  onClick={() => {
+                                    setCurrentSubmissionId(sub.id);
+                                    setRemarkText(sub.remark || "");
+                                    setShowRemarkModal(true);
+                                  }}
+                                >
+                                  <i className="bx bx-message-square-edit me-1"></i> 
+                                  {sub.remark ? "Edit Remark" : "Add Remark"}
+                                </Button>
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  className="d-flex align-items-center"
+                                  onClick={() => {
+                                    setCurrentSubmissionId(sub.id);
+                                    setScoreValue(sub.score ?? 0);
+                                    setShowScoreModal(true);
+                                  }}
+                                >
+                                  <i className="bx bx-star me-1"></i>
+                                  Add/Edit Score
+                                </Button>
+                              </div>
                             </td>
+                            <td>{sub.score ?? "—"}</td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} className="text-center py-4">
+                          <td colSpan={6} className="text-center py-4">
                             <div className="text-muted">
                               <i className="bx bx-search" style={{ fontSize: '2rem' }}></i>
                               <p className="mb-0 mt-2">
@@ -646,6 +764,35 @@ const Analytics: React.FC = () => {
                 </Button>
               </Modal.Footer>
             </Modal>
+            
+            <Modal show={showScoreModal} onHide={() => setShowScoreModal(false)}>
+              <Modal.Header closeButton>
+                <Modal.Title>Add/Edit Score</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Form>
+                  <Form.Group controlId="scoreInput">
+                    <Form.Label>Score</Form.Label>
+                    <Form.Control
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={scoreValue ?? ""}
+                      onChange={(e) => setScoreValue(Number(e.target.value))}
+                    />
+                  </Form.Group>
+                </Form>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={() => setShowScoreModal(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleSaveScore}>
+                  Save Score
+                </Button>
+              </Modal.Footer>
+            </Modal>
+
           </Container>
         </main>
       </section>

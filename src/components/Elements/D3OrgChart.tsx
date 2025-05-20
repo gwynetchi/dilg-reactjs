@@ -3,21 +3,35 @@ import * as d3 from "d3";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import ZoomControls from "./ZoomControls";
 
+
+const clusterColors: Record<string, string> = {
+  "A": "#F8F9FA",    // Soft white (slightly off-white for better visibility)
+  "B": "#89C2D9",    // Deeper pastel blue
+  "C": "#FF9BAA",    // Richer pastel red
+  "D": "#FFE66D",    // Brighter pastel yellow
+  "default": "#B392AC" // Deeper pastel purple
+};
+const clusterBorderColors: Record<string, string> = {
+  "A": "#D3D3D3",    // Light gray
+  "B": "#468FAF",    // Darker blue
+  "C": "#E86A6A",    // Darker red
+  "D": "#FFD43B",    // Golden yellow
+  "default": "#8A6A9B" // Darker purple
+};
 export interface OrgChartNode {
   id: number;
   position1: string;
   position2: string;
   name: string;
   email: string;
-  contact: string;
-  img: string;
   city: string;
+  img: string;
   cluster: string;
   status: string;
-  icon: string;
-  superiorId?: number;
   subordinates?: number[];
   layout?: "vertical" | "horizontal";
+  superiorId?: number;
+  section?: "MES" | "FAS" | "CDS"; // Add this line
   x?: number;
   y?: number;
 }
@@ -36,459 +50,313 @@ const statusColor = {
 
 const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
   const svgRef = useRef<HTMLDivElement>(null);
-  const setTransformRef = useRef<((x: number, y: number, scale: number, animationTime?: number, animationType?: "easeOut" | "linear" | "easeInQuad" | "easeOutQuad" | "easeInOutQuad" | "easeInCubic" | "easeOutCubic" | "easeInOutCubic" | "easeInQuart" | "easeOutQuart" | "easeInOutQuart" | "easeInQuint" | "easeOutQuint" | "easeInOutQuint" | undefined) => void) | null>(null);
+  const setTransformRef = useRef<(...args: any) => void>(null);
 
   useEffect(() => {
-    try {
-      // Validate inputs
-      if (!svgRef.current) {
-        console.error("SVG container reference is not available");
-        return;
-      }
-
-      if (!Array.isArray(data) || data.length === 0) {
-        console.error("Invalid or empty data provided");
-        svgRef.current.innerHTML = "<div class='text-center p-4'>No organization data available</div>";
-        return;
-      }
-
-      // Clear previous content
+    if (!svgRef.current) return;
+    if (!Array.isArray(data) || data.length === 0) {
       svgRef.current.innerHTML = "";
+      return;
+    }
 
-      // Clone and validate data
-      let clonedData: OrgChartNode[];
-      try {
-        clonedData = JSON.parse(JSON.stringify(data)) as OrgChartNode[];
-      } catch (e) {
-        console.error("Failed to clone data", e);
-        return;
-      }
+    // Clear previous content
+    svgRef.current.innerHTML = "";
 
-      // Create node map and find root
+    try {
+      // Create node map
       const nodeMap = new Map<number, OrgChartNode>();
-      clonedData.forEach(node => {
-        if (node?.id !== undefined) {
-          nodeMap.set(node.id, node);
-        }
-      });
+      data.forEach(node => nodeMap.set(node.id, node));
 
-      if (nodeMap.size === 0) {
-        console.error("No valid nodes found in data");
-        return;
-      }
-
-      const rootData = clonedData.find(d => 
-        !clonedData.some(n => n.subordinates?.includes(d.id))
+      // Find root nodes (nodes without superiors)
+      const rootNodes = data.filter(node => 
+        !data.some(n => n.subordinates?.includes(node.id))
       );
 
-      if (!rootData) {
-        console.error("No root node found in data");
-        return;
-      }
+      // Create virtual root if multiple roots exist
+      const virtualRoot: OrgChartNode = {
+        id: -1,
+        name: "Organization",
+        position1: "",
+        position2: "",
+        email: "",
+        city: "",
+        img: "",
+        cluster: "",
+        status: "offline",
+        subordinates: rootNodes.map(n => n.id),
+        layout: "horizontal"
+      };
 
-      // Handle dummy node logic
-      const dummyId = 999;
-      const targetId = 26;
-      try {
-        const parentNode = clonedData.find(n => n.subordinates?.includes(targetId));
-        if (parentNode) {
-          if (!Array.isArray(parentNode.subordinates)) {
-            parentNode.subordinates = [];
-          }
-          if (!parentNode.subordinates.includes(dummyId)) {
-            parentNode.subordinates.push(dummyId);
-            clonedData.push({
-              id: dummyId,
-              position1: "",
-              position2: "",
-              name: "",
-              email: "",
-              contact: "",
-              img: "",
-              city: "",
-              cluster: "",
-              status: "offline",
-              icon: "",
-              subordinates: [],
-            });
-          }
-        }
-      } catch (e) {
-        console.error("Error processing dummy node", e);
-      }
-
-      // Build hierarchy with error handling
+      // Build hierarchy
       const buildHierarchy = (node: OrgChartNode): any => {
-        if (!node) return null;
-        
         return {
           ...node,
           children: (node.subordinates || [])
             .map(id => nodeMap.get(id))
             .filter((n): n is OrgChartNode => n !== undefined)
             .map(buildHierarchy)
-            .filter(n => n !== null)
         };
       };
 
-      const hierarchyData = buildHierarchy(rootData);
-      if (!hierarchyData) {
-        console.error("Failed to build hierarchy");
-        return;
-      }
+      const hierarchyData = buildHierarchy(virtualRoot);
+      const hierarchy = d3.hierarchy(hierarchyData) as d3.HierarchyPointNode<any>;
 
-      const hierarchy = d3.hierarchy(hierarchyData) as d3.HierarchyPointNode<OrgChartNode>;
-      if (!hierarchy) {
-        console.error("Failed to create d3 hierarchy");
-        return;
-      }
+      // Set dimensions
+      const width = 1160;
+      const height = 800;
 
-      // Set dimensions with fallbacks
-      const containerWidth = svgRef.current.clientWidth || 1160;
-      const containerHeight = svgRef.current.clientHeight || 800;
-      const width = Math.max(containerWidth, 800);
-      const height = Math.max(containerHeight, 600);
-
-      // Create SVG with error handling
-      let svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-      try {
-        svg = d3.select(svgRef.current)
-          .append("svg")
-          .attr("width", width)
-          .attr("height", height)
-          .style("overflow", "visible");
-      } catch (e) {
-        console.error("Failed to create SVG element", e);
-        return;
-      }
+      // Create SVG
+      const svg = d3.select(svgRef.current)
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .style("overflow", "visible");
 
       const g = svg.append("g").attr("transform", "translate(50,50)");
 
-      // Setup tree layout with fallbacks
-      let treeLayout;
-      try {
-        treeLayout = d3.tree<OrgChartNode>()
-          .size([width - 100, height - 50])
-          .separation((a, b) => a.parent === b.parent ? 2 : 4);
-      } catch (e) {
-        console.error("Failed to create tree layout", e);
-        return;
-      }
+      // Setup tree layout with proper spacing
+      const treeLayout = d3.tree<OrgChartNode>()
+        .size([width - 100, height - 100])
+        .nodeSize([250, 200]) // Increased spacing
+        .separation((a, b) => a.parent === b.parent ? 1.5 : 2);
 
-      try {
-        treeLayout(hierarchy);
-      } catch (e) {
-        console.error("Failed to apply tree layout", e);
-        return;
-      }
+      treeLayout(hierarchy);
 
-      // Link generator with fallback
-      const elbowLink = (d: d3.HierarchyPointLink<OrgChartNode>) => {
-        try {
-          const sx = d.source.x || 0;
-          const sy = d.source.y || 0;
-          const tx = d.target.x || 0;
-          const ty = d.target.y || 0;
-          const midY = sy + (ty - sy) / 2;
-          return `M${sx},${sy}V${midY}H${tx}V${ty}`;
-        } catch (e) {
-          console.error("Error generating link path", e);
-          return "";
-        }
-      };
+      // Draw links with smooth curves
+      const linkGenerator = d3.linkVertical()
+        .x((d: [number, number]) => d[0])
+        .y((d: [number, number]) => d[1]);
 
-      // In D3OrgChart.tsx, modify the custom layout section:
-      try {
-        hierarchy.each(node => {
-          if (!node?.children) return;
-          const layout = node.data.layout || "horizontal";
+g.selectAll(".link")
+  .data(hierarchy.links())
+  .enter()
+  .append("path")
+  .attr("class", "link")
+  .attr("fill", "none")
+  .attr("stroke", d => {
+    const targetCluster = d.target.data.cluster;
+    return clusterBorderColors[targetCluster] || "#28a745";
+  })
+  .attr("stroke-width", 2.5)
+  .attr("stroke-opacity", 0.8)
+  .attr("d", d => {
+    const source: [number, number] = [d.source.x || 0, d.source.y || 0];
+    const target: [number, number] = [d.target.x || 0, d.target.y || 0];
+    return linkGenerator({ source, target } as any);
+  });
 
-          if (layout === "vertical") {
-            const spacingY = 150;
-            const baseY = (node.y || 0) + spacingY;
-            node.children.forEach((child, i) => {
-              if (child) {
-                child.x = node.x || 0;
-                child.y = baseY + i * spacingY;
-              }
-            });
-          } else {
-            // Group by cluster first
-            const childrenByCluster = new Map<string, d3.HierarchyPointNode<OrgChartNode>[]>();
-            node.children.forEach(child => {
-              const childCluster = child.data.cluster || "";
-              if (!childrenByCluster.has(childCluster)) {
-                childrenByCluster.set(childCluster, []);
-              }
-              childrenByCluster.get(childCluster)?.push(child);
-            });
+      // Filter out virtual root
+      const nodesToDraw = hierarchy.descendants().filter(d => d.data.id !== -1);
 
-            const spacingX = 300;
-            const clusterSpacing = 400; // Extra space between clusters
-            const baseX = node.x || 0;
-            
-            let clusterOffset = 0;
-            let clusterIndex = 0;
-            const clusterCount = childrenByCluster.size;
+            // Draw cluster backgrounds first (so nodes appear on top)
+      const clusters = Array.from(new Set(data.map(node => node.cluster))).filter(Boolean);
+      
+      clusters.forEach(cluster => {
+        const clusterNodes = nodesToDraw.filter(d => d.data.cluster === cluster);
+        if (clusterNodes.length === 0) return;
 
-            childrenByCluster.forEach((children, clusterName) => {
-              const clusterWidth = (children.length - 1) * spacingX;
-              const clusterStartX = baseX - (clusterCount > 1 ? clusterWidth/2 : 0) + clusterOffset;
+        // Calculate cluster bounds
+        const xExtent = d3.extent(clusterNodes, d => d.x || 0) as [number, number];
+        const yExtent = d3.extent(clusterNodes, d => d.y || 0) as [number, number];
+        
+        const padding = 40;
+        g.append("rect")
+          .attr("x", xExtent[0] - padding)
+          .attr("y", yExtent[0] - padding)
+          .attr("width", xExtent[1] - xExtent[0] + padding * 2)
+          .attr("height", yExtent[1] - yExtent[0] + padding * 2)
+          .attr("rx", 15)
+          .attr("fill", clusterColors[cluster] || clusterColors.default)
+          .attr("opacity", cluster === "A" ? 0.15 : 0.25) // More subtle for white cluster
+          .attr("stroke", clusterBorderColors[cluster] || clusterBorderColors.default)
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "5,5");
 
-              children.forEach((child, i) => {
-                if (child) {
-                  child.x = clusterStartX + i * spacingX;
-                  child.y = (node.y || 0) + 150;
-                  
-                  // Add cluster visual indicator (optional)
-                  if (i === 0) {
-                    child.data.position2 = `${clusterName} ${child.data.position2 || ''}`.trim();
-                  }
-                }
-              });
+        // Add cluster label
+g.append("text")
+  .attr("x", xExtent[0] - padding + 10)
+  .attr("y", yExtent[0] - padding + 20)
+  .attr("font-size", "14px")
+  .attr("font-weight", "bold")
+  .attr("fill", clusterBorderColors[cluster] || clusterBorderColors.default)
+  .text(`Cluster ${cluster} (${clusterNodes.length} members)`);
+      });
 
-              clusterOffset += clusterWidth + clusterSpacing;
-              clusterIndex++;
-            });
-          }
-        });
-      } catch (e) {
-        console.error("Error applying custom layouts", e);
-      }
-
-      // Draw links with error handling
-      try {
-        const links = hierarchy.links() as d3.HierarchyPointLink<OrgChartNode>[];
-      g.selectAll(".link")
-        .data(links.filter(d => d.target.data.id !== dummyId))
+      // Draw nodes
+      const nodeGroup = g.selectAll(".node")
+        .data(nodesToDraw)
         .enter()
-        .append("path")
-        .attr("fill", "none")
-        .attr("stroke", d => {
-          const sourceCluster = d.source.data.cluster || "";
-          const targetCluster = d.target.data.cluster || "";
-          return sourceCluster === targetCluster && sourceCluster !== "" ? "#4CAF50" : "#28a745";
-        })
-        .attr("stroke-width", d => {
-          const sourceCluster = d.source.data.cluster || "";
-          const targetCluster = d.target.data.cluster || "";
-          return sourceCluster === targetCluster && sourceCluster !== "" ? 3 : 2;
-        })
-        .attr("stroke-linecap", "round")
-        .attr("d", elbowLink);
-      } catch (e) {
-        console.error("Error drawing links", e);
-      }
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.x || 0},${d.y || 0})`)
+        .style("cursor", "pointer");
 
-      // Draw nodes with error handling
-      try {
-        const filteredData = hierarchy.descendants().filter(d => d.data.id !== dummyId);
-        const nodeGroup = g.selectAll(".node")
-          .data(filteredData)
-          .enter()
-          .append("g")
-          .attr("transform", (d: d3.HierarchyPointNode<OrgChartNode>) => 
-            `translate(${d.x || 0},${d.y || 0})`);
+      const cardWidth = 290;
+      const cardHeight = 110;
 
-        const cardWidth = 290;
-        const cardHeight = 110;
-
-        // Node click handler with error handling
-        nodeGroup.on("click", (event, d) => {
-          try {
-            const { x = 0, y = 0 } = d;
-            const scale = 1.5;
-            const centeredX = -x * scale + width / 2;
-            const centeredY = -y * scale + height / 2;
-
-            if (setTransformRef.current) {
-              setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
-            }
-
-            if (onNodeClick) {
-              onNodeClick(d.data);
-            }
-
-            d3.select(event.currentTarget)
-              .select("rect")
-              .transition()
-              .duration(300)
-              .attr("stroke", "#f96332")
-              .attr("stroke-width", 4)
-              .transition()
-              .duration(1000)
-              .attr("stroke", "#001f3f")
-              .attr("stroke-width", 1);
-          } catch (e) {
-            console.error("Error handling node click", e);
-          }
-        });
-
-        // Draw node cards
-        nodeGroup.append("rect")
-          .attr("x", -cardWidth / 2)
-          .attr("y", -cardHeight / 2)
-          .attr("width", cardWidth)
-          .attr("height", cardHeight)
-          .attr("rx", 10)
-          .attr("fill", "#022350")
-          .attr("stroke", "#ff9900")
-          .attr("stroke-width", 1)
-          .attr("filter", "url(#shadow)");
-
-        nodeGroup.append("rect")
-          .attr("x", -cardWidth / 2)
-          .attr("y", cardHeight / 2 - 6)
-          .attr("width", cardWidth)
-          .attr("height", 6)
-          .attr("fill", "#f96332");
-
-        nodeGroup.append("rect")
-          .attr("x", -cardWidth / 2 + 5)
-          .attr("y", -cardHeight / 2 + 5)
-          .attr("width", 4)
-          .attr("height", cardHeight - 10)
-          .attr("rx", 2)
-          .attr("fill", d => {
-            // Generate a consistent color based on cluster name
-            const cluster = d.data.cluster || "";
-            if (!cluster) return "#6c757d";
-            
-            // Simple hash function for consistent colors
-            let hash = 0;
-            for (let i = 0; i < cluster.length; i++) {
-              hash = cluster.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const color = `hsl(${Math.abs(hash % 360)}, 70%, 50%)`;
-            return color;
-          });
-        // Draw node images with fallback
-        nodeGroup.append("image")
-          .attr("xlink:href", d => {
-            try {
-              return d.data.icon || "https://via.placeholder.com/60";
-            } catch {
-              return "https://via.placeholder.com/60";
-            }
-          })
-          .attr("x", -cardWidth / 2 + 10)
-          .attr("y", -cardHeight / 2 + 10)
-          .attr("width", 60)
-          .attr("height", 60)
-          .attr("clip-path", "circle(30px at center)");
-
-        // Draw node text with fallbacks and truncation
-        const addTextWithFallback = (
-          selection: d3.Selection<SVGTextElement, d3.HierarchyPointNode<OrgChartNode>, SVGGElement, unknown>,
-          getter: (d: OrgChartNode) => string,
-          x: number,
-          y: number,
-          styles: Record<string, string>,
-          maxLength?: number
-        ) => {
-          selection
-            .attr("x", x)
-            .attr("y", y)
-            .text(d => {
-              try {
-                const text = getter(d.data) || "";
-                return maxLength && text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
-              } catch {
-                return "";
-              }
-            });
-
-          Object.entries(styles).forEach(([key, value]) => {
-            selection.attr(key, value);
-          });
-        };
-
-        addTextWithFallback(
-          nodeGroup.append("text"),
-          d => d.name,
-          -cardWidth / 2 + 90,
-          -cardHeight / 2 + 30,
-          {
-            "fill": "#ffffff",
-            "font-size": "13px",
-            "font-weight": "bold"
-          },
-          20
-        );
-
-        addTextWithFallback(
-          nodeGroup.append("text"),
-          d => d.position1,
-          -cardWidth / 2 + 90,
-          -cardHeight / 2 + 45,
-          {
-            "fill": "#cfcfcf",
-            "font-size": "11px",
-            "font-weight": "bold"
-          },
-          25
-        );
-
-        addTextWithFallback(
-          nodeGroup.append("text"),
-          d => d.position2,
-          -cardWidth / 2 + 90,
-          -cardHeight / 2 + 60,
-          {
-            "fill": "#cfcfcf",
-            "font-size": "11px"
-          },
-          25
-        );
-
-        addTextWithFallback(
-          nodeGroup.append("text"),
-          d => d.email,
-          -cardWidth / 2 + 90,
-          -cardHeight / 2 + 75,
-          {
-            "fill": "#ffffff",
-            "font-size": "10px"
-          }
-        );
-
-        // Draw status indicator
-        nodeGroup.append("circle")
-          .attr("cx", 65)
-          .attr("cy", -45)
-          .attr("r", 6)
-          .attr("fill", d => {
-            try {
-              return statusColor[d.data.status as keyof typeof statusColor] || "#6c757d";
-            } catch {
-              return "#6c757d";
-            }
-          });
-
-        // Add shadow filter
-        svg.append("defs")
-          .append("filter")
-          .attr("id", "shadow")
-          .html(`<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>`);
-
-        // Center on initial node
+      // Node click handler
+      nodeGroup.on("click", function(event, d: d3.HierarchyPointNode<any>) {
+        event.stopPropagation();
+        
         if (setTransformRef.current) {
-          const nodeToCenterId = 1;
-          const nodeToCenter = filteredData.find(d => d.data.id === nodeToCenterId);
-
-          if (nodeToCenter) {
-            const { x = 0, y = 0 } = nodeToCenter;
-            const scale = 0.4;
-            const centeredX = -x * scale + width / 2;
-            const centeredY = -y * scale + 100;
-            setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
-          }
+          const scale = 1.5;
+          const centeredX = -d.x * scale + width / 2;
+          const centeredY = -d.y * scale + height / 2;
+          setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
         }
-      } catch (e) {
-        console.error("Error drawing nodes", e);
+
+        if (onNodeClick) {
+          onNodeClick(d.data);
+        }
+
+        d3.select(this)
+          .select("rect")
+          .transition()
+          .duration(300)
+          .attr("stroke", "#f96332")
+          .attr("stroke-width", 4)
+          .transition()
+          .duration(1000)
+          .attr("stroke", "#001f3f")
+          .attr("stroke-width", 1);
+      });
+
+      // Node card background
+nodeGroup.append("rect")
+  .attr("x", -cardWidth / 2)
+  .attr("y", -cardHeight / 2)
+  .attr("width", cardWidth)
+  .attr("height", cardHeight)
+  .attr("rx", 10)
+  .attr("fill", "#022350")
+  .attr("stroke", d => clusterBorderColors[d.data.cluster || ""] || "#ff9900")
+  .attr("stroke-width", 1)
+  .attr("filter", "url(#shadow)");
+      // Node image
+// Replace the image append code with this:
+nodeGroup.append("image")
+  .attr("xlink:href", d => d.data.img || "https://via.placeholder.com/60")
+  .attr("x", -cardWidth / 2 + 10)
+  .attr("y", -cardHeight / 2 + 10)
+  .attr("width", 60)
+  .attr("height", 60)
+  .attr("clip-path", "circle(30px at center)")
+  .on("error", function() {
+    // Fallback to placeholder if image fails to load
+    d3.select(this)
+      .attr("xlink:href", "https://via.placeholder.com/60")
+      .attr("width", 60)
+      .attr("height", 60);
+  });
+      // Node name
+      nodeGroup.append("text")
+        .attr("x", -cardWidth / 2 + 90)
+        .attr("y", -cardHeight / 2 + 30)
+        .attr("fill", "#ffffff")
+        .attr("font-size", "13px")
+        .attr("font-weight", "bold")
+        .text(d => d.data.name);
+
+      // Position 1
+      nodeGroup.append("text")
+        .attr("x", -cardWidth / 2 + 90)
+        .attr("y", -cardHeight / 2 + 45)
+        .attr("fill", "#cfcfcf")
+        .attr("font-size", "11px")
+        .attr("font-weight", "bold")
+        .text(d => d.data.position1);
+
+      // Position 2
+      nodeGroup.append("text")
+        .attr("x", -cardWidth / 2 + 90)
+        .attr("y", -cardHeight / 2 + 60)
+        .attr("fill", "#cfcfcf")
+        .attr("font-size", "11px")
+        .text(d => d.data.position2);
+
+      // Email (with truncation)
+      nodeGroup.append("text")
+        .attr("x", -cardWidth / 2 + 90)
+        .attr("y", -cardHeight / 2 + 75)
+        .attr("fill", "#ffffff")
+        .attr("font-size", "10px")
+        .text(d => {
+          const city = d.data.city || "Unknown";
+          const cluster = d.data.cluster || "No Cluster";
+          return `${city} • Cluster ${cluster}`;
+        })
+        .call(text => text.each(function() {
+          const self = d3.select(this);
+          const textLength = (self.node() as SVGTextElement).getComputedTextLength();
+          if (textLength > cardWidth - 20) {
+            self.text(self.text().substring(0, 28) + '...');
+          }
+        }));
+
+      // Status indicator
+      nodeGroup.append("circle")
+        .attr("cx", 65)
+        .attr("cy", -45)
+        .attr("r", 6)
+        .attr("fill", d => statusColor[d.data.status as keyof typeof statusColor] || "#6c757d");
+
+      // Add shadow filter
+      svg.append("defs")
+        .append("filter")
+        .attr("id", "shadow")
+        .html(`<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>`);
+
+      // Center initial view
+      if (setTransformRef.current && nodesToDraw.length > 0) {
+        const firstNode = nodesToDraw[0];
+        const scale = 0.7;
+        const centeredX = -(firstNode.data.x || 0) * scale + width / 3;
+        const centeredY = -(firstNode.data.y || 0) * scale + height / 4;
+        setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
       }
+      const clustersWithData = Array.from(new Set(data.map(d => d.cluster))).filter(Boolean);
+      
+      const legend = svg.append("g")
+        .attr("transform", `translate(${width - 220}, 30)`)
+        .attr("class", "chart-legend");
+
+      legend.append("rect")
+        .attr("width", 180)
+        .attr("height", clustersWithData.length * 25 + 25)
+        .attr("fill", "white")
+        .attr("opacity", 0.9)
+        .attr("rx", 5)
+        .attr("stroke", "#ddd");
+
+      legend.append("text")
+        .attr("x", 10)
+        .attr("y", 20)
+        .attr("font-size", "14px")
+        .attr("font-weight", "bold")
+        .attr("fill", "#333")
+        .text("Cluster Legend");
+
+      clustersWithData.forEach((cluster, i) => {
+        const legendItem = legend.append("g")
+          .attr("transform", `translate(10, ${i * 25 + 30})`);
+
+legendItem.append("rect")
+  .attr("width", 15)
+  .attr("height", 15)
+  .attr("rx", 3)
+  .attr("fill", clusterColors[cluster] || clusterColors.default)  // THIS WAS MISSING
+  .attr("stroke", clusterBorderColors[cluster] || clusterBorderColors.default);
+
+        legendItem.append("text")
+          .attr("x", 20)
+          .attr("y", 12)
+          .attr("font-size", "12px")
+          .attr("fill", "#333")
+          .text(`Cluster ${cluster}`);
+      });
+
     } catch (e) {
-      console.error("Unexpected error in D3OrgChart", e);
+      console.error("Error rendering org chart:", e);
       if (svgRef.current) {
         svgRef.current.innerHTML = "<div class='text-center p-4 text-danger'>Error rendering organization chart</div>";
       }
@@ -498,13 +366,12 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
   return (
     <div className="bg-light rounded shadow position-relative" style={{ height: "800px" }}>
       <TransformWrapper
-        initialScale={0.4}
-        minScale={0.4}
+        initialScale={0.1}
+        minScale={0.1}
         maxScale={4}
         wheel={{ disabled: false }}
         doubleClick={{ disabled: false }}
         panning={{ disabled: false }}
-        centerOnInit
         limitToBounds={false}
       >
         {({ zoomIn, zoomOut, setTransform }) => {
@@ -515,19 +382,12 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
                 zoomIn={zoomIn} 
                 zoomOut={zoomOut} 
                 resetTransform={() => {
-                  try {
-                    const nodeToCenterId = 1;
-                    const nodeToCenter = data.find(d => d.id === nodeToCenterId);
-                    if (nodeToCenter && setTransformRef.current) {
-                      const x = nodeToCenter.x || 0;
-                      const y = nodeToCenter.y || 0;
-                      const scale = 0.4;
-                      const centeredX = -x * scale + 720 / 2;
-                      const centeredY = -y * scale + 100;
-                      setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
-                    }
-                  } catch (e) {
-                    console.error("Error resetting transform", e);
+                  if (data.length > 0 && setTransformRef.current) {
+                    const firstNode = data[0];
+                    const scale = 0.1;
+                    const centeredX = -(firstNode.x || 0) * scale + 720 / 3;
+                    const centeredY = -(firstNode.y || 0) * scale + 100;
+                    setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");
                   }
                 }} 
               />

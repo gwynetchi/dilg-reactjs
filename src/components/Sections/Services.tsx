@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-scroll";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 // Components
 import ClientSlider from "../Elements/ClientSlider";
 import ServiceBox from "../Elements/ServiceBox";
@@ -10,18 +10,18 @@ import AddImage1 from "../../assets/img/add/pd1.png";
 import AddImage2 from "../../assets/img/add/pic2.png";
 import AddImage3 from "../../assets/img/add/pic3.png";
 import AddImage4 from "../../assets/img/add/pic4.png";
+import SectionModal from "../Elements/SectionModal";
 
 
-export default function Services() {
-  const [y, setY] = useState(window.scrollY);
-  useEffect(() => {
-      window.addEventListener("scroll", () => setY(window.scrollY));
-      return () => {
-        window.removeEventListener("scroll", () => setY(window.scrollY));
-      };
-    }, [y]);
+export default function Services({ onSectionClick }: { onSectionClick: (section: string) => void }) {
+  const [selectedSection, setSelectedSection] = useState<"MES" | "FAS" | "CDS" | null>(null);
 
-
+const handleSectionClick = (section: "MES" | "FAS" | "CDS") => {
+  setSelectedSection(section);
+  if (onSectionClick) {
+    onSectionClick(section);
+  }
+};
 
   return (
     <Wrapper id="services">
@@ -42,21 +42,21 @@ export default function Services() {
             </p>
           </HeaderInfo>
           <ServiceBoxRow className="flex">
-            <ServiceBoxWrapper>
+        <ServiceBoxWrapper onClick={() => handleSectionClick("MES")}>
               <ServiceBox
                 icon="MEDlogo"
                 title="Monitoring and Evaluation Section (MES)"
                 subtitle="Oversees the performance of local government units (LGUs) by implementing monitoring, evaluation, and assessment programs to ensure effective governance and service delivery."
               />
             </ServiceBoxWrapper>
-            <ServiceBoxWrapper>
+            <ServiceBoxWrapper onClick={() => handleSectionClick("CDS")}>
               <ServiceBox
                 icon="CDDlogo"
                 title="Capability Development Section (CDS)"
                 subtitle="Enhances the skills and competencies of local government officials and employees through training programs, technical assistance, and capacity-building initiatives to strengthen local governance."
               />
             </ServiceBoxWrapper>
-            <ServiceBoxWrapper>
+            <ServiceBoxWrapper onClick={() => handleSectionClick("FAS")}>
               <ServiceBox
                 icon="FADlogo"
                 title="Financial and Administrative Section (FAS)"
@@ -110,6 +110,12 @@ export default function Services() {
           </div>
         </div>
       </div>
+            {selectedSection && (
+        <SectionModal 
+          section={selectedSection}
+          onClose={() => setSelectedSection(null)}
+        />
+      )}
     </Wrapper>
   );
 }

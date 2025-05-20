@@ -108,6 +108,7 @@ const MessageDetails: React.FC = () => {
         autoStatus,
         imageUrl: imageUrl,
         evaluatorStatus: "Pending",
+        score: null,
       }, { merge: true });
   
       const messageRef = doc(db, "communications", id);

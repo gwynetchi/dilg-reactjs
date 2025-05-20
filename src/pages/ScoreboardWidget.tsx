@@ -170,7 +170,7 @@ const ScoreboardWidget: React.FC = () => {
       <div className="card-header d-flex justify-content-between align-items-center">
         <h3 className="widget-title">Top LGUs</h3>
         <button 
-          className="btn btn-sm btn-primary view-all-btn"
+          className="btn btn-sm btn-outline-primary view-all-btn"
           onClick={navigateToScoreboard}
         >
           View All

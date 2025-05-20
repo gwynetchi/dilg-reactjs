@@ -353,7 +353,7 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
           </div>
 
           {/* Create User Form */}
-          <div className="card p-3 mb-4">
+          <div className="card p-4 mb-4">
             <h4>Create New User</h4>
             <div className="row g-2">
               {nameFields.map(({ field, placeholder }) => (
@@ -410,7 +410,7 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
                 </select>
               </div>
               <div className="col">
-                <button className="btn btn-primary w-100" onClick={handleCreateUser}>
+                <button className="btn btn-outline-primary" onClick={handleCreateUser}>
                   Create User
                 </button>
               </div>
@@ -491,13 +491,13 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
                               <td>{formatDate(user.createdAt)}</td>
                               <td>
                                 <button 
-                                  className="btn btn-warning btn-sm me-1" 
+                                  className="btn btn-outline-warning btn-sm me-1" 
                                   onClick={() => handleEditClick(user)}
                                 >
                                   Edit Info
                                 </button>
                                 <button 
-                                  className="btn btn-danger btn-sm" 
+                                  className="btn btn-outline-danger btn-sm" 
                                   onClick={() => handleDeleteClick(user.id)}
                                   disabled={user.id === currentUserId}
                                   title={user.id === currentUserId ? "Cannot delete your own account" : ""}
@@ -519,7 +519,7 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
           {/* Edit User Modal */}
           {editingUser && (
             <div className="modal show fade d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-              <div className="modal-dialog modal-lg">
+              <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content">
                   <div className="modal-header">
                     <h5 className="modal-title">Edit User: {editingUser.email}</h5>

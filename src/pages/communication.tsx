@@ -475,7 +475,7 @@ const Communication: React.FC = () => {
                     href={currentFileUrl} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="btn btn-primary"
+                    className="btn btn-outline-primary"
                   >
                     Download File
                   </a>
@@ -839,13 +839,13 @@ const Communication: React.FC = () => {
                   <td>{comm.remarks}</td>
                   <td>
                     <button 
-                      className="btn btn-sm btn-primary me-2"
+                      className="btn btn-sm btn-outline-primary me-2"
                       onClick={() => handleEdit(comm)}
                     >
                       Edit
                     </button>
                     <button 
-                      className="btn btn-sm btn-danger"  
+                      className="btn btn-sm btn-outline-danger"  
                       onClick={() => handleDelete(comm.id)}
                     >
                       Delete

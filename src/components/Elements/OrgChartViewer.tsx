@@ -7,6 +7,8 @@ import { FirebaseError } from "firebase/app";
 interface OrgChartViewerProps {
   onNodeClick?: (node: OrgChartNode) => void;
   key?: number;
+  nodes?: OrgChartNode[]; // Add this line
+
 }
 
 const DEFAULT_NODE: Partial<OrgChartNode> = {
@@ -14,18 +16,15 @@ const DEFAULT_NODE: Partial<OrgChartNode> = {
   position1: "",
   position2: "",
   email: "",
-  contact: "",
   img: "",
   city: "",
   cluster: "",
   subordinates: [],
   layout: "horizontal",
   status: "offline",
-  icon: "",
 };
 
-const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => {
-  const [data, setData] = useState<OrgChartNode[]>([]);
+const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refreshKey }) => {  const [data, setData] = useState<OrgChartNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +62,6 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => 
               position1: String(docData.position1 ?? DEFAULT_NODE.position1),
               position2: String(docData.position2 ?? DEFAULT_NODE.position2),
               email: String(docData.email ?? DEFAULT_NODE.email),
-              contact: String(docData.contact ?? DEFAULT_NODE.contact),
               img: String(docData.img ?? DEFAULT_NODE.img),
               city: String(docData.city ?? DEFAULT_NODE.city),
               cluster: String(docData.cluster ?? DEFAULT_NODE.cluster),
@@ -76,7 +74,6 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => 
                 ? docData.layout as "horizontal" | "vertical"
                 : "horizontal",
               status: String(docData.status ?? DEFAULT_NODE.status),
-              icon: String(docData.icon ?? DEFAULT_NODE.icon),
             };
 
             // Validate required fields
@@ -118,7 +115,7 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => 
     return () => {
       isMounted = false;
     };
-  }, [key]);
+  }, [refreshKey]);
 
   const handleNodeClick = (node: OrgChartNode) => {
     try {
@@ -127,7 +124,7 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key }) => 
       }
     } catch (e) {
       console.error("Error handling node click:", e);
-    }
+    } 
   };
 
   if (loading) {

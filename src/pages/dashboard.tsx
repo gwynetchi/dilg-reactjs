@@ -438,7 +438,7 @@ const Dashboard = () => {
                   </div>
 
                   <div className="col-md-4 d-flex justify-content-end">
-                    <button className="btn btn-sm btn-primary me-2" onClick={applyFilters}>
+                    <button className="btn btn-sm btn-outline-primary me-2" onClick={applyFilters}>
                       <i className="bx bx-filter-alt"></i> Apply
                     </button>
                     <button className="btn btn-sm btn-outline-secondary" onClick={resetFilters}>
