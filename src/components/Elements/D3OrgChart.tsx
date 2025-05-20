@@ -28,7 +28,6 @@ export interface OrgChartNode {
   img: string;
   cluster: string;
   status: string;
-  icon: string;
   subordinates?: number[];
   layout?: "vertical" | "horizontal";
   superiorId?: number;
@@ -83,7 +82,6 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
         img: "",
         cluster: "",
         status: "offline",
-        icon: "",
         subordinates: rootNodes.map(n => n.id),
         layout: "horizontal"
       };
