@@ -9,9 +9,11 @@ interface ServiceBoxProps {
   icon: "CDDlogo" | "FADlogo" | "MEDlogo" | "printer";
   title: string;
   subtitle: string;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
+  active?: boolean;
 }
 
-export default function ServiceBox({icon, title, subtitle}: ServiceBoxProps) {
+export default function ServiceBox({ icon, title, subtitle, onClick }: ServiceBoxProps) {
   let getIcon;
 
   switch (icon) {
@@ -32,16 +34,14 @@ export default function ServiceBox({icon, title, subtitle}: ServiceBoxProps) {
       break;
   }
 
-
-  return (
-    <Wrapper className="flex flexColumn">
-      <IconStyle>{getIcon}</IconStyle>
-      <TitleStyle className="font20 extraBold">{title}</TitleStyle>
-      <SubtitleStyle className="font13">{subtitle}</SubtitleStyle>
-    </Wrapper>
-  );
-}
-
+// In ServiceBox.tsx
+return (
+  <Wrapper className="flex flexColumn" onClick={onClick}>
+    <IconStyle onClick={onClick}>{getIcon}</IconStyle>
+    <TitleStyle className="font20 extraBold" onClick={onClick}>{title}</TitleStyle>
+    <SubtitleStyle className="font13" onClick={onClick}>{subtitle}</SubtitleStyle>
+  </Wrapper>
+);}
 const Wrapper = styled.div`
   width: 100%;
 `;

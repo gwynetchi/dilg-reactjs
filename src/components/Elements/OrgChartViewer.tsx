@@ -7,6 +7,8 @@ import { FirebaseError } from "firebase/app";
 interface OrgChartViewerProps {
   onNodeClick?: (node: OrgChartNode) => void;
   key?: number;
+  nodes?: OrgChartNode[]; // Add this line
+
 }
 
 const DEFAULT_NODE: Partial<OrgChartNode> = {

@@ -42,6 +42,7 @@ const AdminOrgChartEditor: React.FC = () => {
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
           superiorId: data.superiorId ?? null,
+          section: data.section as "MES" | "FAS" | "CDS" || undefined,
         };
       });
 
@@ -89,6 +90,7 @@ const AdminOrgChartEditor: React.FC = () => {
         position2: newNode.position2 || "",
         layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
         status: "offline",
+      section: newNode.section as "MES" | "FAS" | "CDS" || undefined, // Add this line
         subordinates: [],
         superiorId: superiorId || undefined, // Ensure we don't pass undefined
       };
@@ -97,6 +99,7 @@ const AdminOrgChartEditor: React.FC = () => {
       batch.set(doc(db, "orgdata", newId.toString()), {
         ...newEntry,
         superiorId: superiorId || null, // Convert undefined to null
+        section: newNode.section || null,
       });
   
       if (superiorId) {
@@ -163,6 +166,7 @@ const handleUpdateUser = async () => {
       cluster: form.cluster ?? currentNode.cluster,
       status: form.status ?? currentNode.status,
       layout: form.layout ?? currentNode.layout,
+      section: form.section ?? currentNode.section,
       subordinates: currentNode.subordinates || [],
     };
 
@@ -412,6 +416,26 @@ const handleNodeClick = (node: OrgChartNode) => {
                   </select>
                 </div>
               )}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+  <select
+    className="border p-2 rounded w-full"
+    value={editMode === "add" ? newNode.section || "" : form.section || ""}
+    onChange={(e) =>
+      editMode === "add"
+        ? setNewNode((prev) => ({ 
+            ...prev, 
+            section: e.target.value as "MES" | "FAS" | "CDS" 
+          }))
+        : updateField("section", e.target.value as "MES" | "FAS" | "CDS")
+    }
+  >
+    <option value="">-- Select Section --</option>
+    <option value="MES">Monitoring and Evaluation Section (MES)</option>
+    <option value="FAS">Financial and Administrative Section (FAS)</option>
+    <option value="CDS">Capability Development Section (CDS)</option>
+  </select>
+</div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
                 <select
