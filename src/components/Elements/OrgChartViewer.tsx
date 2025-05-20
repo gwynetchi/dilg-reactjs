@@ -20,7 +20,6 @@ const DEFAULT_NODE: Partial<OrgChartNode> = {
   subordinates: [],
   layout: "horizontal",
   status: "offline",
-  icon: "",
 };
 
 const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refreshKey }) => {  const [data, setData] = useState<OrgChartNode[]>([]);
@@ -73,7 +72,6 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refre
                 ? docData.layout as "horizontal" | "vertical"
                 : "horizontal",
               status: String(docData.status ?? DEFAULT_NODE.status),
-              icon: String(docData.icon ?? DEFAULT_NODE.icon),
             };
 
             // Validate required fields

@@ -39,7 +39,6 @@ const AdminOrgChartEditor: React.FC = () => {
           city: data.city || "",
           cluster: data.cluster || "",
           status: data.status || "offline",
-          icon: data.icon || "",
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
           superiorId: data.superiorId ?? null,
@@ -86,7 +85,6 @@ const AdminOrgChartEditor: React.FC = () => {
         img: newNode.img || "",
         city: newNode.city || "",
         cluster: newNode.cluster || "",
-        icon: newNode.icon || "",
         position1: newNode.position1 || "",
         position2: newNode.position2 || "",
         layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
@@ -164,7 +162,6 @@ const AdminOrgChartEditor: React.FC = () => {
         city: form.city ?? currentNode.city,
         cluster: form.cluster ?? currentNode.cluster,
         status: form.status ?? currentNode.status,
-        icon: form.icon ?? currentNode.icon,
         layout: form.layout ?? currentNode.layout,
         subordinates: currentNode.subordinates,
         superiorId: form.superiorId !== undefined ? form.superiorId : undefined, // Convert undefined to undefined
@@ -355,11 +352,11 @@ const handleNodeClick = (node: OrgChartNode) => {
                 <input
                   placeholder="https://example.com/photo.jpg"
                   className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.icon || "" : form.icon || ""}
+                  value={editMode === "add" ? newNode.img || "" : form.img || ""}
                   onChange={(e) =>
                     editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, icon: e.target.value }))
-                      : updateField("icon", e.target.value)
+                      ? setNewNode((prev) => ({ ...prev, img: e.target.value }))
+                      : updateField("img", e.target.value)
                   }
                 />
               </div>
