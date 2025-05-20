@@ -122,66 +122,70 @@ const AdminOrgChartEditor: React.FC = () => {
     }
   };
 
-  const handleUpdateUser = async () => {
-    if (!selectedId || !form) return;
-    
-    setLoading(true);
-    try {
-      const batch = writeBatch(db);
-      const currentNode = nodes.find(n => n.id === selectedId);
-      if (!currentNode) return;
+const handleUpdateUser = async () => {
+  if (!selectedId || !form) return;
   
-      // 1. Handle superior changes (if superiorId was modified)
-      if (form.superiorId !== undefined && form.superiorId !== currentNode.superiorId) {
-        // Remove from old superior's subordinates (if existed)
-        const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
-        if (oldSuperior) {
-          batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
-            subordinates: oldSuperior.subordinates?.filter(id => id !== selectedId) || []
+  setLoading(true);
+  try {
+    const batch = writeBatch(db);
+    const currentNode = nodes.find(n => n.id === selectedId);
+    if (!currentNode) return;
+
+    // 1. Handle superior changes (if superiorId was modified)
+    if (form.superiorId !== undefined && form.superiorId !== currentNode.superiorId) {
+      // Remove from old superior's subordinates (if existed)
+      const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
+      if (oldSuperior) {
+        batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
+          subordinates: oldSuperior.subordinates?.filter(id => id !== selectedId) || []
+        });
+      }
+
+      // Add to new superior's subordinates (if new superior exists)
+      if (form.superiorId) {
+        const newSuperior = nodes.find(n => n.id === form.superiorId);
+        if (newSuperior) {
+          batch.update(doc(db, "orgdata", newSuperior.id.toString()), {
+            subordinates: [...(newSuperior.subordinates || []), selectedId]
           });
         }
-  
-        // Add to new superior's subordinates (if new superior exists)
-        if (form.superiorId) {
-          const newSuperior = nodes.find(n => n.id === form.superiorId);
-          if (newSuperior) {
-            batch.update(doc(db, "orgdata", newSuperior.id.toString()), {
-              subordinates: [...(newSuperior.subordinates || []), selectedId]
-            });
-          }
-        }
       }
-  
-      // 2. Prepare the update data - explicitly set all fields
-      const updateData: Partial<OrgChartNode> = {
-        name: form.name ?? currentNode.name,
-        position1: form.position1 ?? currentNode.position1,
-        position2: form.position2 ?? currentNode.position2,
-        email: form.email ?? currentNode.email,
-        img: form.img ?? currentNode.img,
-        city: form.city ?? currentNode.city,
-        cluster: form.cluster ?? currentNode.cluster,
-        status: form.status ?? currentNode.status,
-        layout: form.layout ?? currentNode.layout,
-        subordinates: currentNode.subordinates,
-        superiorId: form.superiorId !== undefined ? form.superiorId : undefined, // Convert undefined to undefined
-      };
-  
-      // 3. Update the node document
-      batch.update(doc(db, "orgdata", selectedId.toString()), updateData);
-  
-      await batch.commit();
-      showToast("User updated successfully", "success");
-      setShowModal(false);
-      await fetchNodes(); // Refresh data to reflect changes
-      setRefreshKey((prev) => prev + 1); // Force UI update
-    } catch (error) {
-      console.error("Error updating user:", error);
-      showToast("Failed to update user", "error");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // 2. Prepare the update data - convert undefined to null or remove the field
+    const updateData: Record<string, any> = {
+      name: form.name ?? currentNode.name,
+      position1: form.position1 ?? currentNode.position1,
+      position2: form.position2 ?? currentNode.position2,
+      email: form.email ?? currentNode.email,
+      img: form.img ?? currentNode.img,
+      city: form.city ?? currentNode.city,
+      cluster: form.cluster ?? currentNode.cluster,
+      status: form.status ?? currentNode.status,
+      layout: form.layout ?? currentNode.layout,
+      subordinates: currentNode.subordinates || [],
+    };
+
+    // Only add superiorId if it's defined (not undefined)
+    if (form.superiorId !== undefined) {
+      updateData.superiorId = form.superiorId !== null ? form.superiorId : null;
+    }
+
+    // 3. Update the node document
+    batch.update(doc(db, "orgdata", selectedId.toString()), updateData);
+
+    await batch.commit();
+    showToast("User updated successfully", "success");
+    setShowModal(false);
+    await fetchNodes();
+    setRefreshKey((prev) => prev + 1);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    showToast("Failed to update user", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteUser = async () => {
     if (!selectedId) return;

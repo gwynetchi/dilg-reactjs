@@ -232,14 +232,21 @@ nodeGroup.append("rect")
   .attr("stroke-width", 1)
   .attr("filter", "url(#shadow)");
       // Node image
-      nodeGroup.append("image")
-        .attr("xlink:href", d => d.data.icon || "https://via.placeholder.com/60")
-        .attr("x", -cardWidth / 2 + 10)
-        .attr("y", -cardHeight / 2 + 10)
-        .attr("width", 60)
-        .attr("height", 60)
-        .attr("clip-path", "circle(30px at center)");
-
+// Replace the image append code with this:
+nodeGroup.append("image")
+  .attr("xlink:href", d => d.data.img || "https://via.placeholder.com/60")
+  .attr("x", -cardWidth / 2 + 10)
+  .attr("y", -cardHeight / 2 + 10)
+  .attr("width", 60)
+  .attr("height", 60)
+  .attr("clip-path", "circle(30px at center)")
+  .on("error", function() {
+    // Fallback to placeholder if image fails to load
+    d3.select(this)
+      .attr("xlink:href", "https://via.placeholder.com/60")
+      .attr("width", 60)
+      .attr("height", 60);
+  });
       // Node name
       nodeGroup.append("text")
         .attr("x", -cardWidth / 2 + 90)
