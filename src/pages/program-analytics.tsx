@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import {
   collection,
@@ -48,9 +48,15 @@ const statusColors: Record<string, string> = {
 };
 
 const Analytics: React.FC = () => {
+  // Use refs to persist state across re-renders
+  const initializedRef = useRef(false);
+  
+  // Store selected program in localStorage to persist across renders
   const [programs, setPrograms] = useState<{ id: string; programName: string }[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, Submission[]>>({});
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedSubject, setSelectedSubject] = useState<string>(() => {
+    return localStorage.getItem('selectedProgram') || "";
+  });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
@@ -59,7 +65,9 @@ const Analytics: React.FC = () => {
   const [showRemarkModal, setShowRemarkModal] = useState(false);
   const [currentSubmissionId, setCurrentSubmissionId] = useState<string | null>(null);
   const [remarkText, setRemarkText] = useState("");
-  const [selectedProgramName, setSelectedProgramName] = useState<string>("");
+  const [selectedProgramName, setSelectedProgramName] = useState<string>(() => {
+    return localStorage.getItem('selectedProgramName') || "";
+  });
   const [submissionStats, setSubmissionStats] = useState({
     total: 0,
     onTime: 0,
@@ -71,6 +79,20 @@ const Analytics: React.FC = () => {
   // Add state for score modal
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
+
+  // Save selected program to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedSubject) {
+      localStorage.setItem('selectedProgram', selectedSubject);
+    }
+  }, [selectedSubject]);
+
+  // Save selected program name to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedProgramName) {
+      localStorage.setItem('selectedProgramName', selectedProgramName);
+    }
+  }, [selectedProgramName]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "programs"), (snapshot) => {
@@ -162,11 +184,19 @@ const Analytics: React.FC = () => {
       setSubmissions({});
       setChartData([]);
       setSelectedDeadline(null);
-      setSelectedProgramName("");
+      if (!localStorage.getItem('selectedProgramName')) {
+        setSelectedProgramName("");
+      }
+      return;
+    }
+
+    // Skip refetching if we've already loaded this program
+    if (submissions[selectedSubject]?.length > 0 && initializedRef.current) {
       return;
     }
 
     setLoading(true);
+    initializedRef.current = true;
 
     const fetchProgramData = async () => {
       try {
@@ -184,7 +214,7 @@ const Analytics: React.FC = () => {
         // Set program name for display
         setSelectedProgramName(programData.programName || "");
 
-        setSelectedDeadline(`${programData.duration?.from} to ${programData.duration?.to}`);
+        setSelectedDeadline(`${formatLongDate(programData.duration?.from)} to ${formatLongDate(programData.duration?.to)}`);
 
         const submissionsQuery = query(
           collection(db, "programsubmission"),
@@ -257,7 +287,7 @@ const Analytics: React.FC = () => {
     };
 
     fetchProgramData();
-  }, [selectedSubject]);
+  }, [selectedSubject, submissions]);
 
   const handleStatusUpdate = async (
     userId: string,
@@ -447,7 +477,7 @@ const Analytics: React.FC = () => {
     const formattedDate = date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
-      day: "numeric",
+      day: "2-digit",
     });
     const formattedTime = date.toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -456,6 +486,22 @@ const Analytics: React.FC = () => {
     });
 
     return `${formattedDate} at ${formattedTime}`;
+  };
+
+  const formatLongDate = (dateString: string) => {
+    if (!dateString) return "";
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit"
+      });
+    } catch (error) {
+      console.error("Invalid date format:", error);
+      return dateString; // Return original string if parsing fails
+    }
   };
 
   return (
@@ -489,6 +535,10 @@ const Analytics: React.FC = () => {
             placeholder="Search or Select Program"
             isClearable
             className="mb-3"
+            value={programs.length > 0 && selectedSubject ? 
+              { value: selectedSubject, label: programs.find(p => p.id === selectedSubject)?.programName || selectedProgramName } : 
+              null
+            }
           />
           
           {selectedProgramName && (
@@ -526,7 +576,7 @@ const Analytics: React.FC = () => {
             <Col>
               <Card className="shadow-sm">
                 <Card.Body>
-                  <Card.Title className="mb-3">Submission Statistics</Card.Title>
+                  <Card.Title className="mb-3">LGU's Submission Statistics</Card.Title>
                   <Row>
                     <Col md={2} sm={4} xs={6} className="mb-3">
                       <div className="p-3 bg-light rounded text-center">
@@ -583,7 +633,7 @@ const Analytics: React.FC = () => {
                       <th>Auto Status</th>
                       <th>Evaluator Status</th>
                       <th>Actions</th>
-                                            <th>Score</th>
+                      <th>Score</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -646,39 +696,41 @@ const Analytics: React.FC = () => {
                               }}
                             />
                           </td>
-                                                    <td>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              className="d-flex align-items-center"
-                              onClick={() => {
-                                setCurrentSubmissionId(sub.id);
-                                setRemarkText(sub.remark || "");
-                                setShowRemarkModal(true);
-                              }}
-                            >
-                              <i className="bx bx-message-square-detail me-1"></i>
-                              {sub.remark ? "Edit Remark" : "Add Remark"}
-                            </Button>
-                                                          <Button
+                          <td>
+                            <div className="d-flex flex-column gap-2">
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                className="d-flex align-items-center w-100"
+                                onClick={() => {
+                                  setCurrentSubmissionId(sub.id);
+                                  setRemarkText(sub.remark || "");
+                                  setShowRemarkModal(true);
+                                }}
+                              >
+                                <i className="bx bx-message-square-detail me-1"></i>
+                                {sub.remark ? "Edit Remark" : "Add Remark"}
+                              </Button>
+                              <Button
                                 variant="outline-secondary"
                                 size="sm"
+                                className="d-flex align-items-center w-100"
                                 onClick={() => {
                                   setCurrentSubmissionId(sub.id);
                                   setCurrentScore(sub.score !== undefined ? sub.score : null);
                                   setShowScoreModal(true);
                                 }}
                               >
-                                Add/Edit Score
+                                <i className="bx bx-star me-1"></i>
+                                {sub.score !== null ? "Edit Score" : "Add Score"}
                               </Button>
+                            </div>
                           </td>
                           <td>
                             <div className="d-flex align-items-center">
                               <span className="me-2 fw-bold">{sub.score !== null ? sub.score : '-'}</span>
-
                             </div>
                           </td>
-
                         </tr>
                       ))
                     ) : (
