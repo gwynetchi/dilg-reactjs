@@ -15,6 +15,10 @@ interface Submission {
   autoStatus?: string;
   messageID?: string;
   subject?: string;
+  occurrence?: string;
+  score?: number;
+  remarks?: string;
+  sourceType: "oneshotreport" | "programreport";
 }
 
 interface ChartData {
@@ -34,6 +38,8 @@ const statusColors: Record<string, string> = {
 
 const allStatuses = Object.keys(statusColors);
 
+type SourceType = "all" | "oneshotreport" | "programreport";
+
 const UserAnalytics: React.FC = () => {
   const [users, setUsers] = useState<Record<string, string>>({});
   const [selectedUser, setSelectedUser] = useState<string>("");
@@ -42,6 +48,7 @@ const UserAnalytics: React.FC = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedSource, setSelectedSource] = useState<SourceType>("all");
   const [statsData, setStatsData] = useState({
     total: 0,
     onTime: 0,
@@ -62,71 +69,200 @@ const UserAnalytics: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch submissions based on selected user, month, and year
+  // Fetch submissions based on selected user, month, year, and source
   useEffect(() => {
     if (!selectedUser) return;
 
     setIsLoading(true);
-    let submissionsQuery = query(
-      collection(db, "submittedDetails"),
-      where("submittedBy", "==", selectedUser)
-    );
+    let allSubmissions: Submission[] = [];
+    let oneShotCompleted = false;
+    let programCompleted = false;
 
-    const unsubscribe = onSnapshot(submissionsQuery, async (snapshot) => {
-      let fetchedSubmissions = snapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id
-      } as Submission));
-
-      if (selectedMonth !== null) {
-        fetchedSubmissions = fetchedSubmissions.filter((sub) => {
-          return (
-            sub.submittedAt &&
-            new Date(sub.submittedAt.seconds * 1000).getMonth() === selectedMonth
-          );
-        });
+    // Function to check if all data loading is complete
+    const checkAllCompleted = () => {
+      if ((selectedSource === "all" && oneShotCompleted && programCompleted) || 
+          (selectedSource === "oneshotreport" && oneShotCompleted) || 
+          (selectedSource === "programreport" && programCompleted)) {
+        
+        processSubmissions(allSubmissions);
       }
+    };
 
-      if (selectedYear !== null) {
-        fetchedSubmissions = fetchedSubmissions.filter((sub) => {
-          return (
-            sub.submittedAt &&
-            new Date(sub.submittedAt.seconds * 1000).getFullYear() === selectedYear
-          );
-        });
-      }
-
-      // Fetch communication subject for each submission
-      const promises = fetchedSubmissions.map(async (sub) => {
-        if (sub.messageID) {
-          const commDoc = await getDoc(doc(db, "communications", sub.messageID));
-          if (commDoc.exists()) {
-            sub.subject = commDoc.data().subject;
-          }
-        }
-        // Ensure each submission has an autoStatus (for demonstration)
-        if (!sub.autoStatus) {
-          sub.autoStatus = sub.evaluatorStatus || "No Submission";
-        }
-        return sub;
-      });
-
-      const completedSubmissions = await Promise.all(promises);
-      setSubmissions(completedSubmissions);
+    // Process submissions after fetching
+    const processSubmissions = (subs: Submission[]) => {
+      setSubmissions(subs);
       setIsLoading(false);
       
       // Update statistics
-      const total = completedSubmissions.length;
-      const onTime = completedSubmissions.filter(s => s.evaluatorStatus === "On Time").length;
-      const late = completedSubmissions.filter(s => s.evaluatorStatus === "Late").length;
-      const incomplete = completedSubmissions.filter(s => 
-        s.evaluatorStatus === "Incomplete" || s.evaluatorStatus === "No Submission").length;
+      const total = subs.length;
+      const onTime = subs.filter(s => s.evaluatorStatus === "On Time").length;
+      const late = subs.filter(s => s.evaluatorStatus === "Late").length;
+      const incomplete = subs.filter(s => 
+        s.evaluatorStatus === "Incomplete" || s.evaluatorStatus === "No Submission" || s.evaluatorStatus === "For Revision").length;
       
       setStatsData({ total, onTime, late, incomplete });
-    });
+    };
 
-    return () => unsubscribe();
-  }, [selectedUser, selectedMonth, selectedYear]);
+    let oneShotUnsubscribe: (() => void) | undefined;
+    let programUnsubscribe: (() => void) | undefined;
+
+    // Fetch one-shot submissions if needed
+    if (selectedSource === "all" || selectedSource === "oneshotreport") {
+      const oneShotQuery = query(
+        collection(db, "submittedDetails"),
+        where("submittedBy", "==", selectedUser)
+      );
+
+      oneShotUnsubscribe = onSnapshot(oneShotQuery, async (snapshot) => {
+        const fetchedSubmissionsPromises = snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          let sub: Submission = {
+            ...data,
+            id: doc.id,
+            sourceType: "oneshotreport"
+          } as Submission;
+
+          // Apply month and year filters
+          if (selectedMonth !== null && (!sub.submittedAt || 
+              new Date(sub.submittedAt.seconds * 1000).getMonth() !== selectedMonth)) {
+            return null;
+          }
+
+          if (selectedYear !== null && (!sub.submittedAt || 
+              new Date(sub.submittedAt.seconds * 1000).getFullYear() !== selectedYear)) {
+            return null;
+          }
+
+          // Fetch communication subject
+          if (sub.messageID) {
+            try {
+              const commDoc = await getDoc(doc(db, "communications", sub.messageID));
+              if (commDoc.exists()) {
+                sub.subject = commDoc.data().subject;
+              }
+            } catch (error) {
+              console.error("Error fetching communication:", error);
+            }
+          }
+
+          // Ensure each submission has an autoStatus
+          if (!sub.autoStatus) {
+            sub.autoStatus = sub.evaluatorStatus || "No Submission";
+          }
+
+          return sub;
+        });
+
+        const fetchedSubmissions = await Promise.all(fetchedSubmissionsPromises);
+        
+        // Filter out null submissions (filtered by month/year)
+        const validSubmissions = fetchedSubmissions.filter((sub): sub is Submission => sub !== null);
+        
+        if (selectedSource === "oneshotreport") {
+          processSubmissions(validSubmissions);
+        } else {
+          allSubmissions = [...allSubmissions, ...validSubmissions];
+          oneShotCompleted = true;
+          checkAllCompleted();
+        }
+      });
+
+      // Return cleanup function for oneshot query
+      if (selectedSource === "oneshotreport") {
+        return oneShotUnsubscribe;
+      }
+    } else {
+      oneShotCompleted = true;
+    }
+
+    // Fetch program submissions if needed
+    if (selectedSource === "all" || selectedSource === "programreport") {
+      const programQuery = query(
+        collection(db, "programsubmission"),
+        where("submittedBy", "==", selectedUser)
+      );
+
+      programUnsubscribe = onSnapshot(programQuery, async (snapshot) => {
+        let programSubmissions: Submission[] = [];
+
+        // Process each program submission document
+        for (const docSnapshot of snapshot.docs) {
+          const programData = docSnapshot.data();
+          const programId = programData.programId;
+          
+          // Get program name if available
+          let programName = "Program Report";
+          try {
+            const programDoc = await getDoc(doc(db, "programs", programId));
+            if (programDoc.exists()) {
+              const programDocData = programDoc.data();
+              programName = programDocData.name || programName;
+            }
+          } catch (error) {
+            console.error("Error fetching program details:", error);
+          }
+
+          // Process all submissions within the program document
+          if (Array.isArray(programData.submissions)) {
+            const validSubmissions = programData.submissions
+              .map((sub: any, index: number) => {
+                // Apply month/year filters on occurrence date
+                if (sub.occurrence) {
+                  const occurrenceDate = new Date(sub.occurrence);
+                  
+                  if (selectedMonth !== null && occurrenceDate.getMonth() !== selectedMonth) {
+                    return null;
+                  }
+                  
+                  if (selectedYear !== null && occurrenceDate.getFullYear() !== selectedYear) {
+                    return null;
+                  }
+                }
+
+                // Create a submission object
+                return {
+                  id: `${docSnapshot.id}-${index}`,
+                  submittedBy: programData.submittedBy,
+                  occurrence: sub.occurrence,
+                  evaluatorStatus: sub.evaluatorStatus || "No Submission",
+                  autoStatus: sub.autoStatus || sub.evaluatorStatus || "No Submission",
+                  score: sub.score,
+                  remarks: sub.remarks,
+                  subject: programName,
+                  submittedAt: sub.submittedAt,
+                  sourceType: "programreport"
+                } as Submission;
+              })
+              .filter((sub: Submission | null): sub is Submission => sub !== null);
+
+            programSubmissions = [...programSubmissions, ...validSubmissions];
+          }
+        }
+        
+        if (selectedSource === "programreport") {
+          processSubmissions(programSubmissions);
+        } else {
+          allSubmissions = [...allSubmissions, ...programSubmissions];
+          programCompleted = true;
+          checkAllCompleted();
+        }
+      });
+
+      // Return cleanup function for program query
+      if (selectedSource === "programreport") {
+        return programUnsubscribe;
+      }
+    } else {
+      programCompleted = true;
+      checkAllCompleted();
+    }
+
+    // Return composite cleanup function
+    return () => {
+      if (oneShotUnsubscribe) oneShotUnsubscribe();
+      if (programUnsubscribe) programUnsubscribe();
+    };
+  }, [selectedUser, selectedMonth, selectedYear, selectedSource]);
 
   // Prepare data for the chart
   useEffect(() => {
@@ -176,21 +312,35 @@ const UserAnalytics: React.FC = () => {
     return <Badge bg={variant}>{status}</Badge>;
   };
 
-  const formatDateTime = (seconds?: number) => {
-    if (!seconds) return "Not Submitted";
+  const formatDateTime = (value?: { seconds: number } | string | null) => {
+    if (!value) return "Not Submitted";
     
-    const date = new Date(seconds * 1000);
+    let date;
+    if (typeof value === 'string') {
+      date = new Date(value);
+    } else if (value.seconds) {
+      date = new Date(value.seconds * 1000);
+    } else {
+      return "Not Submitted";
+    }
+    
     const formattedDate = date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-    const formattedTime = date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-    });
-    return `${formattedDate} ${formattedTime}`;
+    
+    // Only show time if we have seconds (timestamp)
+    if (typeof value !== 'string') {
+      const formattedTime = date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      });
+      return `${formattedDate} ${formattedTime}`;
+    }
+    
+    return formattedDate;
   };
 
   return (
@@ -199,7 +349,7 @@ const UserAnalytics: React.FC = () => {
         <main>
           <div className="head-title mb-4">
             <div className="left">
-              <h2>User Analytics Report</h2>
+              <h2>User Statistics Monitoring</h2>
               <ul className="breadcrumb">
                 <li>
                   <Link to="/dashboards" className="active">Home</Link>
@@ -224,7 +374,7 @@ const UserAnalytics: React.FC = () => {
             <Card.Body>
               <Card.Title className="mb-3">Data Filters</Card.Title>
               <Row>
-                <Col md={4} className="mb-3">
+                <Col md={3} className="mb-3">
                   <label className="form-label">Select User</label>
                   <Select
                     options={Object.entries(users).map(([id, name]) => ({ value: id, label: name }))}
@@ -234,7 +384,7 @@ const UserAnalytics: React.FC = () => {
                     className="custom-select-container"
                   />
                 </Col>
-                <Col md={4} className="mb-3">
+                <Col md={3} className="mb-3">
                   <label className="form-label">Select Month</label>
                   <Select
                     options={Array.from({ length: 12 }, (_, i) => ({ 
@@ -247,7 +397,7 @@ const UserAnalytics: React.FC = () => {
                     className="custom-select-container"
                   />
                 </Col>
-                <Col md={4} className="mb-3">
+                <Col md={3} className="mb-3">
                   <label className="form-label">Select Year</label>
                   <Select
                     options={Array.from({ length: 10 }, (_, i) => ({ 
@@ -257,6 +407,19 @@ const UserAnalytics: React.FC = () => {
                     onChange={(option) => setSelectedYear(option?.value ?? null)}
                     placeholder="Select Year"
                     isClearable
+                    className="custom-select-container"
+                  />
+                </Col>
+                <Col md={3} className="mb-3">
+                  <label className="form-label">Report Source</label>
+                  <Select
+                    options={[
+                      { value: "all", label: "All Sources" },
+                      { value: "oneshotreport", label: "One Shot Reports" },
+                      { value: "programreport", label: "Program Reports" }
+                    ]}
+                    defaultValue={{ value: "all", label: "All Sources" }}
+                    onChange={(option) => setSelectedSource(option?.value as SourceType || "all")}
                     className="custom-select-container"
                   />
                 </Col>
@@ -327,25 +490,35 @@ const UserAnalytics: React.FC = () => {
                       <Table striped bordered hover className="align-middle">
                         <thead className="bg-light">
                           <tr>
-                            <th>Submitted At</th>
-                            <th>Subject</th>
+                            <th>Date</th>
+                            <th>Subject/Program</th>
+                            <th className="text-center">Source</th>
                             <th className="text-center">Auto Status</th>
                             <th className="text-center">Evaluator Status</th>
+                            <th className="text-center">Score</th>
+                            <th>Remarks</th>
                           </tr>
                         </thead>
                         <tbody>
                           {submissions.length > 0 ? (
                             submissions.map((sub) => (
                               <tr key={sub.id}>
-                                <td>{formatDateTime(sub.submittedAt?.seconds)}</td>
+                                <td>{formatDateTime(sub.occurrence || sub.submittedAt)}</td>
                                 <td>{sub.subject || "N/A"}</td>
+                                <td className="text-center">
+                                  <Badge bg="secondary">
+                                    {sub.sourceType === "oneshotreport" ? "One Shot Report" : "Program Report"}
+                                  </Badge>
+                                </td>
                                 <td className="text-center">{renderStatusBadge(sub.autoStatus || "No Submission")}</td>
                                 <td className="text-center">{renderStatusBadge(sub.evaluatorStatus || "No Submission")}</td>
+                                <td className="text-center">{sub.score ?? "N/A"}</td>
+                                <td>{sub.remarks || "None"}</td>
                               </tr>
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={4} className="text-center py-4">
+                              <td colSpan={7} className="text-center py-4">
                                 {selectedUser ? "No submissions found for selected filters." : "Please select a user to view their submissions."}
                               </td>
                             </tr>

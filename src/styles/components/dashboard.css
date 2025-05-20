@@ -1247,4 +1247,39 @@ tr {
 	width: max-content;
 	white-space: nowrap;
   }
+  .analytics-card {
+  /* Increase the size */
+  width: 450px;        /* Increase width (adjust as needed) */
+  height: 280px;       /* Increase height (adjust as needed) */
+  padding: 2rem;       /* Add more padding */
+  margin: 1rem;        /* Add margin between cards */
   
+  /* Improve the layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;           /* Space between icon and text */
+  
+  /* Add visual styling */
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Make the icons bigger */
+.analytics-icon {
+  font-size: 2.5rem;   /* Bigger icon */
+}
+
+/* Style the text */
+.analytics-card span {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* Optional hover effect */
+.analytics-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}

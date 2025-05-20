@@ -360,8 +360,8 @@ legendItem.append("rect")
   return (
     <div className="bg-light rounded shadow position-relative" style={{ height: "800px" }}>
       <TransformWrapper
-        initialScale={0.7}
-        minScale={0.4}
+        initialScale={0.1}
+        minScale={0.1}
         maxScale={4}
         wheel={{ disabled: false }}
         doubleClick={{ disabled: false }}
@@ -378,7 +378,7 @@ legendItem.append("rect")
                 resetTransform={() => {
                   if (data.length > 0 && setTransformRef.current) {
                     const firstNode = data[0];
-                    const scale = 0.7;
+                    const scale = 0.1;
                     const centeredX = -(firstNode.x || 0) * scale + 720 / 3;
                     const centeredY = -(firstNode.y || 0) * scale + 100;
                     setTransformRef.current(centeredX, centeredY, scale, 500, "easeOut");

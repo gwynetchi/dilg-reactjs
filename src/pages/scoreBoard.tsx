@@ -86,6 +86,7 @@ const [year, setYear] = useState<number | 'all'>('all');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }, 6000);
   };
+  const USE_SUBMITTED_DETAILS = false; // Change to true when needed
  
   useEffect(() => {
     const unsubscribeUsers = onSnapshot(collection(db, 'users'), async (usersSnapshot) => {
@@ -101,7 +102,7 @@ let pendingReports = 0;
 let scores: number[] = [];
 
 if (source === 'details' || source === 'all') {
-  const submittedDetailsRef = collection(db, 'submittedDetail');
+  const submittedDetailsRef = collection(db, 'submittedDetails');
   const queryRef = query(submittedDetailsRef, where('submittedBy', '==', userId));
   const detailsSnap = await getDocs(queryRef);
 
@@ -213,35 +214,58 @@ const averageScore = scores.length > 0 ? totalScore / scores.length : 0;
 
       <div className="dashboard-container">
         <h1>Top {TOP_N} Scoreboard</h1>
-        <div className="filters">
-  <label>
-    Source:
-    <select value={source} onChange={(e) => setSource(e.target.value as any)}>
-      <option value="program">Program Submissions</option>
-      <option value="details">Submitted Details</option>
+<div className="row g-3 align-items-center mb-3">
+  <div className="col-md-4">
+    <label htmlFor="sourceSelect" className="form-label">Source:</label>
+    <select
+      id="sourceSelect"
+      className="form-select"
+      value={source}
+      onChange={(e) => setSource(e.target.value as any)}
+    >
+      <option value="program">Program Submissions and Reports</option>
+      <option value="details">One-shot Reports</option>
       <option value="all">All</option>
     </select>
-  </label>
+  </div>
 
-  <label>
-    Month:
-    <select value={month} onChange={(e) => setMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}>
+  <div className="col-md-4">
+    <label htmlFor="monthSelect" className="form-label">Month:</label>
+    <select
+      id="monthSelect"
+      className="form-select"
+      value={month}
+      onChange={(e) =>
+        setMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
+      }
+    >
       <option value="all">All</option>
       {[...Array(12)].map((_, i) => (
-        <option key={i} value={i + 1}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
+        <option key={i} value={i + 1}>
+          {new Date(0, i).toLocaleString('default', { month: 'long' })}
+        </option>
       ))}
     </select>
-  </label>
+  </div>
 
-  <label>
-    Year:
-    <select value={year} onChange={(e) => setYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}>
+  <div className="col-md-4">
+    <label htmlFor="yearSelect" className="form-label">Year:</label>
+    <select
+      id="yearSelect"
+      className="form-select"
+      value={year}
+      onChange={(e) =>
+        setYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
+      }
+    >
       <option value="all">All</option>
       {[2023, 2024, 2025].map((y) => (
-        <option key={y} value={y}>{y}</option>
+        <option key={y} value={y}>
+          {y}
+        </option>
       ))}
     </select>
-  </label>
+  </div>
 </div>
 
         <table className="scoreboard-table">
