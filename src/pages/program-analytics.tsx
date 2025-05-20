@@ -25,7 +25,7 @@ interface Submission {
   autoStatus?: string;
   evaluatorStatus?: string;
   remark?: string;
-  score?: number;
+  score?: number | null
   docId: string;
 }
 
@@ -68,6 +68,9 @@ const Analytics: React.FC = () => {
     noSubmission: 0,
     forRevision: 0,
   });
+  // Add state for score modal
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [currentScore, setCurrentScore] = useState<number | null>(null);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "programs"), (snapshot) => {
@@ -87,14 +90,14 @@ const Analytics: React.FC = () => {
       setChartData(allStatuses.map((status) => ({ status, autoCount: 0, manualCount: 0 })));
       return;
     }
-  
+
     const statusCount: Record<string, { autoCount: number; manualCount: number }> = {};
-  
+
     // Initialize all statuses with 0
     allStatuses.forEach((status) => {
       statusCount[status] = { autoCount: 0, manualCount: 0 };
     });
-  
+
     // If there are no submissions for this program, mark all as "No Submission"
     if (!submissions[selectedSubject] || submissions[selectedSubject].length === 0) {
       statusCount["No Submission"].autoCount = 1;
@@ -103,21 +106,21 @@ const Analytics: React.FC = () => {
         const autoStatus = sub.autoStatus || "No Submission";
         const evaluatorStatus =
           sub.evaluatorStatus && sub.evaluatorStatus !== "Pending" ? sub.evaluatorStatus : "";
-  
+
         statusCount[autoStatus].autoCount += 1;
-  
+
         if (evaluatorStatus) {
           statusCount[evaluatorStatus].manualCount += 1;
         }
       });
     }
-  
+
     const formattedChartData = allStatuses.map((status) => ({
       status,
       autoCount: statusCount[status].autoCount,
       manualCount: statusCount[status].manualCount,
     }));
-  
+
     // Calculate submission statistics
     const totalSubmissions = submissions[selectedSubject]?.length || 0;
     const onTimeCount = submissions[selectedSubject]?.filter(s => s.autoStatus === "On Time").length || 0;
@@ -125,7 +128,7 @@ const Analytics: React.FC = () => {
     const incompleteCount = submissions[selectedSubject]?.filter(s => s.autoStatus === "Incomplete").length || 0;
     const noSubmissionCount = submissions[selectedSubject]?.filter(s => s.autoStatus === "No Submission").length || 0;
     const forRevisionCount = submissions[selectedSubject]?.filter(s => s.autoStatus === "For Revision").length || 0;
-    
+
     setSubmissionStats({
       total: totalSubmissions,
       onTime: onTimeCount,
@@ -137,7 +140,7 @@ const Analytics: React.FC = () => {
 
     setChartData(formattedChartData);
   }, [submissions, selectedSubject]);
-  
+
   useEffect(() => {
     // Fetch user data to map user IDs to full names
     const unsubscribe = onSnapshot(collection(db, "users"), (querySnapshot) => {
@@ -224,6 +227,7 @@ const Analytics: React.FC = () => {
                 autoStatus,
                 evaluatorStatus: entry.evaluatorStatus || "Pending",
                 remark: entry.remarks || "",
+                score: entry.score || null,
               });
             });
           });
@@ -365,12 +369,71 @@ const Analytics: React.FC = () => {
     setShowRemarkModal(false);
   };
 
+  // Add function to handle saving scores
+  const handleSaveScore = async () => {
+    if (!currentSubmissionId) return;
+
+    const currentSubmission = submissions[selectedSubject]?.find(sub => sub.id === currentSubmissionId);
+
+    if (!currentSubmission) {
+      console.error("Submission not found in state");
+      return;
+    }
+
+    const { docId, occurrence } = currentSubmission;
+
+    try {
+      // Fetch the programsubmission document by docId
+      const docRef = doc(db, "programsubmission", docId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        console.error("Submission document not found");
+        return;
+      }
+
+      const data = docSnap.data();
+      const submissionsArray = data.submissions || [];
+
+      // Update the correct submission entry by occurrence
+      const updatedSubmissions = submissionsArray.map((entry: any) =>
+        entry.occurrence === occurrence
+          ? { ...entry, score: currentScore }
+          : entry
+      );
+
+      // Save the updated array
+      await updateDoc(docRef, { submissions: updatedSubmissions });
+
+      // Update local state
+      setSubmissions((prev) => {
+        if (!selectedSubject || !prev[selectedSubject]) return prev;
+
+        return {
+          ...prev,
+          [selectedSubject]: prev[selectedSubject].map((sub) =>
+            sub.id === currentSubmissionId
+              ? { ...sub, score: currentScore }
+              : sub
+          ),
+        };
+      });
+
+      console.log("Score successfully updated.");
+    } catch (error) {
+      console.error("Error updating score:", error);
+      alert("Failed to save score.");
+    }
+
+    setShowScoreModal(false);
+  };
+
   // Status badge with appropriate color
   const StatusBadge = ({ status }: { status: string }) => {
     const color = statusColors[status] || "#6c757d";
     return (
-      <Badge 
-        bg="" 
+      <Badge
+        bg=""
         style={{ backgroundColor: color, fontSize: '0.85rem', padding: '0.35em 0.65em' }}
       >
         {status}
@@ -391,7 +454,7 @@ const Analytics: React.FC = () => {
       minute: "numeric",
       hour12: true,
     });
-    
+
     return `${formattedDate} at ${formattedTime}`;
   };
 
@@ -408,14 +471,12 @@ const Analytics: React.FC = () => {
               <li className="breadcrumb-item">
                 <Link to="/evaluator/analytics">Analytics</Link>
               </li>
-              <li className="breadcrumb-item active">
-                Program Monitoring
-              </li>
+              <li className="breadcrumb-item active">Program Monitoring</li>
             </ol>
           </nav>
         </div>
       </div>
-      
+
       <Card className="shadow-sm mb-4">
         <Card.Body>
           <Card.Title className="mb-3">Select Program</Card.Title>
@@ -522,6 +583,7 @@ const Analytics: React.FC = () => {
                       <th>Auto Status</th>
                       <th>Evaluator Status</th>
                       <th>Actions</th>
+                                            <th>Score</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -584,7 +646,7 @@ const Analytics: React.FC = () => {
                               }}
                             />
                           </td>
-                          <td>
+                                                    <td>
                             <Button
                               variant="outline-primary"
                               size="sm"
@@ -598,12 +660,30 @@ const Analytics: React.FC = () => {
                               <i className="bx bx-message-square-detail me-1"></i>
                               {sub.remark ? "Edit Remark" : "Add Remark"}
                             </Button>
+                                                          <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => {
+                                  setCurrentSubmissionId(sub.id);
+                                  setCurrentScore(sub.score !== undefined ? sub.score : null);
+                                  setShowScoreModal(true);
+                                }}
+                              >
+                                Add/Edit Score
+                              </Button>
                           </td>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              <span className="me-2 fw-bold">{sub.score !== null ? sub.score : '-'}</span>
+
+                            </div>
+                          </td>
+
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="text-center py-4">
+                        <td colSpan={6} className="text-center py-4">
                           <i className="bx bx-info-circle fs-4 mb-2 d-block text-muted"></i>
                           {selectedSubject ? "No submissions found for this program." : "Select a program to view submissions."}
                         </td>
@@ -617,6 +697,7 @@ const Analytics: React.FC = () => {
         </>
       )}
 
+      {/* Remark Modal */}
       <Modal show={showRemarkModal} onHide={() => setShowRemarkModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>
@@ -643,6 +724,41 @@ const Analytics: React.FC = () => {
           <Button variant="primary" onClick={handleSaveRemark}>
             <i className="bx bx-save me-1"></i>
             Save Remark
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Score Modal */}
+      <Modal show={showScoreModal} onHide={() => setShowScoreModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bx bx-star me-2"></i>
+            Add/Edit Score
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group>
+            <Form.Label>Score (0-10)</Form.Label>
+            <Form.Control
+              type="number"
+              min="0"
+              max="10"
+              value={currentScore !== null ? currentScore : ''}
+              onChange={(e) => setCurrentScore(e.target.value ? parseInt(e.target.value) : null)}
+              placeholder="Enter a score from 0 to 10"
+            />
+            <Form.Text className="text-muted">
+              Enter a number between 0 (lowest) and 10 (highest)
+            </Form.Text>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowScoreModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSaveScore}>
+            <i className="bx bx-save me-1"></i>
+            Save Score
           </Button>
         </Modal.Footer>
       </Modal>
