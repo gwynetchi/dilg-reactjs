@@ -125,38 +125,63 @@ const App: React.FC = () => {
   const auth = getAuth();
   const db = getFirestore();
   const [showWarning, setShowWarning] = useState(false);
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
 
     // Auto-logout after 12 hours of inactivity (no deletion)
     const handleAutoLogout = async () => {
       if (user) {
         console.log('Auto-logout after 12 hours of inactivity');
-        await signOut(auth); // Just logs out, no deletion
+        await signOut(auth);
         setUser(null);
         setRole(null);
+        setShowWarning(false);
+        if (timeoutId) clearTimeout(timeoutId);
       }
     };
-  
-    const { reset } = useIdleTimer({
-      timeout: 1000 * 60 * 60 * 12, // 12 hours
-      onIdle: handleAutoLogout,
-      debounce: 500,
-      events: [
-        'mousedown',
-        'keydown',
-        'wheel',
-        'DOMMouseScroll',
-        'mousewheel',
-        'mousemove',
-        'touchmove',
-        'touchstart',
-        'resize'
-      ],
-      promptBeforeIdle: 1000 * 60 * 5, // 5-minute warning
-      onPrompt: () => setShowWarning(true),
-      onActive: () => setShowWarning(false),
-    });
+
+      // Show warning 5 minutes before logout
+    const showWarningBeforeLogout = () => {
+      setShowWarning(true);
+      // Set timeout for actual logout 5 minutes after warning
+      const id = setTimeout(handleAutoLogout, 5 * 60 * 1000);
+      setTimeoutId(id);
+    };
+
+  const { reset } = useIdleTimer({
+    timeout: 1000 * 60 * 60 * 12, // 12 hours in milliseconds
+    onIdle: showWarningBeforeLogout,
+    debounce: 500,
+    events: [
+      'mousedown',
+      'keydown',
+      'wheel',
+      'DOMMouseScroll',
+      'mousewheel',
+      'mousemove',
+      'touchmove',
+      'touchstart',
+      'resize'
+    ],
+    promptBeforeIdle: 1000 * 60 * 60 * 11 + 1000 * 60 * 55, // Show warning 5 minutes before idle timeout
+    onActive: () => {
+      setShowWarning(false);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        setTimeoutId(null);
+      }
+    },
+  });
     
+    const handleUserActivity = () => {
+    reset();
+    setShowWarning(false);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      setTimeoutId(null);
+    }
+  };
+
     // Add reset to the dependency array of your auth useEffect
     useEffect(() => {
       const unsubscribeAuth = onAuthStateChanged(auth, async () => {
@@ -239,20 +264,28 @@ const App: React.FC = () => {
           <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
  
             {/* Warning Modal */}
-            {showWarning && (
-              <div className="warning-modal" style={{
-                position: 'fixed',
-                top: '20px',
-                right: '20px',
-                padding: '15px',
-                backgroundColor: '#fff',
-                borderRadius: '8px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                zIndex: 1000
-              }}>
-                <p>Your session will expire in 5 minutes due to inactivity.</p>
+          {/* Warning Modal */}
+          {showWarning && (
+            <div className="warning-modal" style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              padding: '15px',
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+              zIndex: 1000,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <p style={{ margin: 0 }}>Your session will expire in 5 minutes due to inactivity.</p>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <button 
-                  onClick={reset}
+                  onClick={() => {
+                    handleUserActivity();
+                    setShowWarning(false);
+                  }}
                   style={{
                     padding: '5px 10px',
                     backgroundColor: '#007bff',
@@ -264,8 +297,22 @@ const App: React.FC = () => {
                 >
                   Stay Logged In
                 </button>
+                <button 
+                  onClick={handleAutoLogout}
+                  style={{
+                    padding: '5px 10px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Log Out Now
+                </button>
               </div>
-            )}
+            </div>
+          )}
 
             <Routes>
               {/* Public Routes */}
