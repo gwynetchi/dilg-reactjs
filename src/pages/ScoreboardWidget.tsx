@@ -156,7 +156,7 @@ const ScoreboardWidget: React.FC = () => {
   };
 
   const navigateToScoreboard = (): void => {
-    navigate('/{%role%}/scoreBoard');
+    navigate('/scoreBoard');
   };
 
   if (loading) return (
