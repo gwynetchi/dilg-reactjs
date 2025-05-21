@@ -235,7 +235,7 @@ nodeGroup.append("rect")
       // Node image
 // Replace the image append code with this:
 nodeGroup.append("image")
-  .attr("xlink:href", d => d.data.img || "https://via.placeholder.com/60")
+  .attr("xlink:href", d => d.data.img || "https://res.cloudinary.com/dr5c99td8/image/upload/v1747795819/xrmnclcohou8vu9x6fic.jpg")
   .attr("x", -cardWidth / 2 + 10)
   .attr("y", -cardHeight / 2 + 10)
   .attr("width", 60)
@@ -244,7 +244,7 @@ nodeGroup.append("image")
   .on("error", function() {
     // Fallback to placeholder if image fails to load
     d3.select(this)
-      .attr("xlink:href", "https://via.placeholder.com/60")
+      .attr("xlink:href", "https://res.cloudinary.com/dr5c99td8/image/upload/v1747795819/xrmnclcohou8vu9x6fic.jpg")
       .attr("width", 60)
       .attr("height", 60);
   });

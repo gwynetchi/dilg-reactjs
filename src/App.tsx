@@ -102,23 +102,18 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/programs", element: <ProgramCards /> },
     { path: "/lgu/programs/:programId", element: <ProgramMessages />},
     { path: "/lgu/program-inbox/message/:id", element: <ProgramMessageDetails /> },
-
-
-
-    
-
   ],
   Viewer: [
     { path: "/viewer/dashboard", element: <Dashboard /> },
     { path: "/viewer/profile", element: <Profile /> },
     { path: "/viewer/inbox", element: <Inbox /> },
     { path: "/viewer/inbox/:id", element: <MessageDetails /> },
-    { path: "/viewer/communication", element: <Communication /> },
-    { path: "/viewer/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/viewer/sentCommunications/:id", element: <Sent /> }, // Added this line
+    { path: "/viewer/programs", element: <ProgramCards /> },
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/viewer/scoreBoard", element: <Scoreboard /> },
+    { path: "/viewer/programs/:programId", element: <ProgramMessages />},
+    { path: "/viewer/program-inbox/message/:id", element: <ProgramMessageDetails /> },
   ],
 };
 

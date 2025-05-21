@@ -10,6 +10,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Swal from "sweetalert2";
 import { formatDistanceToNow } from "date-fns";
 
@@ -24,6 +25,8 @@ interface Occurrence {
 
 const ViewProgramLinks: React.FC = () => {
   const { programId } = useParams<{ programId: string }>();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [documentId, setDocumentId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -54,6 +57,20 @@ const ViewProgramLinks: React.FC = () => {
       title,
     });
   };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Fetch user role from Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
+        }
+      } else {
+        setUserRole(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchOccurrences = async () => {
@@ -522,16 +539,16 @@ const ViewProgramLinks: React.FC = () => {
                         <i className={`bi bi-arrow-${sortConfig.key === "date" && sortConfig.direction === "asc" ? "up" : "down"} ms-1`}></i>
                       </div>
                     </th>
-                    <th style={{ width: "20%" }}>Monitoring</th>
-                    <th style={{ width: "20%" }}>Submission</th>
-                    <th style={{ width: "15%" }} onClick={() => requestSort("status")}>
+                      <th style={{ width: "20%" }}>Monitoring</th>
+                    {userRole !== 'Viewer' &&( <th style={{ width: "20%" }}>Submission</th>)}
+                    {userRole !== 'Viewer' &&(<th style={{ width: "15%" }} onClick={() => requestSort("status")}>
                       <div className="d-flex align-items-center cursor-pointer">
                         Status
                         <i className={`bi bi-arrow-${sortConfig.key === "status" && sortConfig.direction === "asc" ? "up" : "down"} ms-1`}></i>
                       </div>
-                    </th>
-                    <th style={{ width: "10%" }}>Notes</th>
-                    <th style={{ width: "10%" }}>Actions</th>
+                    </th>)}
+                    {userRole !== 'Viewer' && (<th style={{ width: "10%" }}>Notes</th>)}
+                    {userRole !== 'Viewer' && (<th style={{ width: "10%" }}>Actions</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -589,7 +606,7 @@ const ViewProgramLinks: React.FC = () => {
                             <span className="text-muted fst-italic">N/A</span>
                           )}
                         </td>
-                        <td>
+                        {userRole !== 'Viewer' && (<td>
                           {occ.submissionLink ? (
                             <a
                               href={occ.submissionLink}
@@ -603,8 +620,8 @@ const ViewProgramLinks: React.FC = () => {
                           ) : (
                             <span className="text-muted fst-italic">N/A</span>
                           )}
-                        </td>
-                        <td>
+                        </td>)}
+                        {userRole !== 'Viewer' && (<td>
                           {occ.submitted ? (
                             <div className="d-flex flex-column">
                               <div className="d-flex align-items-center text-success">
@@ -636,8 +653,8 @@ const ViewProgramLinks: React.FC = () => {
                               )}
                             </button>
                           )}
-                        </td>
-                        <td>
+                        </td>)}
+                        {userRole !== 'Viewer' && (<td>
                           <button
                             className="btn btn-sm btn-outline-secondary w-100"
                             onClick={() => handleAddNote(occ.date, occ.notes || "")}
@@ -646,8 +663,8 @@ const ViewProgramLinks: React.FC = () => {
                             <i className="bi bi-pencil-square me-1"></i>
                             {occ.notes ? "View/Edit" : "Add"}
                           </button>
-                        </td>
-                        <td>
+                        </td>)}
+                        {userRole !== 'Viewer' &&(<td>
                           {occ.submitted ? (
                             <button
                               className="btn btn-sm btn-outline-danger w-100"
@@ -658,7 +675,7 @@ const ViewProgramLinks: React.FC = () => {
                               Unmark
                             </button>
                           ) : null}
-                        </td>
+                        </td>)}
                       </tr>
                     );
                   })}

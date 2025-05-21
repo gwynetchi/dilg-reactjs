@@ -17,11 +17,34 @@ const AdminOrgChartEditor: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState<"add" | "edit">("add");
-  const [newNode, setNewNode] = useState<Partial<OrgChartNode> & { superiorId?: number }>({});
+  const [newNode, setNewNode] = useState<Partial<Omit<OrgChartNode, "img">> & { img?: string | File; superiorId?: number }>({});
   const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const { showToast } = useToast();
+// Add these constants at the top of your file
+const DEFAULT_PROFILE_IMAGE = '/path/to/default-profile.png'; // Local fallback
+const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/dr5c99td8/image/upload';
+const CLOUDINARY_UPLOAD_PRESET = 'uploads';
 
+// Add this helper function for image uploads
+const uploadImageToCloudinary = async (file: File, userId: string): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  formData.append("folder", `orgChart/${userId}`);
+
+  const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Image upload failed");
+  }
+
+  const data = await response.json();
+  return data.secure_url;
+};
   const fetchNodes = useCallback(async () => {
     setLoading(true);
     try {
@@ -78,12 +101,18 @@ const AdminOrgChartEditor: React.FC = () => {
     try {
       const newId = Math.max(0, ...nodes.map((n) => n.id)) + 1;
       const superiorId = newNode.superiorId ? +newNode.superiorId : null;
-  
+      // Handle image upload if it's a File object (from file input)
+    let imageUrl = newNode.img || DEFAULT_PROFILE_IMAGE;
+    if (typeof newNode.img === "object" && newNode.img !== null && "type" in newNode.img && typeof (newNode.img as File).type === "string") {
+      imageUrl = await uploadImageToCloudinary(newNode.img as File, newId.toString());
+    }
+
+      
       const newEntry: OrgChartNode = {
         id: newId,
         name: newNode.name || "",
         email: newNode.email || "",
-        img: newNode.img || "",
+        img: typeof imageUrl === "string" ? imageUrl : DEFAULT_PROFILE_IMAGE, // Ensure img is always a string
         city: newNode.city || "",
         cluster: newNode.cluster || "",
         position1: newNode.position1 || "",
@@ -356,19 +385,44 @@ const handleNodeClick = (node: OrgChartNode) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Picture URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
                 <input
-                  placeholder="https://example.com/photo.jpg"
+                  type="file"
+                  accept="image/*"
                   className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.img || "" : form.img || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, img: e.target.value }))
-                      : updateField("img", e.target.value)
-                  }
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (editMode === "add") {
+                        setNewNode(prev => ({ ...prev, img: file }));
+                      } else {
+                        // Immediately upload and set the URL, do not store File in state
+                        (async () => {
+                          setLoading(true);
+                          try {
+                            const url = await uploadImageToCloudinary(file, selectedId ? selectedId.toString() : "temp");
+                            setForm(prev => ({ ...prev, img: url }));
+                          } catch (err) {
+                            showToast("Failed to upload image", "error");
+                          } finally {
+                            setLoading(false);
+                          }
+                        })();
+                      }
+                    }
+                  }}
+                  disabled={loading}
                 />
-              </div>
-                            
+                {editMode === "edit" && form.img && typeof form.img === 'string' && (
+                  <div className="mt-2">
+                    <img 
+                      src={form.img} 
+                      alt="Current profile" 
+                      className="h-20 w-20 rounded-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>                            
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                 <input

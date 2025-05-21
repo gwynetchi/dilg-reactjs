@@ -107,7 +107,7 @@ const SectionModal: React.FC<SectionModalProps> = ({ section, onClose }) => {
             ) : (
               filteredUsers.map(user => (
                 <UserItem key={user.id}>
-                  <UserImage src={user.img || "https://via.placeholder.com/80"} alt={user.name} />
+                  <UserImage src={user.img || " "} alt={user.name} />
                   <UserInfo>
                     <UserName>{user.name}</UserName>
                     <UserPosition>{user.position1}</UserPosition>

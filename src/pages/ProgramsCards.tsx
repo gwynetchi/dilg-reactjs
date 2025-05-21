@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { onSnapshot, collection, query, where, doc, getDoc, getFirestore, limit, startAfter, orderBy, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Spinner, Card, Row, Col, Container, Badge, Button, Pagination, Breadcrumb, Form, Dropdown } from 'react-bootstrap';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Spinner, Card, Row, Col, Container, Badge, Button, Breadcrumb, Form, Alert } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { CalendarWeek, Calendar2Month, Calendar3, CalendarDate, Search, FilterCircle, XCircle } from 'react-bootstrap-icons';
 import debounce from 'lodash/debounce';
@@ -47,12 +47,13 @@ const ProgramCards: React.FC = () => {
     frequency: null,
     dateRange: null,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [indexBuilding, setIndexBuilding] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const programsPerPage = 9;
 
-  // Debounce search function to avoid excessive queries
-  const debouncedSearch = useCallback(
+  // Debounce search function
+  const handleSearchChange = useCallback(
     debounce((term: string) => {
       setSearchTerm(term);
       setCurrentPage(1);
@@ -64,98 +65,97 @@ const ProgramCards: React.FC = () => {
   // Get current user's ID and role
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
         const userDoc = await getDoc(doc(getFirestore(), "users", user.uid));
-        const userRole = userDoc.data()?.role?.toLowerCase();
-        setRole(userRole);
+        setRole(userDoc.data()?.role?.toLowerCase() || null);
       } else {
         setUserId(null);
         setRole(null);
       }
     });
-  
-    return () => unsubscribe();
-  }, []);  
+    return () => unsubscribeAuth();
+  }, []);
 
   // Fetch programs with pagination
-  const fetchPrograms = useCallback(async (reset = false) => {
-    if (!userId) return;
-    
-    setLoading(true);
-    
-    let q = query(
-      collection(db, 'programs'),
-      where('participants', 'array-contains', userId),
-      orderBy('programName'),
-      limit(programsPerPage)
-    );
-    
-    // Add pagination using startAfter if not resetting and we have a last document
-    if (!reset && lastVisible) {
-      q = query(
-        collection(db, 'programs'),
-        where('participants', 'array-contains', userId),
-        orderBy('programName'),
-        startAfter(lastVisible),
-        limit(programsPerPage)
-      );
-    }
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        setHasMore(false);
-        setLoading(false);
-        return;
-      }
-      
-      // Set the last document for pagination
-      const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-      setLastVisible(lastDoc);
-      
-      const newPrograms: Program[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          programName: data.programName,
-          frequency: data.frequency,
-          duration: data.duration,
-          description: data.description || 'No description provided',
-          frequencyDetails: data.frequencyDetails,
-          participants: data.participants,
-          imageUrl: data.imageUrl || '', 
-        };
-      });
-      
-      // If resetting, replace programs, otherwise append
-      if (reset) {
-        setPrograms(newPrograms);
-      } else {
-        setPrograms(prev => [...prev, ...newPrograms]);
-      }
-      
-      setLoading(false);
-    });
-    
-    return () => unsubscribe();
-  }, [userId, lastVisible]);
-
-  // Initial fetch and when user changes
   useEffect(() => {
-    if (userId) {
-      setPrograms([]);
-      setLastVisible(null);
-      setHasMore(true);
-      fetchPrograms(true);
-    }
-  }, [userId, fetchPrograms]);
+    if (!userId) return;
+
+    let unsubscribe: () => void;
+    const fetchPrograms = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        let q = query(
+          collection(db, 'programs'),
+          where('participants', 'array-contains', userId),
+          orderBy('programName'),
+          limit(programsPerPage)
+        );
+        
+        if (currentPage > 1 && lastVisible) {
+          q = query(q, startAfter(lastVisible));
+        }
+        
+        unsubscribe = onSnapshot(q, 
+          (snapshot) => {
+            if (snapshot.empty) {
+              setHasMore(false);
+              setLoading(false);
+              return;
+            }
+            
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            setLastVisible(lastDoc);
+            
+            const newPrograms = snapshot.docs.map(doc => ({
+              id: doc.id,
+              programName: doc.data().programName,
+              frequency: doc.data().frequency,
+              duration: doc.data().duration,
+              description: doc.data().description || 'No description provided',
+              frequencyDetails: doc.data().frequencyDetails,
+              participants: doc.data().participants,
+              imageUrl: doc.data().imageUrl || '',
+            }));
+            
+            setPrograms(prev => currentPage === 1 ? newPrograms : [...prev, ...newPrograms]);
+            setLoading(false);
+            setIndexBuilding(false);
+          },
+          (err) => {
+            if (err.code === 'failed-precondition' && err.message.includes('index')) {
+              setIndexBuilding(true);
+            }
+            setError(err.message);
+            setLoading(false);
+          }
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setLoading(false);
+      }
+    };
+
+    fetchPrograms();
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [userId, currentPage]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setLastVisible(null);
+  }, [searchTerm, filters]);
 
   // Load more programs
   const loadMorePrograms = () => {
     if (!loading && hasMore) {
       setCurrentPage(prev => prev + 1);
-      fetchPrograms();
     }
   };
   
@@ -215,17 +215,14 @@ const ProgramCards: React.FC = () => {
   
   // Apply filters to programs
   const applyFilters = (program: Program) => {
-    // Search term filter
     const matchesSearch = 
       program.programName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       program.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Frequency filter
     const matchesFrequency = 
       !filters.frequency || 
       program.frequency.toLowerCase() === filters.frequency.toLowerCase();
     
-    // Date range filter (active, upcoming, past)
     let matchesDateRange = true;
     if (filters.dateRange) {
       const now = new Date();
@@ -266,7 +263,7 @@ const ProgramCards: React.FC = () => {
 
   // Generate pagination
   const renderPagination = () => {
-    if (programs.length === 0) return null;
+    if (filteredPrograms.length === 0) return null;
     
     return (
       <div className="d-flex justify-content-center mt-4">
@@ -291,6 +288,31 @@ const ProgramCards: React.FC = () => {
 
   return (
     <Container className="py-4">
+      {/* Error and Index Building Alerts */}
+      {error && (
+        <Alert variant="danger" className="mb-4">
+          {error}
+          {error.includes('index') && (
+            <div className="mt-2">
+              <a 
+                href={error.match(/https?:\/\/[^\s]+/)?.[0] || '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-outline-danger"
+              >
+                Create Required Index
+              </a>
+            </div>
+          )}
+        </Alert>
+      )}
+      {indexBuilding && (
+        <Alert variant="info" className="mb-4">
+          <Spinner animation="border" size="sm" className="me-2" />
+          Database index is building. This may take a few minutes...
+        </Alert>
+      )}
+
       {/* Breadcrumb Navigation */}
       <Breadcrumb className="mb-4">
         <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
@@ -305,8 +327,7 @@ const ProgramCards: React.FC = () => {
               type="text"
               className="form-control"
               placeholder="Search programs..."
-              value={searchTerm}
-              onChange={(e) => debouncedSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
             <Search className="position-absolute" style={{ right: '10px', top: '10px' }} />
           </div>
@@ -366,7 +387,7 @@ const ProgramCards: React.FC = () => {
         </Card>
       )}
       
-      {/* Loading State when initially loading */}
+      {/* Loading State */}
       {loading && programs.length === 0 ? (
         <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
           <Spinner animation="border" variant="primary" />

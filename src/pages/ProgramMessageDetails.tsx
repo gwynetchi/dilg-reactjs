@@ -8,7 +8,6 @@ const ProgramMessageDetails: React.FC = () => {
   const { id } = useParams();
   const auth = getAuth();
   const currentUser = auth.currentUser;
-  
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState<any>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -56,13 +55,16 @@ const ProgramMessageDetails: React.FC = () => {
           setMessage({ ...msgData, senderName });
           setImageUrl(msgData.imageUrl || null);
 
-          const subRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
-          const subSnap = await getDoc(subRef);
-          if (subSnap.exists()) {
-            const subData = subSnap.data();
-            setSubmissionStatus(subData);
-            setRemark(subData.remark || null);
-            setEvaluatorRemark(subData.evaluatorRemark || null);
+          // Only fetch submission details if user is not a Viewer
+          if (role !== "Viewer" || "viewer") {
+            const subRef = doc(db, "submittedDetails", `${id}_${currentUser.uid}`);
+            const subSnap = await getDoc(subRef);
+            if (subSnap.exists()) {
+              const subData = subSnap.data();
+              setSubmissionStatus(subData);
+              setRemark(subData.remark || null);
+              setEvaluatorRemark(subData.evaluatorRemark || null);
+            }
           }
         }
       } catch (error) {
@@ -73,7 +75,7 @@ const ProgramMessageDetails: React.FC = () => {
     };
 
     fetchMessageDetails();
-  }, [id, currentUser]);
+  }, [id, currentUser, role]); // Added role to dependencies
 
   const handleMarkAsSubmitted = async () => {
     if (!currentUser || !message || !id) return;
@@ -174,17 +176,22 @@ const ProgramMessageDetails: React.FC = () => {
               </div>
             )}
 
-            {submissionStatus ? (
+            {/* Only show submission-related elements if user is not a Viewer */}
+            {(role !== "Viewer" && role !== "viewer") && (
               <>
-                <div className="alert alert-info">You already submitted this message.</div>
-                <div><strong>Evaluator Status:</strong> {submissionStatus.evaluatorStatus}</div>
-                {remark && <div><strong>Your Remark:</strong> {remark}</div>}
-                {evaluatorRemark && <div><strong>Evaluator Remark:</strong> {evaluatorRemark}</div>}
+                {submissionStatus ? (
+                  <>
+                    <div className="alert alert-info">You already submitted this message.</div>
+                    <div><strong>Evaluator Status:</strong> {submissionStatus.evaluatorStatus}</div>
+                    {remark && <div><strong>Your Remark:</strong> {remark}</div>}
+                    {evaluatorRemark && <div><strong>Evaluator Remark:</strong> {evaluatorRemark}</div>}
+                  </>
+                ) : (
+                  <button className="btn btn-success" onClick={handleMarkAsSubmitted}>
+                    Mark as Submitted
+                  </button>
+                )}
               </>
-            ) : (
-              <button className="btn btn-success" onClick={handleMarkAsSubmitted}>
-                Mark as Submitted
-              </button>
             )}
           </div>
 

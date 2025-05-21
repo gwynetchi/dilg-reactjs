@@ -349,7 +349,6 @@ const ManagePrograms: React.FC = () => {
           users={users}
           onSave={handleProgramUpdate}
           onClose={handleModalClose}
-          show={selectedProgram !== null}
         />
       )}
     </div>
