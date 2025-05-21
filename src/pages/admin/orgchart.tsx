@@ -65,7 +65,7 @@ const uploadImageToCloudinary = async (file: File, userId: string): Promise<stri
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
           superiorId: data.superiorId ?? null,
-          section: data.section as "MES" | "FAS" | "CDS" || undefined,
+          section: data.section as "MES" | "FAS" | "CDS" || null,
         };
       });
 
@@ -119,7 +119,7 @@ const uploadImageToCloudinary = async (file: File, userId: string): Promise<stri
         position2: newNode.position2 || "",
         layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
         status: "offline",
-      section: newNode.section as "MES" | "FAS" | "CDS" || undefined, // Add this line
+      section: newNode.section as "MES" | "FAS" | "CDS" || null,
         subordinates: [],
         superiorId: superiorId || undefined, // Ensure we don't pass undefined
       };
@@ -195,7 +195,7 @@ const handleUpdateUser = async () => {
       cluster: form.cluster ?? currentNode.cluster,
       status: form.status ?? currentNode.status,
       layout: form.layout ?? currentNode.layout,
-      section: form.section ?? currentNode.section,
+      section: form.section ?? currentNode.section ?? null,
       subordinates: currentNode.subordinates || [],
     };
 
