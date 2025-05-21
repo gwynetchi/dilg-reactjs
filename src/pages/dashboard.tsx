@@ -279,7 +279,7 @@ const Dashboard = () => {
                   <i className={`bx ${isFrameworkCollapsed ? 'bx-chevron-down' : 'bx-chevron-up'}`}></i>
                 </button>
               </div>
-              <div className={`${isFrameworkCollapsed ? 'd-none' : ''}`} style={{maxHeight: "250px", overflow: "auto"}}>
+              <div className={`${isFrameworkCollapsed ? 'd-none' : ''}`} style={{maxHeight: "auto", overflow: "hidden", marginBottom: "10px"}}>
                 <ResultsFramework />
               </div>
             </div>

@@ -1,35 +1,23 @@
-import React, { useState, useEffect, JSX } from "react";
+import React, { useState, useEffect, JSX, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, doc, getDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./pages/navbar";
 import "./styles/components/pages.css";
 import { useIdleTimer } from 'react-idle-timer'; 
 
-
+// Import all your components
 import DeletedCommunications from "./pages/DeletedCommunications";
 import Analytics from "./pages/analytics";
-
-// Import Dashboards
 import Dashboard from "./pages/dashboard";
-
-// Import Message Details
 import MessageDetails from "./pages/messagedetails";
-
-// Import Sent communications
 import Sent from "./pages/sentCommunications";
-
-// Import Communication Pages
 import Communication from "./pages/communication";
-
-// Import Inbox, Calendar, Messaging, and Profile
 import Inbox from "./pages/inbox";
 import Calendar from "./pages/calendar";
 import Messaging from "./pages/message";
 import Profile from "./pages/profile";
-
-// Import Authentication and Landing Pages
 import AuthForm from "./components/NewAuthForm";
 import Landing from "./screens/Landing";
 import SubmissionAnalytics from "./pages/submission-analytics";
@@ -39,7 +27,6 @@ import Sentbox from "./pages/sentbox";
 import Scoreboard from "./pages/scoreBoard";
 import UserManagement from "./pages/UserManagement";
 import DeletedUsers from "./pages/admin/DeletedUsers";
-
 import ProgramMessageDetails from "./pages/ProgramMessageDetails";
 import EvaluatorPrograms from "./pages/managePrograms";
 import ProgramCards from "./pages/ProgramsCards";
@@ -48,24 +35,23 @@ import OrgChartAdmin from "./pages/admin/orgchart";
 import ProgramLinksManager from "./pages/modules/program-modules/ProgramLinksManager";
 import MayorManagement from "./pages/admin/MayorManagement";
 
+// Role-based route configuration
 const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]> = {
   Admin: [
     { path: "/admin/dashboard", element: <Dashboard /> },
     { path: "/admin/profile", element: <Profile /> },
     { path: "/admin/inbox/:id", element: <MessageDetails /> },
     { path: "/admin/communication", element: <Communication /> },
-    { path: "/admin/sentCommunications/:id", element: <Sent /> }, // Added this line
+    { path: "/admin/sentCommunications/:id", element: <Sent /> },
     { path: "/admin/inbox", element: <Inbox /> },
     { path: "/admin/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/admin/calendar", element: <Calendar /> },
     { path: "/admin/scoreBoard", element: <Scoreboard /> },
-    { path: "/admin/UserManagement", element: <UserManagement /> }, // ← Added here
-    { path: "/admin/OrganizationalChart", element: <OrgChartAdmin /> }, // ← Added here
+    { path: "/admin/UserManagement", element: <UserManagement /> },
+    { path: "/admin/OrganizationalChart", element: <OrgChartAdmin /> },
     { path: "/admin/DeletedUsers", element: <DeletedUsers />},
     { path: "/admin/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/admin/MayorManagement", element: <MayorManagement cities={{}} onSave={function (): Promise<void> {
-      throw new Error("Function not implemented.");
-    } } />},
+    { path: "/admin/MayorManagement", element: <MayorManagement cities={{}} onSave={() => Promise.resolve()} />},
   ],
   Evaluator: [
     { path: "/evaluator/dashboard", element: <Dashboard /> },
@@ -75,7 +61,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/sentbox", element: <Sentbox /> },
     { path: "/evaluator/communication", element: <Communication /> },
     { path: "/evaluator/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/evaluator/sentCommunications/:id", element: <Sent /> }, // Added this line
+    { path: "/evaluator/sentCommunications/:id", element: <Sent /> },
     { path: "/evaluator/calendar", element: <Calendar /> },
     { path: "/evaluator/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/evaluator/analytics", element: <Analytics /> },
@@ -85,8 +71,6 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/evaluator/scoreBoard", element: <Scoreboard /> },
     { path: "/evaluator/programs", element: <EvaluatorPrograms /> },
     { path: "/evaluator/programs/:programId", element: <ProgramMessages />}
-
-
   ],
   LGU: [
     { path: "/lgu/dashboard", element: <Dashboard /> },
@@ -95,7 +79,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/inbox/:id", element: <MessageDetails /> },
     { path: "/lgu/communication", element: <Communication /> },
     { path: "/lgu/DeletedCommunications", element: <DeletedCommunications/>},
-    { path: "/lgu/sentCommunications/:id", element: <Sent /> }, // Added this line
+    { path: "/lgu/sentCommunications/:id", element: <Sent /> },
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
@@ -117,81 +101,66 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
   ],
 };
 
+// Timeout constants
+const INACTIVITY_TIMEOUT = 1000 * 60 * 60 * 6; // 6 hours
+const WARNING_TIMEOUT = 1000 * 60 * 1; // 1 minute warning before logout
+
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 576);
+  const [showWarning, setShowWarning] = useState(false);
+  
   const auth = getAuth();
   const db = getFirestore();
-  const [showWarning, setShowWarning] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const LAST_ACTIVE_KEY = "lastActiveTime";
+  let logoutTimer: ReturnType<typeof setTimeout>;
 
+  const updateLastActiveTime = () => {
+  localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+};
 
-    // Auto-logout after 12 hours of inactivity (no deletion)
-    const handleAutoLogout = async () => {
-      if (user) {
-        console.log('Auto-logout after 12 hours of inactivity');
-        await signOut(auth);
-        setUser(null);
-        setRole(null);
-        setShowWarning(false);
-        if (timeoutId) clearTimeout(timeoutId);
-      }
-    };
-
-      // Show warning 5 minutes before logout
-    const showWarningBeforeLogout = () => {
-      setShowWarning(true);
-      // Set timeout for actual logout 5 minutes after warning
-      const id = setTimeout(handleAutoLogout, 5 * 60 * 1000);
-      setTimeoutId(id);
-    };
-
-  const { reset } = useIdleTimer({
-    timeout: 1000 * 60 * 60 * 12, // 12 hours in milliseconds
-    onIdle: showWarningBeforeLogout,
-    debounce: 500,
-    events: [
-      'mousedown',
-      'keydown',
-      'wheel',
-      'DOMMouseScroll',
-      'mousewheel',
-      'mousemove',
-      'touchmove',
-      'touchstart',
-      'resize'
-    ],
-    promptBeforeIdle: 1000 * 60 * 60 * 11 + 1000 * 60 * 55, // Show warning 5 minutes before idle timeout
-    onActive: () => {
-      setShowWarning(false);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
-      }
-    },
-  });
-    
-    const handleUserActivity = () => {
-    reset();
-    setShowWarning(false);
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
-    }
+  const getLastActiveTime = () => {
+    const stored = localStorage.getItem(LAST_ACTIVE_KEY);
+    return stored ? parseInt(stored, 10) : null;
   };
 
-    // Add reset to the dependency array of your auth useEffect
-    useEffect(() => {
-      const unsubscribeAuth = onAuthStateChanged(auth, async () => {
-        // ... existing code ...
-      });
-      return () => unsubscribeAuth();
-    }, [reset]); // ← Add reset here
-          
+  const handleAutoLogout = useCallback(async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      setRole(null);
+      setShowWarning(false);
+    }
+  }, [auth]);
+
+  // Idle timer configuration
+  const { reset } = useIdleTimer({
+    timeout: INACTIVITY_TIMEOUT,
+    onIdle: () => {
+      setShowWarning(true);
+      logoutTimer = setTimeout(handleAutoLogout, WARNING_TIMEOUT);
+    },
+    onActive: () => {
+      clearTimeout(logoutTimer);
+      updateLastActiveTime();
+      setShowWarning(false);
+    },
+    debounce: 500,
+    promptBeforeIdle: INACTIVITY_TIMEOUT - WARNING_TIMEOUT,
+    events: [
+      "mousedown", "keydown", "wheel", "DOMMouseScroll",
+      "mousewheel", "mousemove", "touchmove", "touchstart", "resize"
+    ],
+  });
+
+  // Auth state and user data management
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setUser(null);
         setRole(null);
@@ -199,39 +168,45 @@ const App: React.FC = () => {
         return;
       }
 
-      const uid = currentUser.uid;
       setUser(currentUser);
 
-      // Set up real-time listener for user deletion
-      const deletedRef = doc(db, "deleted_users", uid);
-      const unsubscribeDeleted = onSnapshot(deletedRef, async (deletedSnap) => {
+      try {
+        const uid = currentUser.uid;
+        const deletedSnap = await getDoc(doc(db, "deleted_users", uid));
         if (deletedSnap.exists()) {
-          console.warn("This account is marked as deleted. Signing out...");
-          await signOut(auth);  // Sign out user if they are marked as deleted
-          setUser(null);
-          setRole(null);
-          setLoading(false);
+          console.warn("Account is marked as deleted. Signing out...");
+          await handleAutoLogout();
+          return;
         }
-      });
 
-      // Fetch role from users collection
-      const userDocRef = doc(db, "users", uid);
-      const userDoc = await getDoc(userDocRef);
-      setRole(userDoc.exists() ? userDoc.data().role : null);
-      setLoading(false);
-
-      // Cleanup Firestore listener on unmount or auth change
-      return () => unsubscribeDeleted();
+        const userSnap = await getDoc(doc(db, "users", uid));
+        setRole(userSnap.exists() ? userSnap.data().role : null);
+      } catch (err) {
+        console.error("User fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribeAuth();
-  }, []);
-  const getDashboardPath = () => {
-    return role && roleRoutesConfig[role] ? roleRoutesConfig[role][0].path : "/login";
-  };
+    return () => unsubscribe();
+  }, [auth, db, handleAutoLogout]);
+  useEffect(() => {
+    const lastActive = getLastActiveTime();
+    const now = Date.now();
+    if (lastActive && now - lastActive > INACTIVITY_TIMEOUT) {
+      console.warn("Inactivity timeout reached before app load.");
+      handleAutoLogout();
+    }
+  }, [handleAutoLogout]);
 
+  // Get dashboard path based on role
+  const getDashboardPath = useCallback(() => {
+    return role && roleRoutesConfig[role]?.[0]?.path || "/login";
+  }, [role]);
+
+  // Protected route component
   const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element; requiredRole: string }) => {
-    if (loading)
+    if (loading) {
       return (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="spinner-border text-primary" role="status">
@@ -239,6 +214,7 @@ const App: React.FC = () => {
           </div>
         </div>
       );
+    }
 
     if (!user) return <Navigate to="/login" replace />;
     if (role !== requiredRole) return <Navigate to={getDashboardPath()} replace />;
@@ -246,7 +222,7 @@ const App: React.FC = () => {
     return children;
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <div className="spinner-border text-primary" role="status">
@@ -254,59 +230,32 @@ const App: React.FC = () => {
         </div>
       </div>
     );
+  }
 
-    return (
-      <Router>
-        <div className="app-container">
-          {user && role && (
-            <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-          )}
-          <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
- 
-            {/* Warning Modal */}
-          {/* Warning Modal */}
+  return (
+    <Router>
+      <div className="app-container">
+        {user && role && (
+          <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+        )}
+        <div className={`content-layout ${user ? (isSidebarOpen ? "expanded" : "collapsed") : ""}`}>
+          {/* Inactivity Warning Modal */}
           {showWarning && (
-            <div className="warning-modal" style={{
-              position: 'fixed',
-              top: '20px',
-              right: '20px',
-              padding: '15px',
-              backgroundColor: '#fff',
-              borderRadius: '8px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-              zIndex: 1000,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}>
-              <p style={{ margin: 0 }}>Your session will expire in 5 minutes due to inactivity.</p>
-              <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="warning-modal">
+              <p>Your session will expire in 30 seconds due to inactivity.</p>
+              <div className="warning-buttons">
                 <button 
                   onClick={() => {
-                    handleUserActivity();
+                    reset();
                     setShowWarning(false);
                   }}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
+                  className="btn btn-primary"
                 >
                   Stay Logged In
                 </button>
                 <button 
                   onClick={handleAutoLogout}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
+                  className="btn btn-danger"
                 >
                   Log Out Now
                 </button>
@@ -314,43 +263,29 @@ const App: React.FC = () => {
             </div>
           )}
 
-            <Routes>
-              {/* Public Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  user ? (
-                    <Navigate to={getDashboardPath()} replace />
-                  ) : (
-                    <Landing />
-                  )
-                }
-              />  
-              <Route
-                path="/login"
-                element={
-                  user ? (
-                    <Navigate to={getDashboardPath()} replace />
-                  ) : (
-                    <AuthForm />
-                  )
-                }
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/dashboard" element={user ? <Navigate to={getDashboardPath()} replace /> : <Landing />} />
+            <Route path="/login" element={user ? <Navigate to={getDashboardPath()} replace /> : <AuthForm />} />
+            <Route path="/register-success" element={<Navigate to="/login" replace />} />
+            <Route path="/program-links/:programId" element={<ProgramLinksManager />} />
+
+            {/* Protected Routes */}
+            {role && roleRoutesConfig[role]?.map(({ path, element }) => (
+              <Route 
+                key={path} 
+                path={path} 
+                element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} 
               />
-              <Route path="/register-success" element={<Navigate to="/login" replace />} />
-              <Route path="/program-links/:programId" element={<ProgramLinksManager />} />
-  
-              {/* Protected Routes (Dynamically Rendered) */}
-              {role &&
-                roleRoutesConfig[role]?.map(({ path, element }) => (
-                  <Route key={path} path={path} element={<ProtectedRoute requiredRole={role}>{element}</ProtectedRoute>} />
-                ))}
-  
-              {/* Catch-All Route */}
-              <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
-            </Routes>
-          </div>
+            ))}
+
+            {/* Catch-All Route */}
+            <Route path="*" element={<Navigate to={user ? getDashboardPath() : "/dashboard"} replace />} />
+          </Routes>
         </div>
-      </Router>
-    );
-  };  
+      </div>
+    </Router>
+  );
+};
+
 export default App;

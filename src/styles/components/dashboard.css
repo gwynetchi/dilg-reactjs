@@ -13,6 +13,16 @@ a {
 li {
 	list-style: none;
 }
+/* Add this in your CSS */
+.bg-purple {
+  background-color: #6f42c1 !important;
+}
+.bg-purple-subtle {
+  background-color: #ede7f6 !important;
+}
+.text-purple {
+  color: #6f42c1 !important;
+}
 
 :root {
 	--poppins: 'Poppins', sans-serif;
