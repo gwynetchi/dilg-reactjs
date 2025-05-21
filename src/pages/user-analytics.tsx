@@ -41,14 +41,31 @@ const allStatuses = Object.keys(statusColors);
 type SourceType = "all" | "oneshotreport" | "programreport";
 
 const UserAnalytics: React.FC = () => {
+  // const location = useLocation();
   const [users, setUsers] = useState<Record<string, string>>({});
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedUser, setSelectedUser] = useState<string>(() => {
+    // Try to restore selectedUser from localStorage
+    const savedUser = localStorage.getItem('selectedUser');
+    return savedUser || "";
+  });
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(() => {
+    // Try to restore selectedMonth from localStorage
+    const savedMonth = localStorage.getItem('selectedMonth');
+    return savedMonth ? parseInt(savedMonth) : null;
+  });
+  const [selectedYear, setSelectedYear] = useState<number | null>(() => {
+    // Try to restore selectedYear from localStorage
+    const savedYear = localStorage.getItem('selectedYear');
+    return savedYear ? parseInt(savedYear) : null;
+  });
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedSource, setSelectedSource] = useState<SourceType>("all");
+  const [selectedSource, setSelectedSource] = useState<SourceType>(() => {
+    // Try to restore selectedSource from localStorage
+    const savedSource = localStorage.getItem('selectedSource');
+    return (savedSource as SourceType) || "all";
+  });
   const [statsData, setStatsData] = useState({
     total: 0,
     onTime: 0,
@@ -56,12 +73,20 @@ const UserAnalytics: React.FC = () => {
     incomplete: 0,
   });
 
+  // Save filter states to localStorage whenever they change
+  useEffect(() => {
+    if (selectedUser) localStorage.setItem('selectedUser', selectedUser);
+    if (selectedMonth !== null) localStorage.setItem('selectedMonth', selectedMonth.toString());
+    if (selectedYear !== null) localStorage.setItem('selectedYear', selectedYear.toString());
+    localStorage.setItem('selectedSource', selectedSource);
+  }, [selectedUser, selectedMonth, selectedYear, selectedSource]);
+
   // Fetch users data
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const usersList = snapshot.docs.reduce((acc, doc) => {
-        const data = doc.data();
-        acc[doc.id] = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
+          const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      const usersList = snapshot.docs.reduce((acc, docSnapshot) => {
+        const data = docSnapshot.data();
+        acc[docSnapshot.id] = `${data.fname} ${data.mname ? data.mname + " " : ""}${data.lname}`.trim();
         return acc;
       }, {} as Record<string, string>);
       setUsers(usersList);
@@ -114,11 +139,11 @@ const UserAnalytics: React.FC = () => {
       );
 
       oneShotUnsubscribe = onSnapshot(oneShotQuery, async (snapshot) => {
-        const fetchedSubmissionsPromises = snapshot.docs.map(async (doc) => {
-          const data = doc.data();
+        const fetchedSubmissionsPromises = snapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
           let sub: Submission = {
             ...data,
-            id: doc.id,
+            id: docSnapshot.id,
             sourceType: "oneshotreport"
           } as Submission;
 
@@ -343,6 +368,9 @@ const UserAnalytics: React.FC = () => {
     return formattedDate;
   };
 
+
+
+
   return (
     <Container fluid className="dashboard-container px-4">
       <section id="content">
@@ -382,6 +410,7 @@ const UserAnalytics: React.FC = () => {
                     placeholder="Select User"
                     isClearable
                     className="custom-select-container"
+                    value={selectedUser ? { value: selectedUser, label: users[selectedUser] || selectedUser } : null}
                   />
                 </Col>
                 <Col md={3} className="mb-3">
@@ -395,6 +424,10 @@ const UserAnalytics: React.FC = () => {
                     placeholder="Select Month"
                     isClearable
                     className="custom-select-container"
+                    value={selectedMonth !== null ? {
+                      value: selectedMonth,
+                      label: new Date(0, selectedMonth).toLocaleString('default', { month: 'long' })
+                    } : null}
                   />
                 </Col>
                 <Col md={3} className="mb-3">
@@ -408,6 +441,7 @@ const UserAnalytics: React.FC = () => {
                     placeholder="Select Year"
                     isClearable
                     className="custom-select-container"
+                    value={selectedYear !== null ? { value: selectedYear, label: selectedYear.toString() } : null}
                   />
                 </Col>
                 <Col md={3} className="mb-3">
@@ -418,12 +452,18 @@ const UserAnalytics: React.FC = () => {
                       { value: "oneshotreport", label: "One Shot Reports" },
                       { value: "programreport", label: "Program Reports" }
                     ]}
-                    defaultValue={{ value: "all", label: "All Sources" }}
+                    value={{ value: selectedSource, label: selectedSource === "all" ? "All Sources" : 
+                             selectedSource === "oneshotreport" ? "One Shot Reports" : "Program Reports" }}
                     onChange={(option) => setSelectedSource(option?.value as SourceType || "all")}
                     className="custom-select-container"
                   />
                 </Col>
               </Row>
+              {/* <Row>
+                <Col md={12} className="text-end">
+                  <Button variant="secondary" onClick={clearFilters}>Clear Filters</Button>
+                </Col>
+              </Row> */}
             </Card.Body>
           </Card>
 
