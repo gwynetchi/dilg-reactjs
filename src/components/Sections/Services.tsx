@@ -14,9 +14,9 @@ import SectionModal from "../Elements/SectionModal";
 
 
 export default function Services({ onSectionClick }: { onSectionClick: (section: string) => void }) {
-  const [selectedSection, setSelectedSection] = useState<"MES" | "FAS" | "CDS" | null>(null);
+  const [selectedSection, setSelectedSection] = useState<"MES" | "FAS" | "CDS" | "PDMU" | null>(null);
 
-const handleSectionClick = (section: "MES" | "FAS" | "CDS") => {
+const handleSectionClick = (section: "MES" | "FAS" | "CDS" | "PDMU") => {
   setSelectedSection(section);
   if (onSectionClick) {
     onSectionClick(section);
@@ -61,6 +61,13 @@ const handleSectionClick = (section: "MES" | "FAS" | "CDS") => {
                 icon="FADlogo"
                 title="Financial and Administrative Section (FAS)"
                 subtitle="Oversees financial, human resource, and administrative operations to ensure the proper and transparent use of the agency’s funds and resources."
+              />
+            </ServiceBoxWrapper>
+            <ServiceBoxWrapper onClick={() => handleSectionClick("PDMU")}>
+              <ServiceBox
+                icon="FADlogo"
+                title="Project and Development Monitoring Unit (PDMU)"
+                subtitle="Responsible for the planning, implementation, monitoring, and evaluation of infrastructure and development projects in coordination with local government units and stakeholders."
               />
             </ServiceBoxWrapper>
           </ServiceBoxRow>

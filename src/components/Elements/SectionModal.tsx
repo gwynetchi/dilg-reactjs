@@ -6,7 +6,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { OrgChartNode } from "./D3OrgChart";
 
 interface SectionModalProps {
-  section: "MES" | "FAS" | "CDS";
+  section: "MES" | "FAS" | "CDS" | "PDMU";
   onClose: () => void;
 }
 
@@ -66,6 +66,8 @@ const SectionModal: React.FC<SectionModalProps> = ({ section, onClose }) => {
         return "Financial and Administrative Section";
       case "CDS":
         return "Capability Development Section";
+      case "PDMU":
+        return "Project and Development Monitoring Unit";
       default:
         return section;
     }

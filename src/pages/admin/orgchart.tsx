@@ -65,7 +65,7 @@ const uploadImageToCloudinary = async (file: File, userId: string): Promise<stri
           layout: data.layout as "vertical" | "horizontal" || "horizontal",
           subordinates: (data.subordinates || []).map((s: any) => +s),
           superiorId: data.superiorId ?? null,
-          section: data.section as "MES" | "FAS" | "CDS" || null,
+          section: data.section as "MES" | "FAS" | "CDS" | "PDMU" || null,
         };
       });
 
@@ -119,7 +119,7 @@ const uploadImageToCloudinary = async (file: File, userId: string): Promise<stri
         position2: newNode.position2 || "",
         layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
         status: "offline",
-      section: newNode.section as "MES" | "FAS" | "CDS" || null,
+      section: newNode.section as "MES" | "FAS" | "CDS" | "PDMU" || null,
         subordinates: [],
         superiorId: superiorId || undefined, // Ensure we don't pass undefined
       };
@@ -479,15 +479,16 @@ const handleNodeClick = (node: OrgChartNode) => {
       editMode === "add"
         ? setNewNode((prev) => ({ 
             ...prev, 
-            section: e.target.value as "MES" | "FAS" | "CDS" 
+            section: e.target.value as "MES" | "FAS" | "CDS" | "PDMU"
           }))
-        : updateField("section", e.target.value as "MES" | "FAS" | "CDS")
+        : updateField("section", e.target.value as "MES" | "FAS" | "CDS" | "PDMU")
     }
   >
     <option value="">-- Select Section --</option>
     <option value="MES">Monitoring and Evaluation Section (MES)</option>
     <option value="FAS">Financial and Administrative Section (FAS)</option>
     <option value="CDS">Capability Development Section (CDS)</option>
+    <option value="PDMU">Project and Development Monitoring Unit (PDMU)</option>
   </select>
 </div>
               <div>

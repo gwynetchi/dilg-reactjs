@@ -31,7 +31,7 @@ export interface OrgChartNode {
   subordinates?: number[];
   layout?: "vertical" | "horizontal";
   superiorId?: number;
-  section?: "MES" | "FAS" | "CDS"; // Add this line
+  section?: "MES" | "FAS" | "CDS" | "PDMU"; 
   x?: number;
   y?: number;
 }
