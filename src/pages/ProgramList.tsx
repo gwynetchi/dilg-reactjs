@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { onSnapshot, collection, query, where, doc, getDoc, getFirestore, limit, startAfter, orderBy, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Spinner, Card, Row, Col, Container, Badge, Button, Breadcrumb, Form, Alert } from 'react-bootstrap';
+import { Spinner, Card, Row, Col, Container, Badge, Button, Breadcrumb, Form, Alert, ListGroup, Nav, Tab } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { CalendarWeek, Calendar2Month, Calendar3, CalendarDate, Search, FilterCircle, XCircle } from 'react-bootstrap-icons';
+import { CalendarWeek, Calendar2Month, Calendar3, CalendarDate, Search, FilterCircle, XCircle, ChevronRight } from 'react-bootstrap-icons';
 import debounce from 'lodash/debounce';
 
 interface Program {
@@ -25,7 +25,7 @@ interface Program {
     yearlyDate?: string;
   };
   participants: string[];
-  imageUrl?: string;
+  outcome?: string;
 }
 
 interface FilterOptions {
@@ -33,7 +33,7 @@ interface FilterOptions {
   dateRange: string | null;
 }
 
-const ProgramCards: React.FC = () => {
+const ProgramList: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -52,7 +52,6 @@ const ProgramCards: React.FC = () => {
   const navigate = useNavigate();
   const programsPerPage = 9;
 
-  // Debounce search function
   const handleSearchChange = useCallback(
     debounce((term: string) => {
       setSearchTerm(term);
@@ -62,7 +61,6 @@ const ProgramCards: React.FC = () => {
     []
   );
 
-  // Get current user's ID and role
   useEffect(() => {
     const auth = getAuth();
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
@@ -78,7 +76,8 @@ const ProgramCards: React.FC = () => {
     return () => unsubscribeAuth();
   }, []);
 
-  // Fetch programs with pagination
+  const [activeTab, setActiveTab] = useState('all');
+
   useEffect(() => {
     if (!userId) return;
 
@@ -110,16 +109,21 @@ const ProgramCards: React.FC = () => {
             const lastDoc = snapshot.docs[snapshot.docs.length - 1];
             setLastVisible(lastDoc);
             
-            const newPrograms = snapshot.docs.map(doc => ({
-              id: doc.id,
-              programName: doc.data().programName,
-              frequency: doc.data().frequency,
-              duration: doc.data().duration,
-              description: doc.data().description || 'No description provided',
-              frequencyDetails: doc.data().frequencyDetails,
-              participants: doc.data().participants,
-              imageUrl: doc.data().imageUrl || '',
-            }));
+            const newPrograms = snapshot.docs.map(doc => {
+              const outcomeColors = ['yellow', 'blue', 'green', 'purple', 'red'];
+              const randomOutcome = outcomeColors[Math.floor(Math.random() * outcomeColors.length)];
+              
+              return {
+                id: doc.id,
+                programName: doc.data().programName,
+                frequency: doc.data().frequency,
+                duration: doc.data().duration,
+                description: doc.data().description || 'No description provided',
+                frequencyDetails: doc.data().frequencyDetails,
+                participants: doc.data().participants,
+                outcome: doc.data().outcome || randomOutcome,
+              };
+            });
             
             setPrograms(prev => currentPage === 1 ? newPrograms : [...prev, ...newPrograms]);
             setLoading(false);
@@ -146,20 +150,17 @@ const ProgramCards: React.FC = () => {
     };
   }, [userId, currentPage]);
 
-  // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
     setLastVisible(null);
   }, [searchTerm, filters]);
 
-  // Load more programs
   const loadMorePrograms = () => {
     if (!loading && hasMore) {
       setCurrentPage(prev => prev + 1);
     }
   };
   
-  // Get frequency icon
   const getFrequencyIcon = (frequency: string) => {
     switch (frequency.toLowerCase()) {
       case 'weekly':
@@ -175,7 +176,6 @@ const ProgramCards: React.FC = () => {
     }
   };
   
-  // Format date for display
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -189,7 +189,6 @@ const ProgramCards: React.FC = () => {
     }
   };
   
-  // Get frequency display text
   const getFrequencyText = (program: Program) => {
     const { frequency, frequencyDetails } = program;
     
@@ -213,7 +212,6 @@ const ProgramCards: React.FC = () => {
     }
   };
   
-  // Apply filters to programs
   const applyFilters = (program: Program) => {
     const matchesSearch = 
       program.programName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -241,15 +239,16 @@ const ProgramCards: React.FC = () => {
     return matchesSearch && matchesFrequency && matchesDateRange;
   };
   
-  // Filter programs
-  const filteredPrograms = programs.filter(applyFilters);
+  const filteredPrograms = programs.filter(program => {
+    const matchesFilters = applyFilters(program);
+    const matchesTab = activeTab === 'all' || program.outcome === activeTab;
+    return matchesFilters && matchesTab;
+  });
   
-  // Handle filter changes
   const handleFilterChange = (filterType: keyof FilterOptions, value: string | null) => {
     setFilters(prev => ({ ...prev, [filterType]: value }));
   };
   
-  // Clear all filters
   const clearFilters = () => {
     setFilters({
       frequency: null,
@@ -258,10 +257,47 @@ const ProgramCards: React.FC = () => {
     setSearchTerm('');
   };
   
-  // Check if any filters are active
   const hasActiveFilters = searchTerm !== '' || filters.frequency !== null || filters.dateRange !== null;
 
-  // Generate pagination
+  const getStatusBadge = (program: Program) => {
+    const now = new Date();
+    const startDate = new Date(program.duration.from);
+    const endDate = new Date(program.duration.to);
+    
+    if (now < startDate) {
+      return <Badge bg="info" className="ms-2">Upcoming</Badge>;
+    } else if (now > endDate) {
+      return <Badge bg="secondary" className="ms-2">Past</Badge>;
+    } else {
+      return <Badge bg="success" className="ms-2">Active</Badge>;
+    }
+  };
+
+  const getOutcomeBadge = (outcome: string) => {
+    if (!outcome) return null;
+    
+    const outcomeMap: Record<string, { text: string; variant: string }> = {
+      yellow: { text: 'Excellence', variant: 'warning' },
+      blue: { text: 'Peaceful', variant: 'primary' },
+      green: { text: 'Resilient', variant: 'success' },
+      purple: { text: 'Inclusive', variant: 'secondary' },
+      red: { text: 'Trusted', variant: 'danger' }
+    };
+
+    const outcomeData = outcomeMap[outcome] || { text: 'Outcome', variant: 'secondary' };
+    
+    return (
+      <Badge bg={outcomeData.variant} className="ms-2 outcome-badge">
+        {outcomeData.text}
+      </Badge>
+    );
+  };
+
+  const getOutcomeColorClass = (outcome: string) => {
+    if (!outcome) return '';
+    return `outcome-${outcome}`;
+  };
+
   const renderPagination = () => {
     if (filteredPrograms.length === 0) return null;
     
@@ -288,7 +324,6 @@ const ProgramCards: React.FC = () => {
 
   return (
     <Container className="py-4">
-      {/* Error and Index Building Alerts */}
       {error && (
         <Alert variant="danger" className="mb-4">
           {error}
@@ -312,15 +347,14 @@ const ProgramCards: React.FC = () => {
           Database index is building. This may take a few minutes...
         </Alert>
       )}
-
-      {/* Breadcrumb Navigation */}
+      <h2 className="mb-0">Regular Reports</h2> 
       <Breadcrumb className="mb-4">
         <Breadcrumb.Item onClick={() => navigate('/')}>Home</Breadcrumb.Item>
         <Breadcrumb.Item active>My Programs</Breadcrumb.Item>
       </Breadcrumb>
       
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">My Program Communications</h2>
+        <h5 className="mb-0">My Program Communications</h5> 
         <div className="d-flex">
           <div className="position-relative me-2">
             <input
@@ -340,11 +374,10 @@ const ProgramCards: React.FC = () => {
         </div>
       </div>
       
-      {/* Filter Panel */}
       {isFilterOpen && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
-            <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex justify-content-end align-items-center mb-3">
               <h5 className="mb-0">Filter Programs</h5>
               {hasActiveFilters && (
                 <Button variant="link" className="p-0 text-decoration-none" onClick={clearFilters}>
@@ -387,7 +420,6 @@ const ProgramCards: React.FC = () => {
         </Card>
       )}
       
-      {/* Loading State */}
       {loading && programs.length === 0 ? (
         <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
           <Spinner animation="border" variant="primary" />
@@ -408,90 +440,120 @@ const ProgramCards: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* Programs count summary */}
           <p className="text-muted mb-3">
             Showing {filteredPrograms.length} {filteredPrograms.length === 1 ? 'program' : 'programs'}
             {hasActiveFilters ? ' (filtered)' : ''}
           </p>
           
-          {/* Programs Grid */}
-          <Row xs={1} md={2} lg={3} className="g-4">
-            {filteredPrograms.map((program) => (
-              <Col key={program.id}>
-                <Card 
-                  className="h-100 shadow-sm border-0 program-card"
-                  onClick={() => navigate(`/${role}/programs/${program.id}`)}
-                  style={{ 
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s, box-shadow 0.2s'
-                  }}
-                >
-                  <div style={{ position: 'relative' }}>
-                    <Card.Img
-                      variant="top"
-                      src={program.imageUrl || "/images/logo.png"}
-                      style={{ 
-                        height: '160px', 
-                        objectFit: 'cover',
-                        borderTopLeftRadius: 'calc(0.375rem - 1px)',
-                        borderTopRightRadius: 'calc(0.375rem - 1px)'
-                      }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/logo.png";
-                      }}
-                    />
-                    <Badge 
-                      bg="primary" 
-                      style={{ 
-                        position: 'absolute', 
-                        bottom: '10px', 
-                        right: '10px',
-                        fontSize: '0.8rem',
-                        padding: '0.35em 0.65em'
-                      }}
-                    >
-                      {program.frequency}
-                    </Badge>
+          <Tab.Container id="outcome-tabs" defaultActiveKey="all" onSelect={(k) => setActiveTab(k || 'all')}>
+            <Nav variant="tabs" className="outcome-nav mb-3">
+              <Nav.Item>
+                <Nav.Link eventKey="all" className="outcome-tab-all">
+                  All Programs
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="yellow" className="outcome-tab-yellow">
+                  Excellence in Governance
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="blue" className="outcome-tab-blue">
+                  Peaceful Communities
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="green" className="outcome-tab-green">
+                  Resilient Communities
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="purple" className="outcome-tab-purple">
+                  Inclusive Communities
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="red" className="outcome-tab-red">
+                  Trusted Department
+                </Nav.Link>
+              </Nav.Item>
+            </Nav>
+            
+            <Tab.Content>
+              <Tab.Pane eventKey={activeTab}>
+                {filteredPrograms.length === 0 ? (
+                  <div className="text-center p-5 bg-light rounded">
+                    <h5>No programs found in this category</h5>
+                    <p className="text-muted">
+                      {hasActiveFilters 
+                        ? 'Try adjusting your search criteria or selecting a different tab.'
+                        : 'There are no programs in this category yet.'}
+                    </p>
                   </div>
-                  
-                  <Card.Body className="d-flex flex-column">
-                    <Card.Title as="h5" className="mb-3">{program.programName}</Card.Title>
-                    
-                    <Card.Text as="div" className="text-muted small mb-2 flex-grow-1">
-                      {program.description && (
-                        <p className="mb-3">{program.description.length > 100 ? 
-                          `${program.description.substring(0, 100)}...` : 
-                          program.description}
-                        </p>
-                      )}
-                    </Card.Text>
-                    
-                    <div className="program-details mt-auto">
-                      <div className="d-flex align-items-center small text-muted mb-2">
-                        {getFrequencyIcon(program.frequency)}
-                        <span>{getFrequencyText(program)}</span>
-                      </div>
-                      
-                      <div className="d-flex justify-content-between small text-muted">
-                        <span>From: {formatDate(program.duration?.from)}</span>
-                        <span>To: {formatDate(program.duration?.to)}</span>
-                      </div>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
+                ) : (
+                  <ListGroup className="shadow-sm">
+                    {filteredPrograms.map((program) => (
+                      <ListGroup.Item 
+                        key={program.id} 
+                        action
+                        onClick={() => navigate(`/${role}/programs/${program.id}`)}
+                        className={`program-item py-3 border-start border-4 ${getOutcomeColorClass(program.outcome || '')}`}
+                        style={{ transition: 'all 0.2s ease' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div className="program-info">
+                            <div className="d-flex align-items-center flex-wrap">
+                              <h5 className="mb-1 me-2">{program.programName}</h5>
+                              {getOutcomeBadge(program.outcome || '')}
+                              {getStatusBadge(program)}
+                              <Badge 
+                                bg="light" 
+                                text="dark" 
+                                className="ms-2 border"
+                              >
+                                {program.frequency}
+                              </Badge>
+                            </div>
+                            
+                            <p className="text-muted mb-2 program-description">
+                              {program.description.length > 120 ? 
+                                `${program.description.substring(0, 120)}...` : 
+                                program.description}
+                            </p>
+                            
+                            <div className="d-flex flex-wrap">
+                              <div className="me-3 small text-muted d-flex align-items-center">
+                                {getFrequencyIcon(program.frequency)}
+                                <span>{getFrequencyText(program)}</span>
+                              </div>
+                              <div className="d-flex small text-muted">
+                                <span className="me-3">From: {formatDate(program.duration?.from)}</span>
+                                <span>To: {formatDate(program.duration?.to)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <ChevronRight className="ms-2 text-muted" size={20} />
+                        </div>
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                )}
+              </Tab.Pane>
+            </Tab.Content>
+          </Tab.Container>
           
-          {/* Load More Pagination */}
           {renderPagination()}
         </>
       )}
       
       <style>{`
-        .program-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        .program-item {
+          background-color: #ffff;
+        }
+        .program-item:hover {
+          background-color: rgba(13, 110, 253, 0.04);
+          transform: translateX(5px);
         }
         .breadcrumb-item a {
           cursor: pointer;
@@ -500,9 +562,151 @@ const ProgramCards: React.FC = () => {
         .breadcrumb-item a:hover {
           text-decoration: underline;
         }
+        .program-description {
+          max-width: 90%;
+        }
+        @media (max-width: 768px) {
+          .program-description {
+            max-width: 100%;
+          }
+        }
+        
+        /* Improved Tab Styling */
+        .outcome-nav .nav-tabs .nav-link {
+          transition: all 0.3s ease;
+          font-weight: 500;
+          border-bottom: 3px solid transparent;
+          background-color: transparent;
+        }
+        
+        .outcome-nav .nav-tabs .nav-link:hover {
+          background-color: rgba(0,0,0,0.03);
+          border-bottom-color: currentColor;
+        }
+        
+        .outcome-tab-all.nav-link {
+          color: #495057;
+        }
+        
+        .outcome-tab-all.nav-link.active {
+          color: #495057;
+          background-color: #f8f9fa;
+          border-bottom-color: #495057;
+          font-weight: 600;
+        }
+        
+        .outcome-tab-yellow.nav-link {
+          color: #856404;
+        }
+        
+        .outcome-tab-yellow.nav-link.active {
+          color: #856404;
+          background-color: #fff8e6;
+          border-bottom-color: #ffc107;
+          font-weight: 600;
+        }
+        
+        .outcome-tab-blue.nav-link {
+          color: #004085;
+        }
+        
+        .outcome-tab-blue.nav-link.active {
+          color: #004085;
+          background-color: #e7f3ff;
+          border-bottom-color: #007bff;
+          font-weight: 600;
+        }
+        
+        .outcome-tab-green.nav-link {
+          color: #155724;
+        }
+        
+        .outcome-tab-green.nav-link.active {
+          color: #155724;
+          background-color: #e8f5e8;
+          border-bottom-color: #28a745;
+          font-weight: 600;
+        }
+        
+        .outcome-tab-purple.nav-link {
+          color: #4a2c6b;
+        }
+        
+        .outcome-tab-purple.nav-link.active {
+          color: #4a2c6b;
+          background-color: #f0ebf7;
+          border-bottom-color: #6f42c1;
+          font-weight: 600;
+        }
+        
+        .outcome-tab-red.nav-link {
+          color: #721c24;
+        }
+        
+        .outcome-tab-red.nav-link.active {
+          color: #721c24;
+          background-color: #fdeaea;
+          border-bottom-color: #dc3545;
+          font-weight: 600;
+        }
+        
+        /* Improved List Item Styling */
+        .outcome-yellow {
+          border-left-color: #ffc107 !important;
+          background-color: #fff;
+        }
+        
+        .outcome-blue {
+          border-left-color: #007bff !important;
+          background-color: #fff;
+        }
+        
+        .outcome-green {
+          border-left-color: #28a745 !important;
+          background-color: #fff;
+        }
+        
+        .outcome-purple {
+          border-left-color: #6f42c1 !important;
+          background-color: #fff;
+        }
+        
+        .outcome-red {
+          border-left-color: #dc3545 !important;
+          background-color: #fff;
+        }
+        
+        .outcome-badge {
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+        
+        /* Responsive improvements */
+        .outcome-nav {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          scrollbar-width: thin;
+        }
+        
+        .outcome-nav::-webkit-scrollbar {
+          height: 5px;
+        }
+        
+        .outcome-nav::-webkit-scrollbar-thumb {
+          background-color: rgba(0,0,0,.2);
+          border-radius: 5px;
+        }
+        
+        @media (max-width: 768px) {
+          .outcome-nav .nav-link {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+            white-space: nowrap;
+          }
+        }
       `}</style>
     </Container>
   );
 };
 
-export default ProgramCards;
+export default ProgramList;
