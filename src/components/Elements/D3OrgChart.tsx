@@ -5,14 +5,14 @@ import ZoomControls from "./ZoomControls";
 
 
 const clusterColors: Record<string, string> = {
-  "A": "#F8F9FA",    // Soft white (slightly off-white for better visibility)
+  "A": "#0b6e4f",    // Soft white (slightly off-white for better visibility)
   "B": "#89C2D9",    // Deeper pastel blue
   "C": "#FF9BAA",    // Richer pastel red
   "D": "#FFE66D",    // Brighter pastel yellow
   "default": "#B392AC" // Deeper pastel purple
 };
 const clusterBorderColors: Record<string, string> = {
-  "A": "#D3D3D3",    // Light gray
+  "A": "#0b6e4f",    // Light gray
   "B": "#468FAF",    // Darker blue
   "C": "#E86A6A",    // Darker red
   "D": "#FFD43B",    // Golden yellow
@@ -27,7 +27,6 @@ export interface OrgChartNode {
   city: string;
   img: string;
   cluster: string;
-  status: string;
   subordinates?: number[];
   layout?: "vertical" | "horizontal";
   superiorId?: number;
@@ -39,16 +38,10 @@ export interface OrgChartNode {
 interface D3OrgChartProps {
   data: OrgChartNode[];
   onNodeClick?: (node: OrgChartNode) => void;
+  selectedNodeId?: number | null;
 }
 
-const statusColor = {
-  present: "#28a745",
-  busy: "#ffc107",
-  travel: "#17a2b8",
-  offline: "#6c757d",
-};
-
-const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
+const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick, selectedNodeId }) => {
   const svgRef = useRef<HTMLDivElement>(null);
   const setTransformRef = useRef<(...args: any) => void>(null);
 
@@ -82,7 +75,6 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick }) => {
         city: "",
         img: "",
         cluster: "",
-        status: "offline",
         subordinates: rootNodes.map(n => n.id),
         layout: "horizontal"
       };
@@ -228,7 +220,7 @@ nodeGroup.append("rect")
   .attr("width", cardWidth)
   .attr("height", cardHeight)
   .attr("rx", 10)
-  .attr("fill", "#022350")
+  .attr("fill", function(d: any) { return clusterBorderColors[d.data.cluster || ""] || "#ff9900"; })
   .attr("stroke", d => clusterBorderColors[d.data.cluster || ""] || "#ff9900")
   .attr("stroke-width", 1)
   .attr("filter", "url(#shadow)");
@@ -292,14 +284,6 @@ nodeGroup.append("image")
             self.text(self.text().substring(0, 28) + '...');
           }
         }));
-
-      // Status indicator
-      nodeGroup.append("circle")
-        .attr("cx", 65)
-        .attr("cy", -45)
-        .attr("r", 6)
-        .attr("fill", d => statusColor[d.data.status as keyof typeof statusColor] || "#6c757d");
-
       // Add shadow filter
       svg.append("defs")
         .append("filter")
@@ -354,6 +338,17 @@ legendItem.append("rect")
           .attr("fill", "#333")
           .text(`Cluster ${cluster}`);
       });
+    if (selectedNodeId && setTransformRef.current) {
+      const selectedNode = nodesToDraw.find(d => d.data.id === selectedNodeId);
+      if (selectedNode) {
+        const scale = 1.5;
+        const containerWidth = width;
+        const containerHeight = height;
+        const centeredX = containerWidth / 2 - (selectedNode.x || 0) * scale;
+        const centeredY = containerHeight / 2 - (selectedNode.y || 0) * scale;
+        setTransformRef.current(centeredX, centeredY, scale, 300, "easeOut");
+      }
+    }
 
     } catch (e) {
       console.error("Error rendering org chart:", e);

@@ -7,8 +7,8 @@ import { FirebaseError } from "firebase/app";
 interface OrgChartViewerProps {
   onNodeClick?: (node: OrgChartNode) => void;
   key?: number;
-  nodes?: OrgChartNode[]; // Add this line
-
+  nodes?: OrgChartNode[];
+  selectedNodeId?: number | null;
 }
 
 const DEFAULT_NODE: Partial<OrgChartNode> = {
@@ -21,10 +21,9 @@ const DEFAULT_NODE: Partial<OrgChartNode> = {
   cluster: "",
   subordinates: [],
   layout: "horizontal",
-  status: "offline",
 };
 
-const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refreshKey }) => {  const [data, setData] = useState<OrgChartNode[]>([]);
+const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refreshKey, selectedNodeId }) => {  const [data, setData] = useState<OrgChartNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +72,6 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refre
               layout: ["horizontal", "vertical"].includes(docData.layout)
                 ? docData.layout as "horizontal" | "vertical"
                 : "horizontal",
-              status: String(docData.status ?? DEFAULT_NODE.status),
             };
 
             // Validate required fields
@@ -164,7 +162,8 @@ const OrgChartViewer: React.FC<OrgChartViewerProps> = ({ onNodeClick, key: refre
     <div className="relative p-6">
       <D3OrgChart 
         data={data} 
-        onNodeClick={handleNodeClick} 
+        onNodeClick={handleNodeClick}
+        selectedNodeId={selectedNodeId}
       />
     </div>
   );

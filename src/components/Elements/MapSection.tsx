@@ -20,7 +20,7 @@ const MapSection: React.FC = () => {
         </div>
         
         <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Click on any municipality or marker to view detailed information</p>
+          {<p>Click on any municipality or marker to view detailed information</p>}
         </div>
       </div>
     </section>
