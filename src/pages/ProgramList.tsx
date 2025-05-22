@@ -276,10 +276,12 @@ const ProgramList: React.FC = () => {
     return matchesSearch && matchesFrequency && matchesDateRange;
   };
   
-  const filteredPrograms = programs.filter(program => {
-    const matchesFilters = applyFilters(program);
-    const matchesTab = activeTab === 'all' || program.outcomeArea === activeTab;
-    return matchesFilters && matchesTab;
+  // Filter programs by search and filters (excluding tab filtering)
+  const baseFilteredPrograms = programs.filter(applyFilters);
+  
+  // Filter by active tab
+  const filteredPrograms = baseFilteredPrograms.filter(program => {
+    return activeTab === 'all' || program.outcomeArea === activeTab;
   });
   
   const handleFilterChange = (filterType: keyof FilterOptions, value: string | null) => {
@@ -450,7 +452,7 @@ const ProgramList: React.FC = () => {
       {isFilterOpen && (
         <Card className="mb-4 shadow-sm">
           <Card.Body>
-            <div className="d-flex justify-content-end align-items-center mb-3">
+            <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">Filter Programs</h5>
               {hasActiveFilters && (
                 <Button variant="link" className="p-0 text-decoration-none" onClick={clearFilters}>
@@ -497,7 +499,8 @@ const ProgramList: React.FC = () => {
         <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
           <Spinner animation="border" variant="primary" />
         </div>
-      ) : filteredPrograms.length === 0 ? (
+      ) : baseFilteredPrograms.length === 0 ? (
+        // Show this only when there are NO programs at all (after search/filter)
         <div className="text-center p-5 bg-light rounded">
           <h4>No programs found</h4>
           <p className="text-muted">
@@ -514,24 +517,27 @@ const ProgramList: React.FC = () => {
       ) : (
         <>
           <p className="text-muted mb-3">
-            Showing {filteredPrograms.length} {filteredPrograms.length === 1 ? 'program' : 'programs'}
+            Showing {baseFilteredPrograms.length} {baseFilteredPrograms.length === 1 ? 'program' : 'programs'}
             {hasActiveFilters ? ' (filtered)' : ''}
           </p>
           
-          <Tab.Container id="outcome-tabs" defaultActiveKey="all" onSelect={(k) => setActiveTab(k || 'all')}>
+          <Tab.Container id="outcome-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'all')}>
             <Nav variant="tabs" className="outcome-nav mb-3">
               <Nav.Item>
                 <Nav.Link eventKey="all" className="outcome-tab-all">
-                  All Programs
+                  All Programs ({baseFilteredPrograms.length})
                 </Nav.Link>
               </Nav.Item>
-              {outcomeOptions.map((option) => (
-                <Nav.Item key={option.value}>
-                  <Nav.Link eventKey={option.value} className={getTabColorClass(option.value)}>
-                    {option.label}
-                  </Nav.Link>
-                </Nav.Item>
-              ))}
+              {outcomeOptions.map((option) => {
+                const count = baseFilteredPrograms.filter(p => p.outcomeArea === option.value).length;
+                return (
+                  <Nav.Item key={option.value}>
+                    <Nav.Link eventKey={option.value} className={getTabColorClass(option.value)}>
+                      {option.label} ({count})
+                    </Nav.Link>
+                  </Nav.Item>
+                );
+              })}
             </Nav>
 
             <Tab.Content>
@@ -540,10 +546,23 @@ const ProgramList: React.FC = () => {
                   <div className="text-center p-5 bg-light rounded">
                     <h5>No programs found in this category</h5>
                     <p className="text-muted">
-                      {hasActiveFilters 
-                        ? 'Try adjusting your search criteria or selecting a different tab.'
-                        : 'There are no programs in this category yet.'}
+                      There are no programs in the "{activeTab === 'all' ? 'All Programs' : outcomeOptions.find(o => o.value === activeTab)?.label}" category
+                      {hasActiveFilters ? ' that match your current filters' : ''}.
                     </p>
+                    <div className="mt-3">
+                      <Button 
+                        variant="outline-primary" 
+                        onClick={() => setActiveTab('all')}
+                        className="me-2"
+                      >
+                        View All Programs
+                      </Button>
+                      {hasActiveFilters && (
+                        <Button variant="outline-secondary" onClick={clearFilters}>
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <ListGroup className="shadow-sm">
