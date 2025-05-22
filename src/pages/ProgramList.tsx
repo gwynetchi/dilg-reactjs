@@ -651,11 +651,23 @@ const ProgramList: React.FC = () => {
           font-weight: 500;
           border-bottom: 3px solid transparent;
           background-color: transparent;
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 0.75rem 1rem;
+          white-space: nowrap;
+          border-radius: 0.375rem 0.375rem 0 0;
+          border: 1px solid transparent;
+          border-bottom: none;
+          margin-bottom: -1px;
         }
         
         .outcome-nav .nav-tabs .nav-link:hover {
           background-color: rgba(0,0,0,0.03);
-          border-bottom-color: currentColor;
+          border-color: #dee2e6;
+          border-bottom: none;
         }
         
         .outcome-tab-all.nav-link {
@@ -664,8 +676,9 @@ const ProgramList: React.FC = () => {
         
         .outcome-tab-all.nav-link.active {
           color: #495057;
-          background-color: #f8f9fa;
-          border-bottom-color: #495057;
+          background-color: #fff;
+          border-color: #dee2e6;
+          border-bottom: 3px solid #495057;
           font-weight: 600;
         }
         
@@ -675,8 +688,9 @@ const ProgramList: React.FC = () => {
         
         .outcome-tab-yellow.nav-link.active {
           color: #856404;
-          background-color: #fff8e6;
-          border-bottom-color: #ffc107;
+          background-color: #fff;
+          border-color: #dee2e6;
+          border-bottom: 3px solid #ffc107;
           font-weight: 600;
         }
         
@@ -686,8 +700,9 @@ const ProgramList: React.FC = () => {
         
         .outcome-tab-blue.nav-link.active {
           color: #004085;
-          background-color: #e7f3ff;
-          border-bottom-color: #0d6efd;
+          background-color: #fff;
+          border-color: #dee2e6;
+          border-bottom: 3px solid #0d6efd;
           font-weight: 600;
         }
         
@@ -697,8 +712,9 @@ const ProgramList: React.FC = () => {
         
         .outcome-tab-green.nav-link.active {
           color: #155724;
-          background-color: #e8f5e8;
-          border-bottom-color: #198754;
+          background-color: #fff;
+          border-color: #dee2e6;
+          border-bottom: 3px solid #198754;
           font-weight: 600;
         }
         
@@ -708,8 +724,9 @@ const ProgramList: React.FC = () => {
         
         .outcome-tab-purple.nav-link.active {
           color: #4a2c6b;
-          background-color: #f0ebf7;
-          border-bottom-color: #6f42c1;
+          background-color: #fff;
+          border-color: #dee2e6;
+          border-bottom: 3px solid #6f42c1;
           font-weight: 600;
         }
         
@@ -719,8 +736,9 @@ const ProgramList: React.FC = () => {
         
         .outcome-tab-red.nav-link.active {
           color: #721c24;
-          background-color: #fdeaea;
-          border-bottom-color: #dc3545;
+          background-color: #fff;
+          border-color: #dee2e6;
+          border-bottom: 3px solid #dc3545;
           font-weight: 600;
         }
         
@@ -760,6 +778,12 @@ const ProgramList: React.FC = () => {
           overflow-x: auto;
           flex-wrap: nowrap;
           scrollbar-width: thin;
+          border-bottom: 1px solid #dee2e6;
+        }
+        
+        .outcome-nav .nav-tabs {
+          border-bottom: none;
+          min-width: max-content;
         }
         
         .outcome-nav::-webkit-scrollbar {
@@ -774,8 +798,17 @@ const ProgramList: React.FC = () => {
         @media (max-width: 768px) {
           .outcome-nav .nav-link {
             font-size: 0.875rem;
-            padding: 0.5rem 0.75rem;
+            padding: 0.625rem 0.875rem;
             white-space: nowrap;
+            min-height: 44px;
+          }
+        }
+        
+        @media (max-width: 576px) {
+          .outcome-nav .nav-link {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.75rem;
+            min-height: 40px;
           }
         }
       `}</style>
