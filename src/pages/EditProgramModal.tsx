@@ -3,12 +3,14 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import Select, { ActionMeta, MultiValue } from "react-select";
 import Swal from "sweetalert2";
+import OutcomeAreaDropdown from "./modules/program-modules/OutcomeAreaDropdown";
 
 interface Program {
   id: string;
   programName: string;
   description: string;
-  link: string;
+  outcomeArea?: string;
+
   duration: { from: string; to: string };
   frequency: string;
   participants: string[];
@@ -307,15 +309,25 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({
                   />
                 </div>
                 
-                <div className="mb-3">
-                  <label className="form-label">Link</label>
-                  <input
-                    className="form-control"
-                    value={editData.link || ""}
-                    onChange={(e) => handleChange("link", e.target.value)}
-                    placeholder="Link"
-                  />
-                </div>
+<div className="mb-3">
+  <label className="form-label">Outcome Area</label>
+  <OutcomeAreaDropdown
+    value={
+      editData.outcomeArea
+        ? {
+            value: editData.outcomeArea,
+            label: editData.outcomeArea,
+            color: "#0d6efd", // Default fallback
+            textColor: "#fff",
+          }
+        : null
+    }
+    onChange={(selected) => {
+      handleChange("outcomeArea", selected?.value || "");
+    }}
+  />
+</div>
+
               </div>
             </div>
 

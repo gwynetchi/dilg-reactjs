@@ -17,6 +17,7 @@ import {
 import { softDelete } from "./../pages/modules/inbox-modules/softDelete";
 import { db } from "../firebase";
 import Swal from 'sweetalert2';
+import OutcomeAreaDropdown from "./modules/program-modules/OutcomeAreaDropdown";
 
 interface User {
   role: string;
@@ -35,6 +36,12 @@ interface Communication {
   monitoringLink?: string;
   imageUrl?: string;
   createdAt?: Date;
+}
+interface OutcomeOption {
+  value: string;
+  label: string;
+  color: string;
+  textColor: string;
 }
 
 interface Alert {
@@ -67,7 +74,7 @@ const Communication: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [filteredCommunications, setFilteredCommunications] = useState<Communication[]>([]);
   const [alert, setAlert] = useState<Alert | null>(null);
-
+const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
   // Group users by roles with counts
   const groupedOptions = Object.entries(
     users.reduce((groups, user) => {
@@ -305,6 +312,7 @@ const Communication: React.FC = () => {
 
       const communicationData = {
         subject,
+         outcomeArea: outcomeArea?.value || "",
         recipients,
         deadline: new Date(deadline),
         remarks,
@@ -325,6 +333,7 @@ const Communication: React.FC = () => {
 
       // Reset form
       setSubject("");
+      setOutcomeArea(null);
       setRecipients([]);
       setDeadline("");
       setRemarks("");
@@ -501,6 +510,15 @@ const Communication: React.FC = () => {
                     onChange={(e) => setSubject(e.target.value)}
                   />
                 </div>
+                <div className="col-12 col-md-6">
+                  <div className="form-floating mb-3">
+                    <OutcomeAreaDropdown
+                      value={outcomeArea}
+                      onChange={(selected) => setOutcomeArea(selected)}
+                    />
+                  </div>
+                </div>
+                
                 <div className="col-md-12 mb-3">
                   <label className="form-label">Upload File (image, docx, ppt, pdf, etc.):</label>
                   <input 

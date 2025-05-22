@@ -29,7 +29,7 @@ import UserManagement from "./pages/UserManagement";
 import DeletedUsers from "./pages/admin/DeletedUsers";
 import ProgramMessageDetails from "./pages/ProgramMessageDetails";
 import EvaluatorPrograms from "./pages/managePrograms";
-import ProgramCards from "./pages/ProgramsCards";
+import ProgramList from "./pages/ProgramList";
 import ProgramMessages from "./pages/ViewProgramLinks";
 import OrgChartAdmin from "./pages/admin/orgchart";
 import ProgramLinksManager from "./pages/modules/program-modules/ProgramLinksManager";
@@ -83,7 +83,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/lgu/calendar", element: <Calendar /> },
     { path: "/lgu/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/lgu/scoreBoard", element: <Scoreboard /> },
-    { path: "/lgu/programs", element: <ProgramCards /> },
+    { path: "/lgu/programs", element: <ProgramList /> },
     { path: "/lgu/programs/:programId", element: <ProgramMessages />},
     { path: "/lgu/program-inbox/message/:id", element: <ProgramMessageDetails /> },
   ],
@@ -92,7 +92,7 @@ const roleRoutesConfig: Record<string, { path: string; element: JSX.Element }[]>
     { path: "/viewer/profile", element: <Profile /> },
     { path: "/viewer/inbox", element: <Inbox /> },
     { path: "/viewer/inbox/:id", element: <MessageDetails /> },
-    { path: "/viewer/programs", element: <ProgramCards /> },
+    { path: "/viewer/programs", element: <ProgramList /> },
     { path: "/viewer/calendar", element: <Calendar /> },
     { path: "/viewer/message", element: <Messaging setUnreadMessages={() => {}} /> },
     { path: "/viewer/scoreBoard", element: <Scoreboard /> },

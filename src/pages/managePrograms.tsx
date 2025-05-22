@@ -16,7 +16,7 @@ interface Program {
   id: string;
   programName: string;
   description: string;
-  link: string;
+  outcomeArea: string;
   duration: { from: string; to: string };
   frequency: string;
   participants: string[];
@@ -288,17 +288,7 @@ const ManagePrograms: React.FC = () => {
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <div className="d-flex gap-2">
-                          {program.link && (
-                            <a 
-                              href={program.link} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="btn btn-sm btn-outline-secondary"
-                              title="Open program link"
-                            >
-                              <i className="bi bi-link-45deg"></i> Link
-                            </a>
-                          )}
+                        
                                                       <button
                             className="btn btn-sm btn-outline-primary"
                             data-bs-toggle="modal"

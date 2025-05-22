@@ -4,6 +4,7 @@
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
+	font-size: 14px;
 }
 
 a {
@@ -1298,3 +1299,4 @@ transitions style {
     background-color: rgb(205, 234, 255);
     transform: translateY(-0.14904px);
 }
+

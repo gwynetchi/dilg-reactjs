@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 
+// Define the structure for a communication message
 interface Communication {
   id: string;
   createdBy: string;
   recipients: string[];
   seenBy: string[];
-  imageUrl: string;
   subject?: string;
-  source: "communications" | "programcommunications";
   createdAt?: {
     seconds: number;
     nanoseconds?: number;
@@ -16,25 +15,56 @@ interface Communication {
     seconds: number;
     nanoseconds?: number;
   } | null;
+  outcomeArea?: string;
 }
-// In MessageTable.tsx
+
 interface Props {
   messages: Communication[];
   userId: string | null;
   senderNames: { [key: string]: string };
   openMessage: (id: string) => void;
-  handleDeleteRequest: (
-    id: string,
-    recipients: string[],
-    source: "communications" | "programcommunications"
-  ) => void;
+  handleDeleteRequest: (id: string, recipients: string[]) => void;
   getDeadlineStatus: (deadline?: { seconds: number }) => string;
-  getStatusStyles: (status: string) => { 
-    className: string; 
-    text: string; 
-    icon: string 
+  getStatusStyles: (status: string) => {
+    className: string;
+    text: string;
+    icon: string;
   };
 }
+
+// Outcome Area options
+const outcomeOptions = [
+  {
+    value: "Excellence in Local Governance Upheld",
+    label: "Excellence in Local Governance Upheld",
+    color: "#ffc107",
+    textColor: "#000",
+  },
+  {
+    value: "Peaceful, Orderly, and Safe Communities Strengthened",
+    label: "Peaceful, Orderly, and Safe Communities Strengthened",
+    color: "#0d6efd",
+    textColor: "#fff",
+  },
+  {
+    value: "Resilient Communities Reinforced",
+    label: "Resilient Communities Reinforced",
+    color: "#198754",
+    textColor: "#fff",
+  },
+  {
+    value: "Inclusive Communities Enabled",
+    label: "Inclusive Communities Enabled",
+    color: "#6f42c1",
+    textColor: "#fff",
+  },
+  {
+    value: "Highly Trusted Department and Partner",
+    label: "Highly Trusted Department and Partner",
+    color: "#dc3545",
+    textColor: "#fff",
+  },
+];
 
 const MessageTable: React.FC<Props> = ({
   messages,
@@ -43,43 +73,16 @@ const MessageTable: React.FC<Props> = ({
   openMessage,
   handleDeleteRequest,
   getDeadlineStatus,
-  getStatusStyles
+  getStatusStyles,
 }) => {
-  const [showFileModal, setShowFileModal] = useState(false);
-  const [currentFileUrl, setCurrentFileUrl] = useState("");
-
-  // Deadline status helpers
-
-  // Removed duplicate definition of getStatusStyles
-
-  const handleAttachmentClick = (e: React.MouseEvent, url: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentFileUrl(url);
-    setShowFileModal(true);
-  };
-
-  const renderAttachment = (url: string) => {
-    const isImage = url.match(/\.(jpeg|jpg|gif|png|bmp)$/);
-    return isImage ? (
-      <img
-        src={url}
-        alt="attachment"
-        style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "5px" }}
-      />
-    ) : (
-      <span>View Attachment</span>
-    );
-  };
-
   const renderDeadline = (deadline?: { seconds: number }) => {
     const status = getDeadlineStatus(deadline);
     const { className, text, icon } = getStatusStyles(status);
-  
+
     if (!deadline) {
       return <span className={className}>{icon} {text}</span>;
     }
-  
+
     const deadlineDate = new Date(deadline.seconds * 1000);
     const dateStr = deadlineDate.toLocaleDateString("en-US", {
       year: "numeric",
@@ -91,86 +94,47 @@ const MessageTable: React.FC<Props> = ({
       minute: "2-digit",
       hour12: true,
     });
-      
+
     return (
       <div className="d-flex align-items-center gap-2">
-        <span className={className}>
-          {icon} {text}
-        </span>
-        <span>
-          {dateStr} {timeStr}
-        </span>
-      </div>
-    );
-  };
-
-  const renderModal = () => {
-    const isImage = currentFileUrl.match(/\.(jpeg|jpg|gif|png|bmp)$/);
-    return (
-      <div className="overlay">
-        <div className="modal-container" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
-          <button
-            className="close-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowFileModal(false);
-            }}
-          >
-            ✖
-          </button>
-          <div className="modal-body" style={{ overflow: "auto" }}>
-            {isImage ? (
-              <img
-                src={currentFileUrl}
-                alt="Attachment"
-                style={{ maxWidth: "100%", maxHeight: "80vh" }}
-              />
-            ) : (
-              <div>
-                <p>This file type cannot be previewed. Please download it instead.</p>
-                <a
-                  href={currentFileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary"
-                >
-                  Download File
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
+        <span className={className}>{icon} {text}</span>
+        <span>{dateStr} {timeStr}</span>
       </div>
     );
   };
 
   return (
     <div className="dashboard-container">
-      {showFileModal && renderModal()}
       <table className="table">
         <thead>
           <tr>
-            <th>Attachment</th>
+            <th>Outcome Area</th>
             <th>Focal Person</th>
             <th>Subject</th>
             <th>Deadline</th>
-            <th>Type</th>
             <th>Date</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {messages.map((msg) => {
-        const createdDate = msg.createdAt?.seconds
-        ? new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "Unknown";
-        const isSeen = msg.seenBy?.includes(userId || "");
+            const createdDate = msg.createdAt?.seconds
+              ? new Date(msg.createdAt.seconds * 1000).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Unknown";
+
+            const isSeen = msg.seenBy?.includes(userId || "");
+console.log("Outcome Area for message:", msg.outcomeArea);
+
+            const outcome = outcomeOptions.find(
+              (option) => option.value === msg.outcomeArea
+              
+            );
 
             return (
               <tr
@@ -183,37 +147,33 @@ const MessageTable: React.FC<Props> = ({
                 }}
               >
                 <td>
-                  {msg.imageUrl ? (
-                    <a
-                      href="#"
-                      onClick={(e) => handleAttachmentClick(e, msg.imageUrl)}
-                      style={{ cursor: "pointer" }}
+                  {msg.outcomeArea ? (
+                    <span
+                      className="badge"
+                      style={{
+                        backgroundColor: outcome?.color || "#6c757d",
+                        color: outcome?.textColor || "#fff",
+                        padding: "5px 10px",
+                        borderRadius: "10px",
+                        fontSize: "0.75rem",
+                      }}
                     >
-                      {renderAttachment(msg.imageUrl)}
-                    </a>
+                      {outcome?.label || msg.outcomeArea}
+                    </span>
                   ) : (
-                    "—"
+                    <span className="text-muted">—</span>
                   )}
                 </td>
                 <td>{senderNames[msg.createdBy] || "Unknown"}</td>
                 <td>{msg.subject || "No Subject"}</td>
-                <td>
-                  {renderDeadline(msg.deadline || undefined)}
-                </td>
-                <td>
-                  {msg.source === "programcommunications" ? (
-                    <span className="program-label">Program Message</span>
-                  ) : (
-                    <span className="regular-label">Direct Message</span>
-                  )}
-                </td>
+                <td>{renderDeadline(msg.deadline || undefined)}</td>
                 <td>{createdDate}</td>
                 <td>
                   <button
                     className="btn btn-sm btn-outline-danger"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteRequest(msg.id, msg.recipients, msg.source);
+                      handleDeleteRequest(msg.id, msg.recipients);
                     }}
                   >
                     Delete
