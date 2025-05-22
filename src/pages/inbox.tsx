@@ -23,6 +23,7 @@ const Inbox: React.FC = () => {
     id: string;
     createdBy: string;
     recipients: string[];
+    outcomeAre?: string;
     seenBy: any;
     imageUrl: any;
     subject?: string;
@@ -124,6 +125,7 @@ const Inbox: React.FC = () => {
       const commMessages = snap1.docs.map((docSnapshot) => {
         const data = docSnapshot.data();
         return {
+           outcomeArea: data.outcomeArea,
           id: docSnapshot.id,
           createdBy: data.createdBy,
           recipients: data.recipients || [],
