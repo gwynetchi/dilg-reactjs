@@ -1,6 +1,6 @@
 // Sections
 import TopNavbar from "../components/Nav/TopNavbar";
-import Header from "../components/Sections/Header";
+import Header from "../assets/img/Header";
 import Services from "../components/Sections/Services";
 {/*import Projects from "../components/Sections/Projects";*/}
 import Blog from "../components/Sections/Blog";

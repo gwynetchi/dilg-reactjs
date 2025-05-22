@@ -26,56 +26,102 @@ export const generateProgramLinks = async (
   const endDate = new Date(duration.to);
   const links: { date: string; submissionlink: string | null; monitoringlink: string | null }[] = [];
 
-  for (
-    let date = new Date(startDate);
-    date <= endDate;
-    date.setDate(date.getDate() + 1)
-  ) {
-    const d = new Date(date); // clone
-    const dayOfWeek = d.toLocaleDateString("en-US", { weekday: "long" });
-    const day = d.getDate();
-    const month = d.getMonth() + 1;
+  if (frequency === "Daily") {
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const d = new Date(date);
+      links.push({
+        date: d.toISOString().split("T")[0],
+        monitoringlink: null,
+        submissionlink: null,
+      });
+    }
 
-    switch (frequency) {
-      case "Daily":
-        links.push({ date: d.toISOString().split("T")[0], monitoringlink: null, submissionlink: null, });
-        break;
+  } else if (frequency === "Weekly") {
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const d = new Date(date);
+      const dayOfWeek = d.toLocaleDateString("en-US", { weekday: "long" });
+      if (dayOfWeek === frequencyDetails.weeklyDay) {
+        links.push({
+          date: d.toISOString().split("T")[0],
+          monitoringlink: null,
+          submissionlink: null,
+        });
+      }
+    }
 
-      case "Weekly":
-        if (dayOfWeek === frequencyDetails.weeklyDay) {
-          links.push({ date: d.toISOString().split("T")[0], monitoringlink: null, submissionlink: null, });
+  } else if (frequency === "Monthly") {
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const d = new Date(date);
+      if (d.getDate() === Number(frequencyDetails.monthlyDay)) {
+        links.push({
+          date: d.toISOString().split("T")[0],
+          monitoringlink: null,
+          submissionlink: null,
+        });
+      }
+    }
+
+  } else if (frequency === "Yearly") {
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const d = new Date(date);
+      const day = d.getDate();
+      const month = d.getMonth() + 1;
+      if (
+        day === Number(frequencyDetails.yearlyDay) &&
+        month === Number(frequencyDetails.yearlyMonth)
+      ) {
+        links.push({
+          date: d.toISOString().split("T")[0],
+          monitoringlink: null,
+          submissionlink: null,
+        });
+      }
+    }
+
+  } else if (frequency === "Quarterly") {
+    const quarterDay = Number(frequencyDetails.quarterDay);
+    const quarterMonthOffset = Number(frequencyDetails.quarter); // 1 = first, 2 = second, 3 = third
+
+    if (quarterDay && quarterMonthOffset) {
+      const quarters = [0, 3, 6, 9]; // Jan, Apr, Jul, Oct
+      const startYear = startDate.getFullYear();
+      const endYear = endDate.getFullYear();
+
+      for (let year = startYear; year <= endYear; year++) {
+        for (const baseMonth of quarters) {
+          const month = baseMonth + (quarterMonthOffset - 1);
+          const d = new Date(year, month, quarterDay);
+
+          if (
+            d.getDate() === quarterDay &&
+            d.getMonth() === month &&
+            d >= startDate &&
+            d <= endDate
+          ) {
+            links.push({
+              date: d.toISOString().split("T")[0],
+              monitoringlink: null,
+              submissionlink: null,
+            });
+          }
         }
-        break;
-
-      case "Monthly":
-        if (day === Number(frequencyDetails.monthlyDay)) {
-          links.push({ date: d.toISOString().split("T")[0], monitoringlink: null, submissionlink: null, });
-        }
-        break;
-
-      case "Quarterly":
-        const quarterMonths: Record<string, number[]> = {
-          "1": [0, 1, 2],   // Jan-Mar
-          "2": [3, 4, 5],   // Apr-Jun
-          "3": [6, 7, 8],   // Jul-Sep
-          "4": [9, 10, 11], // Oct-Dec
-        };
-        if (
-          quarterMonths[frequencyDetails.quarter || ""]?.includes(d.getMonth()) &&
-          day === Number(frequencyDetails.quarterDay)
-        ) {
-          links.push({ date: d.toISOString().split("T")[0], monitoringlink: null, submissionlink: null, });
-        }
-        break;
-
-      case "Yearly":
-        if (
-          day === Number(frequencyDetails.yearlyDay) &&
-          month === Number(frequencyDetails.yearlyMonth)
-        ) {
-          links.push({ date: d.toISOString().split("T")[0], monitoringlink: null, submissionlink: null, });
-        }
-        break;
+      }
     }
   }
 

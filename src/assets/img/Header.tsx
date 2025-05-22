@@ -1,10 +1,10 @@
 import styled from "styled-components";
 // Components
-import FullButton from "../Buttons/FullButton";
+import FullButton from "../../components/Buttons/FullButton";
 // Assets
 import HeaderImage from "../../assets/img/pd.png";
-import QuotesIcon from "../../assets/svg/Quotes";
-import Dots from "../../assets/svg/Dots";
+import QuotesIcon from "../svg/Quotes";
+import Dots from "../svg/Dots";
 
 import { useNavigate } from "react-router-dom";
 // import { motion } from "framer-motion"; //Animated Button

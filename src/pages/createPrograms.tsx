@@ -11,7 +11,7 @@ import { db } from "../firebase";
 import "../styles/components/dashboard.css";
 import { generateProgramLinks } from "./modules/program-modules/generateProgramLinks";
 import { createProgramSubmissions } from "./modules/program-modules/createProgramSubmissions";
-
+import OutcomeAreaDropdown from "./modules/program-modules/OutcomeAreaDropdown";
 interface User {
   id: string;
   fullName: string;
@@ -28,11 +28,17 @@ interface FrequencyDetails {
   yearlyMonth?: string;
   yearlyDay?: string;
 }
+interface OutcomeOption {
+  value: string;
+  label: string;
+  color: string;
+  textColor: string;
+}
 
 const CreatePrograms: React.FC = () => {
   // All state variables remain the same
   const [programName, setProgramName] = useState("");
-  const [link, setLink] = useState("");
+const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
   const [description, setDescription] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const [participants, setParticipants] = useState<string[]>([]);
@@ -53,6 +59,9 @@ const CreatePrograms: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
+
+
 
   // All functions remain the same
   const fetchUsers = async () => {
@@ -190,8 +199,9 @@ const CreatePrograms: React.FC = () => {
         details = { monthlyDay };
         break;
       case "Quarterly":
-        details = { quarter, quarterDay };
-        break;
+  details = { quarter, quarterDay };
+  break;
+
       case "Yearly":
         details = { yearlyMonth, yearlyDay };
         break;
@@ -250,10 +260,11 @@ const CreatePrograms: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!programName || participants.length === 0 || !frequency || !duration.from || !duration.to) {
-      showAlert("Please fill in all required fields before submitting.");
-      return;
-    }
+if (!programName || !outcomeArea || participants.length === 0 || !frequency || !duration.from || !duration.to) {
+  showAlert("Please fill in all required fields before submitting.");
+  return;
+}
+
   
     setLoading(true);
   
@@ -271,8 +282,9 @@ const CreatePrograms: React.FC = () => {
           details = { monthlyDay };
           break;
         case "Quarterly":
-          details = { quarter, quarterDay };
-          break;
+  details = { quarter, quarterDay };
+  break;
+
         case "Yearly":
           details = { yearlyMonth, yearlyDay };
           break;
@@ -285,25 +297,26 @@ const CreatePrograms: React.FC = () => {
         imageUrl = await uploadImage();
       }
   
-      const programRef = await addDoc(collection(db, "programs"), {
-        programName,
-        link,
-        description,
-        participants,
-        frequency,
-        frequencyDetails: details,
-        duration,
-        imageUrl,
-        createdAt: serverTimestamp(),
-        createdBy: getAuth().currentUser?.uid || null,
-      });
+const programRef = await addDoc(collection(db, "programs"), {
+  programName,
+  outcomeArea: outcomeArea?.value || "",
+  description,
+  participants,
+  frequency,
+  frequencyDetails: details,
+  duration,
+  imageUrl,
+  createdAt: serverTimestamp(),
+  createdBy: getAuth().currentUser?.uid || null,
+});
+
       
       const occurrences = await generateProgramLinks(programRef.id, frequency, details, duration);
       await createProgramSubmissions(programRef, participants, occurrences);
       
       showAlert("Program successfully added!", "success");
       setProgramName("");
-      setLink("");
+      setOutcomeArea(null);
       setDescription("");
       setParticipants([]);
       setDuration({ from: "", to: "" });
@@ -380,19 +393,19 @@ const CreatePrograms: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="col-12 col-md-6">
-                  <div className="form-floating mb-3">
-                    <input
-                      type="text"
-                      id="programLink"
-                      className="form-control"
-                      placeholder="Enter program link"
-                      value={link}
-                      onChange={(e) => setLink(e.target.value)}
-                    />
-                    <label htmlFor="programLink">Program Link</label>
-                  </div>
-                </div>
+
+<div className="col-12 col-md-6">
+  <div className="form-floating mb-3">
+    <OutcomeAreaDropdown
+      value={outcomeArea}
+      onChange={(selected) => setOutcomeArea(selected)}
+    />
+  </div>
+</div>
+
+
+
+
                 
                 <div className="col-12">
                         <div className="form-floating mb-3">
@@ -654,46 +667,58 @@ const CreatePrograms: React.FC = () => {
                                   </div>
                                 )}
 
-                                {frequency === "Quarterly" && (
-                                  <div className="row g-2">
-                                    <div className="col-sm-6">
-                                      <label className="form-label">Quarter:</label>
-                                      <select
-                                        className="form-select"
-                                        value={quarter}
-                                        onChange={(e) => {
-                                          setQuarter(e.target.value);
-                                          setQuarterDay("");
-                                        }}
-                                        required
-                                      >
-                                        <option value="">Select Quarter</option>
-                                        <option value="1">Q1 (Jan–Mar)</option>
-                                        <option value="2">Q2 (Apr–Jun)</option>
-                                        <option value="3">Q3 (Jul–Sep)</option>
-                                        <option value="4">Q4 (Oct–Dec)</option>
-                                      </select>
-                                    </div>
-                                    <div className="col-sm-6">
-                                      <label className="form-label">Day:</label>
-                                      <select
-                                        className="form-select"
-                                        value={quarterDay}
-                                        onChange={(e) => setQuarterDay(e.target.value)}
-                                        disabled={!quarter}
-                                        required
-                                      >
-                                        <option value="">Select Day</option>
-                                        {quarter &&
-                                          Array.from({ length: getDaysInMonth(Number(quarter) * 3 - 2) }, (_, i) => (
-                                            <option key={i + 1} value={i + 1}>
-                                              {i + 1}
-                                            </option>
-                                          ))}
-                                      </select>
-                                    </div>
-                                  </div>
-                                )}
+{frequency === "Quarterly" && (
+  <div className="row g-2">
+    <div className="col-sm-6">
+      <label className="form-label">Month in quarter:</label>
+      <select
+        className="form-select"
+        value={quarter}
+        onChange={(e) => {
+          setQuarter(e.target.value);
+          setQuarterDay("");
+        }}
+        required
+      >
+        <option value="">Select Month in Quarter</option>
+        <option value="1">First month of each quarter (Jan, Apr, Jul, Oct)</option>
+        <option value="2">Second month of each quarter (Feb, May, Aug, Nov)</option>
+        <option value="3">Third month of each quarter (Mar, Jun, Sep, Dec)</option>
+      </select>
+    </div>
+
+    <div className="col-sm-6">
+      <label className="form-label">Day:</label>
+      <select
+        className="form-select"
+        value={quarterDay}
+        onChange={(e) => setQuarterDay(e.target.value)}
+        disabled={!quarter}
+        required
+      >
+        <option value="">Select Day</option>
+{quarter && (() => {
+  const baseQuarterMonths: Record<number, number> = {
+    1: 0, // Jan
+    2: 1, // Feb
+    3: 2, // Mar
+  };
+
+  const exampleMonth = baseQuarterMonths[Number(quarter)];
+  const daysInExample = getDaysInMonth(exampleMonth + 1); // ✅ FIXED
+
+  return Array.from({ length: daysInExample }, (_, i) => (
+    <option key={i + 1} value={i + 1}>
+      {i + 1}
+    </option>
+  ));
+})()}
+
+      </select>
+    </div>
+  </div>
+)}
+
 
                                 {frequency === "Monthly" && (
                                   <div className="row">

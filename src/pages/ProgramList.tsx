@@ -25,13 +25,53 @@ interface Program {
     yearlyDate?: string;
   };
   participants: string[];
-  outcome?: string;
+  outcomeArea?: string;
 }
 
 interface FilterOptions {
   frequency: string | null;
   dateRange: string | null;
 }
+
+interface OutcomeOption {
+  value: string;
+  label: string;
+  color: string;
+  textColor: string;
+}
+
+const outcomeOptions: OutcomeOption[] = [
+  {
+    value: "Excellence in Local Governance Upheld",
+    label: "Excellence in Local Governance Upheld",
+    color: "#ffc107", // Bootstrap yellow
+    textColor: "#000",
+  },
+  {
+    value: "Peaceful, Orderly, and Safe Communities Strengthened",
+    label: "Peaceful, Orderly, and Safe Communities Strengthened",
+    color: "#0d6efd", // Bootstrap blue
+    textColor: "#fff",
+  },
+  {
+    value: "Resilient Communities Reinforced",
+    label: "Resilient Communities Reinforced",
+    color: "#198754", // Bootstrap green
+    textColor: "#fff",
+  },
+  {
+    value: "Inclusive Communities Enabled",
+    label: "Inclusive Communities Enabled",
+    color: "#6f42c1",
+    textColor: "#fff",
+  },
+  {
+    value: "Highly Trusted Department and Partner",
+    label: "Highly Trusted Department and Partner",
+    color: "#dc3545", // Bootstrap red
+    textColor: "#fff",
+  },
+];
 
 const ProgramList: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -110,9 +150,6 @@ const ProgramList: React.FC = () => {
             setLastVisible(lastDoc);
             
             const newPrograms = snapshot.docs.map(doc => {
-              const outcomeColors = ['yellow', 'blue', 'green', 'purple', 'red'];
-              const randomOutcome = outcomeColors[Math.floor(Math.random() * outcomeColors.length)];
-              
               return {
                 id: doc.id,
                 programName: doc.data().programName,
@@ -121,7 +158,7 @@ const ProgramList: React.FC = () => {
                 description: doc.data().description || 'No description provided',
                 frequencyDetails: doc.data().frequencyDetails,
                 participants: doc.data().participants,
-                outcome: doc.data().outcome || randomOutcome,
+                outcomeArea: doc.data().outcomeArea,
               };
             });
             
@@ -241,7 +278,7 @@ const ProgramList: React.FC = () => {
   
   const filteredPrograms = programs.filter(program => {
     const matchesFilters = applyFilters(program);
-    const matchesTab = activeTab === 'all' || program.outcome === activeTab;
+    const matchesTab = activeTab === 'all' || program.outcomeArea === activeTab;
     return matchesFilters && matchesTab;
   });
   
@@ -273,29 +310,65 @@ const ProgramList: React.FC = () => {
     }
   };
 
-  const getOutcomeBadge = (outcome: string) => {
-    if (!outcome) return null;
+  const getOutcomeBadge = (outcomeArea: string) => {
+    if (!outcomeArea) return null;
     
-    const outcomeMap: Record<string, { text: string; variant: string }> = {
-      yellow: { text: 'Excellence', variant: 'warning' },
-      blue: { text: 'Peaceful', variant: 'primary' },
-      green: { text: 'Resilient', variant: 'success' },
-      purple: { text: 'Inclusive', variant: 'secondary' },
-      red: { text: 'Trusted', variant: 'danger' }
+    const outcomeData = outcomeOptions.find(option => option.value === outcomeArea);
+    if (!outcomeData) return null;
+    
+    // Use simplified badge labels for better readability
+    const simplifiedLabels: Record<string, string> = {
+      "Excellence in Local Governance Upheld": "Excellence",
+      "Peaceful, Orderly, and Safe Communities Strengthened": "Peaceful",
+      "Resilient Communities Reinforced": "Resilient", 
+      "Inclusive Communities Enabled": "Inclusive",
+      "Highly Trusted Department and Partner": "Trusted"
     };
-
-    const outcomeData = outcomeMap[outcome] || { text: 'Outcome', variant: 'secondary' };
+    
+    const getBootstrapVariant = (color: string) => {
+      switch (color) {
+        case '#ffc107': return 'warning';
+        case '#0d6efd': return 'primary';
+        case '#198754': return 'success';
+        case '#6f42c1': return 'purple';
+        case '#dc3545': return 'danger';
+        default: return 'secondary';
+      }
+    };
     
     return (
-      <Badge bg={outcomeData.variant} className="ms-2 outcome-badge">
-        {outcomeData.text}
+      <Badge bg={getBootstrapVariant(outcomeData.color)} className="ms-2 outcome-badge">
+        {simplifiedLabels[outcomeArea] || outcomeArea}
       </Badge>
     );
   };
 
-  const getOutcomeColorClass = (outcome: string) => {
-    if (!outcome) return '';
-    return `outcome-${outcome}`;
+  const getOutcomeColorClass = (outcomeArea: string) => {
+    const outcomeData = outcomeOptions.find(option => option.value === outcomeArea);
+    if (!outcomeData) return '';
+    
+    switch (outcomeData.color) {
+      case '#ffc107': return 'outcome-yellow';
+      case '#0d6efd': return 'outcome-blue';
+      case '#198754': return 'outcome-green';
+      case '#6f42c1': return 'outcome-purple';
+      case '#dc3545': return 'outcome-red';
+      default: return '';
+    }
+  };
+
+  const getTabColorClass = (outcomeArea: string) => {
+    const outcomeData = outcomeOptions.find(option => option.value === outcomeArea);
+    if (!outcomeData) return 'outcome-tab-all';
+    
+    switch (outcomeData.color) {
+      case '#ffc107': return 'outcome-tab-yellow';
+      case '#0d6efd': return 'outcome-tab-blue';
+      case '#198754': return 'outcome-tab-green';
+      case '#6f42c1': return 'outcome-tab-purple';
+      case '#dc3545': return 'outcome-tab-red';
+      default: return 'outcome-tab-all';
+    }
   };
 
   const renderPagination = () => {
@@ -452,33 +525,15 @@ const ProgramList: React.FC = () => {
                   All Programs
                 </Nav.Link>
               </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="yellow" className="outcome-tab-yellow">
-                  Excellence in Governance
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="blue" className="outcome-tab-blue">
-                  Peaceful Communities
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="green" className="outcome-tab-green">
-                  Resilient Communities
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="purple" className="outcome-tab-purple">
-                  Inclusive Communities
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="red" className="outcome-tab-red">
-                  Trusted Department
-                </Nav.Link>
-              </Nav.Item>
+              {outcomeOptions.map((option) => (
+                <Nav.Item key={option.value}>
+                  <Nav.Link eventKey={option.value} className={getTabColorClass(option.value)}>
+                    {option.label}
+                  </Nav.Link>
+                </Nav.Item>
+              ))}
             </Nav>
-            
+
             <Tab.Content>
               <Tab.Pane eventKey={activeTab}>
                 {filteredPrograms.length === 0 ? (
@@ -497,14 +552,14 @@ const ProgramList: React.FC = () => {
                         key={program.id} 
                         action
                         onClick={() => navigate(`/${role}/programs/${program.id}`)}
-                        className={`program-item py-3 border-start border-4 ${getOutcomeColorClass(program.outcome || '')}`}
+                        className={`program-item py-3 border-start border-4 ${getOutcomeColorClass(program.outcomeArea || '')}`}
                         style={{ transition: 'all 0.2s ease' }}
                       >
                         <div className="d-flex justify-content-between align-items-center">
                           <div className="program-info">
                             <div className="d-flex align-items-center flex-wrap">
                               <h5 className="mb-1 me-2">{program.programName}</h5>
-                              {getOutcomeBadge(program.outcome || '')}
+                              {getOutcomeBadge(program.outcomeArea || '')}
                               {getStatusBadge(program)}
                               <Badge 
                                 bg="light" 
@@ -613,7 +668,7 @@ const ProgramList: React.FC = () => {
         .outcome-tab-blue.nav-link.active {
           color: #004085;
           background-color: #e7f3ff;
-          border-bottom-color: #007bff;
+          border-bottom-color: #0d6efd;
           font-weight: 600;
         }
         
@@ -624,7 +679,7 @@ const ProgramList: React.FC = () => {
         .outcome-tab-green.nav-link.active {
           color: #155724;
           background-color: #e8f5e8;
-          border-bottom-color: #28a745;
+          border-bottom-color: #198754;
           font-weight: 600;
         }
         
@@ -657,12 +712,12 @@ const ProgramList: React.FC = () => {
         }
         
         .outcome-blue {
-          border-left-color: #007bff !important;
+          border-left-color: #0d6efd !important;
           background-color: #fff;
         }
         
         .outcome-green {
-          border-left-color: #28a745 !important;
+          border-left-color: #198754 !important;
           background-color: #fff;
         }
         
