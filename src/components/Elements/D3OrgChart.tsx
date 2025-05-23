@@ -95,7 +95,7 @@ const D3OrgChart: React.FC<D3OrgChartProps> = ({ data = [], onNodeClick, selecte
 
       // Set dimensions
       const width = 1160;
-      const height = 800;
+      const height = 500;
 
       // Create SVG
       const svg = d3.select(svgRef.current)
@@ -359,7 +359,7 @@ legendItem.append("rect")
   }, [data, onNodeClick]);
 
   return (
-    <div className="bg-light rounded shadow position-relative" style={{ height: "800px" }}>
+    <div className="bg-light rounded shadow position-relative" style={{ height: "500px" }}>
       <TransformWrapper
         initialScale={0.1}
         minScale={0.1}

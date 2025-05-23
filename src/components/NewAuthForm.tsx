@@ -240,8 +240,8 @@ const AuthForm = () => {
                       className={styles.logoImage}
                     />
                   </div>
-                  <h1>DILG - RMS</h1>
-                  <p>Records Management System</p>
+                  <h3>DILG - Records Management System</h3>
+                  {/* <p>Records Management System</p> */}
                   <motion.button 
                     className={styles.backLink}
                     onClick={() => navigate("/")}
