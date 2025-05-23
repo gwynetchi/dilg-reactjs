@@ -60,16 +60,16 @@ type Message = CommunicationMessage | ProgramMessage;
 const MENU_ITEMS = {
   Viewer: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-    { name: "One Shot Reports", icon: "bxs-inbox", path: "/viewer/inbox" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/viewer/inbox" },
     { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/viewer/programs" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
   ],
   Evaluator: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-    { name: "One Shot Reports", icon: "bxs-inbox", path: "/evaluator/inbox" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/evaluator/inbox" },
     { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/evaluator/programs" },
-    { name: "Communication", icon: "bxs-message-alt-edit", path: "/evaluator/communication" },
-    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/evaluator/DeletedCommunications" },
+    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/evaluator/one_shot_reports" },
+    { name: "Deleted One Shot Reports", icon: "bx bxs-message-alt-minus", path: "/evaluator/Deletedone_shot_reports" },
     { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
     { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
     { name: "Message", icon: "bxs-chat", path: "/evaluator/message" },
@@ -77,19 +77,19 @@ const MENU_ITEMS = {
   ],
   LGU: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
-    { name: "One Shot Reports", icon: "bxs-inbox", path: "/lgu/inbox" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/lgu/inbox" },
     { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/lgu/programs" },
-    { name: "Communication", icon: "bxs-message-alt-edit", path: "/lgu/communication" },
-    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/lgu/DeletedCommunications" },
+    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/lgu/one_shot_reports" },
+    { name: "Deleted One Shot Reports", icon: "bx bxs-message-alt-minus", path: "/lgu/Deletedone_shot_reports" },
     { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
     { name: "Message", icon: "bxs-chat", path: "/lgu/message" },
     { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
   ],
   Admin: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
-    { name: "One Shot Reports", icon: "bxs-inbox", path: "/admin/inbox" },
-    { name: "Communication", icon: "bxs-message-alt-edit", path: "/admin/communication" },
-    { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/admin/DeletedCommunications" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/admin/inbox" },
+    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/admin/one_shot_reports" },
+    { name: "Deleted One Shot Reports", icon: "bx bxs-message-alt-minus", path: "/admin/Deletedone_shot_reports" },
     { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
     { name: "Message", icon: "bxs-chat", path: "/admin/message" },
     // { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
@@ -495,7 +495,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         className={`btn btn-sm ${activeFilter === 'communications' ? 'active' : ''}`} 
                         onClick={() => setActiveFilter('communications')}
                       >
-                        Communications
+                        One Shot Reports
                       </button>
                       <button 
                         className={`btn btn-sm ${activeFilter === 'programs' ? 'active' : ''}`} 

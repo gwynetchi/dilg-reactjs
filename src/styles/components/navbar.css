@@ -126,7 +126,72 @@
 #sidebar .side-menu.bottom li:nth-last-of-type(2) {
   bottom: 40px; /* İkinci son öğeyi yukarı kaydır */
 }
+/* Submenu styles */
+.side-menu li.has-submenu {
+  position: relative;
+}
 
+.side-menu li.has-submenu .submenu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding-left: 20px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: 5px 0;
+}
+
+.side-menu li.has-submenu.open .submenu {
+  max-height: 500px;
+}
+
+.side-menu li.has-submenu .toggle-icon {
+  position: absolute;
+  right: 15px;
+  transition: transform 0.3s ease;
+}
+
+.side-menu li.has-submenu.open .toggle-icon {
+  transform: rotate(90deg);
+}
+
+.side-menu .submenu li {
+  padding: 0;
+}
+
+.side-menu .submenu li a {
+  padding: 8px 15px;
+  display: block;
+  color: var(--light);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.side-menu .submenu li a:hover {
+  color: var(--primary);
+  padding-left: 20px;
+}
+
+.side-menu .submenu li.active a {
+  color: var(--primary);
+  font-weight: bold;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Adjust menu badge position for submenu items */
+.side-menu li.has-submenu .menu-badge {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Active state for parent menu when submenu is active */
+.side-menu li.has-submenu.active > a {
+  color: var(--primary);
+  font-weight: bold;
+}
 .notification-dropdown {
 	position: absolute;
 	top: 100%;
