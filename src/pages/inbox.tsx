@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import InboxControls from "./modules/inbox-modules/inboxcontrols";
 import DeleteMessageModal from "./modules/inbox-modules/deletemodal";
 import MessageTable from "./modules/inbox-modules/messagetable";
@@ -308,13 +308,13 @@ useEffect(() => {
         <main>
           <div className="head-title">
             <div className="left">
-              <h1>Inbox</h1>
+              <h1>One Shot Reports Inbox</h1>
               <nav aria-label="breadcrumb">
                 <ol className="breadcrumb">
                   <li className="breadcrumb-item">
-                    <a href="/dashboards">Home</a>
+                    <Link to="/">Dashboard</Link>
                   </li>
-                  <li className="breadcrumb-item active">Dashboard Tools</li>
+                  <li className="breadcrumb-item active">One Shot Reports Inbox</li>
                 </ol>
               </nav>
             </div>

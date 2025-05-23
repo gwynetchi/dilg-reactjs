@@ -146,8 +146,8 @@ const CommunicationForm: React.FC<Props> = ({ onClose, onSuccess, editData }) =>
       onSuccess();
       onClose();
     } catch (err) {
-      console.error("Error submitting communication:", err);
-      alert("Failed to submit communication.");
+      console.error("Error submitting one shot report/communication:", err);
+      alert("Failed to submit one shot report/communication.");
     } finally {
       setLoading(false);
     }

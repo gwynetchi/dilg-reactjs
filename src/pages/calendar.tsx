@@ -6,7 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Calendar: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -179,7 +179,7 @@ borderColor: "#fd7e14",
             <h1>Deadlines</h1>
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb">
-                <li className="breadcrumb-item"><a href="/dashboards">Home</a></li>
+                <li className="breadcrumb-item"><Link to="/">Dashboard</Link></li>
                 <li className="breadcrumb-item active">Calendar</li>
               </ol>
             </nav>

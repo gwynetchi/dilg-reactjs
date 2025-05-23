@@ -18,6 +18,7 @@ import { softDelete } from "./../pages/modules/inbox-modules/softDelete";
 import { db } from "../firebase";
 import Swal from 'sweetalert2';
 import OutcomeAreaDropdown from "./modules/program-modules/OutcomeAreaDropdown";
+import { Link } from "react-router-dom";
 
 interface User {
   role: string;
@@ -306,7 +307,7 @@ const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
       const user = auth.currentUser;
       
       if (!user) {
-        showAlert("You must be logged in to send communications", "error");
+        showAlert("You must be logged in to send One Shot Reprots/Communications", "error");
         return;
       }
 
@@ -348,8 +349,8 @@ const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
       // Refresh the list
       fetchSentCommunications();
     } catch (error) {
-      console.error("Error sending communication:", error);
-      showAlert("Failed to send communication. Please try again.", "error");
+      console.error("Error sending one shot report/communication:", error);
+      showAlert("Failed to send one shot report/communication. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -461,7 +462,7 @@ const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
         onClick={() => setShowDetails(!showDetails)}
       >
         <i className={`bx ${showDetails ? "bxs-minus-circle" : "bxs-plus-circle"} bx-tada-hover`}></i>
-        <span className="text">{showDetails ? "Hide" : "Create New Communication"}</span>
+        <span className="text">{showDetails ? "Hide" : "Create New One Shot Report/Communication"}</span>
       </button>
     
       {showFileModal && (
@@ -690,13 +691,13 @@ const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
       <main>
         <div className="head-title">
           <div className="left">
-            <h1>Communication</h1>
+            <h2>Communication/One Shot Reports Management</h2>
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <a href="/dashboards">Home</a>
+                  <Link to="/">Dashboard</Link>
                 </li>
-                <li className="breadcrumb-item active">Communication</li>
+                <li className="breadcrumb-item active">One Shot Report and Communication Management</li>
               </ol>
             </nav>
           </div>
@@ -772,7 +773,7 @@ const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
           </select>
         </div>
 
-        <h3>Sent Communications</h3>
+        <h4>Sent One Shot Reports/Communications</h4>
         {filteredCommunications.length === 0 ? (
           <p>No sent communications found.</p>
         ) : (

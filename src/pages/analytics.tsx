@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaFileAlt, FaUsers, FaChartBar } from "react-icons/fa";
 import "../styles/components/dashboard.css";
 
@@ -14,7 +14,7 @@ const Analytics = () => {
               <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
               <li className="breadcrumb-item">
-                <a href="/dashboards">Home</a>
+                <Link to="/">Dashboard</Link>
               </li>
               <li className="breadcrumb-item active">Reports Evaluation And Monitoring</li>
             </ol>
