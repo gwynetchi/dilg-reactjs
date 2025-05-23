@@ -92,7 +92,7 @@ const MENU_ITEMS = {
     { name: "Deleted Communication", icon: "bx bxs-message-alt-minus", path: "/admin/DeletedCommunications" },
     { name: "Calendar", icon: "bxs-calendar", path: "/admin/calendar" },
     { name: "Message", icon: "bxs-chat", path: "/admin/message" },
-    { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
+    // { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/admin/scoreBoard" },
     { name: "Deleted Users", icon: "bx bx-user-x", path: "/admin/DeletedUsers" },
     { name: "User Management", icon: "bxs-user-plus", path: "/admin/userManagement" },
     { name: "Organizational Chart", icon: "bx-sitemap", path: "/admin/OrganizationalChart" },
