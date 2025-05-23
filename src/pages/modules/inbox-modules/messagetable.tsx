@@ -23,8 +23,7 @@ interface Props {
   userId: string | null;
   senderNames: { [key: string]: string };
   openMessage: (id: string) => void;
-  handleDeleteRequest: (id: string, recipients: string[]) => void;
-  getDeadlineStatus: (deadline?: { seconds: number }) => string;
+handleDeleteRequest: (id: string, recipients: string[], source: "communications" | "programcommunications") => void;  getDeadlineStatus: (deadline?: { seconds: number }) => string;
   getStatusStyles: (status: string) => {
     className: string;
     text: string;
@@ -173,7 +172,7 @@ console.log("Outcome Area for message:", msg.outcomeArea);
                     className="btn btn-sm btn-outline-danger"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteRequest(msg.id, msg.recipients);
+                      handleDeleteRequest(msg.id, msg.recipients, "communications");
                     }}
                   >
                     Delete

@@ -137,7 +137,7 @@ const Inbox: React.FC = () => {
           remarks: data.remarks || "",
           submissionLink: data.submissionLink || "",
           monitoringLink: data.monitoringLink || "",
-          source: "communications" as "communications"
+          source: "communications" as const, // No need for programcommunications
         };
       });
 

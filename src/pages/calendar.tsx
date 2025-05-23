@@ -215,7 +215,7 @@ borderColor: "#fd7e14",
                 borderRadius: "50%",
                 border: "2px solid white"
               }}></span>
-              Communications
+              One Shot
             </div>
             
             <div 
@@ -242,7 +242,7 @@ borderColor: "#fd7e14",
                 borderRadius: "50%",
                 border: "2px solid white"
               }}></span>
-              Program Submissions
+              Regular Reports
             </div>
           </div>
 <FullCalendar
