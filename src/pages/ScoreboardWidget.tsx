@@ -169,12 +169,12 @@ const ScoreboardWidget: React.FC = () => {
     <div className="card mb-3">
       <div className="card-header d-flex justify-content-between align-items-center">
         <h3 className="widget-title">Top LGUs</h3>
-        <button 
+        {/* <button 
           className="btn btn-sm btn-outline-primary view-all-btn"
           onClick={navigateToScoreboard}
         >
           View All
-        </button>
+        </button> */}
       </div>
       <canvas
         ref={confettiRef}

@@ -29,11 +29,11 @@ interface ChartData {
 
 // Status colors matching the original
 const statusColors: Record<string, string> = {
-  "On Time": "#28a745",
-  "Late": "#dc3545",
+  "On Time": "#4CAF50",
+  "Late": "#2196F3",
   "Incomplete": "#ffc107",
-  "No Submission": "#6c757d",
-  "For Revision": "#17a2b8",
+  "No Submission": "#F44336",
+  "For Revision": "#FF9800",
 };
 
 const allStatuses = Object.keys(statusColors);
@@ -491,7 +491,7 @@ const UserAnalytics: React.FC = () => {
                   <Card className="shadow-sm h-100 text-center">
                     <Card.Body>
                       <h6 className="text-muted">Late</h6>
-                      <h2 className="mb-0 text-danger">{statsData.late}</h2>
+                      <h2 className="mb-0 text-primary">{statsData.late}</h2>
                       <small>{statsData.total > 0 ? Math.round(statsData.late / statsData.total * 100) : 0}%</small>
                     </Card.Body>
                   </Card>
