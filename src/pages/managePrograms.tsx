@@ -37,6 +37,40 @@ interface User {
   role: string;
 }
 
+// Outcome Area options with styling
+const outcomeOptions = [
+  {
+    value: "Excellence in Local Governance Upheld",
+    label: "Excellence in Local Governance Upheld",
+    color: "#ffc107",
+    textColor: "#000",
+  },
+  {
+    value: "Peaceful, Orderly, and Safe Communities Strengthened",
+    label: "Peaceful, Orderly, and Safe Communities Strengthened",
+    color: "#0d6efd",
+    textColor: "#fff",
+  },
+  {
+    value: "Resilient Communities Reinforced",
+    label: "Resilient Communities Reinforced",
+    color: "#198754",
+    textColor: "#fff",
+  },
+  {
+    value: "Inclusive Communities Enabled",
+    label: "Inclusive Communities Enabled",
+    color: "#6f42c1",
+    textColor: "#fff",
+  },
+  {
+    value: "Highly Trusted Department and Partner",
+    label: "Highly Trusted Department and Partner",
+    color: "#dc3545",
+    textColor: "#fff",
+  },
+];
+
 const ManagePrograms: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -175,6 +209,37 @@ const ManagePrograms: React.FC = () => {
     window.location.href = `/program-links/${programId}`;
   };
 
+  // Render outcome area badge
+  const renderOutcomeArea = (outcomeArea: string) => {
+    const outcome = outcomeOptions.find(
+      (option) => option.value === outcomeArea
+    );
+
+    if (!outcomeArea) {
+      return <span className="text-muted">—</span>;
+    }
+
+    return (
+      <span
+        className="badge"
+        style={{
+          backgroundColor: outcome?.color || "#6c757d",
+          color: outcome?.textColor || "#fff",
+          padding: "6px 12px",
+          borderRadius: "12px",
+          fontSize: "0.75rem",
+          fontWeight: "500",
+          maxWidth: "200px",
+          wordWrap: "break-word",
+          whiteSpace: "normal",
+          lineHeight: "1.2"
+        }}
+      >
+        {outcome?.label || outcomeArea}
+      </span>
+    );
+  };
+
   return (
     <div className="container py-4">
       {/* Breadcrumb */}
@@ -229,7 +294,7 @@ const ManagePrograms: React.FC = () => {
               <table className="table table-hover mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th>Image</th>
+                    <th>Outcome Area</th>
                     <th>Program Name</th>
                     <th>Description</th>
                     <th>Duration</th>
@@ -247,22 +312,8 @@ const ManagePrograms: React.FC = () => {
                       style={{ cursor: "pointer" }}
                       title="Click to manage program links"
                     >
-                      <td className="text-center" style={{ width: "80px" }}>
-                        {program.imageUrl ? (
-                          <img 
-                            src={program.imageUrl} 
-                            alt={program.programName}
-                            className="rounded-circle"
-                            style={{ width: '48px', height: '48px', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <div 
-                            className="bg-light rounded-circle d-flex align-items-center justify-content-center"
-                            style={{ width: '48px', height: '48px' }}
-                          >
-                            <i className="bi bi-calendar-event text-muted"></i>
-                          </div>
-                        )}
+                      <td style={{ maxWidth: "200px" }}>
+                        {renderOutcomeArea(program.outcomeArea)}
                       </td>
                       <td className="fw-medium">{program.programName}</td>
                       <td className="text-muted">{truncateText(program.description, 80)}</td>
@@ -288,8 +339,7 @@ const ManagePrograms: React.FC = () => {
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <div className="d-flex gap-2">
-                        
-                                                      <button
+                          <button
                             className="btn btn-sm btn-outline-primary"
                             data-bs-toggle="modal"
                             data-bs-target="#editModal"
@@ -301,7 +351,7 @@ const ManagePrograms: React.FC = () => {
                           >
                             <i className="bi bi-pencil-fill"></i> Edit
                           </button>
-                                                      <button
+                          <button
                             className="btn btn-sm btn-outline-danger"
                             onClick={(e) => {
                               e.stopPropagation(); // prevent redirect

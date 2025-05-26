@@ -40,6 +40,7 @@ const dashboardStyles = {
 };
 
 const Dashboard = () => {
+ const [sourceFilter, setSourceFilter] = useState<"all" | "submittedDetails" | "programsubmission">("all");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [activeUsers, setActiveUsers] = useState(0);
@@ -106,12 +107,75 @@ const Dashboard = () => {
     setLoading(true);
     const fetchReportsData = async () => {
       try {
-        const submitRef = collection(db, "submittedDetails");
-        const submitSnapshot = await getDocs(submitRef);
-        const allReports = submitSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as any),
-        }));
+
+        let allReports: any[] = [];
+
+if (sourceFilter === "all" || sourceFilter === "submittedDetails") {
+  const submitSnapshot = await getDocs(collection(db, "submittedDetails"));
+  const submitted = submitSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as any),
+  }));
+  allReports = allReports.concat(submitted);
+}
+
+if (sourceFilter === "all" || sourceFilter === "programsubmission") {
+  const programsubmissionSnapshot = await getDocs(collection(db, "programsubmission"));
+  programsubmissionSnapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (Array.isArray(data.submissions)) {
+      data.submissions.forEach((submission: any) => {
+        const date = submission.submittedAt && typeof submission.submittedAt.toDate === 'function'
+          ? submission.submittedAt.toDate()
+          : submission.submittedAt
+            ? new Date(submission.submittedAt)
+            : null;
+
+        const monthMatches = selectedMonth ? date?.getMonth() + 1 === parseInt(selectedMonth) : true;
+        const yearMatches = selectedYear ? date?.getFullYear() === parseInt(selectedYear) : true;
+
+        if (monthMatches && yearMatches && submission.submittedBy) {
+          allReports.push({
+            ...submission,
+            id: docSnap.id + "_" + submission.occurrence,
+            submittedAt: submission.submittedAt,
+            evaluatorStatus: submission.evaluatorStatus || "Pending",
+            remarks: submission.remarks || "",
+            submittedBy: submission.submittedBy
+          });
+        }
+      });
+    }
+  });
+}
+
+          const programsubmissionSnapshot = await getDocs(collection(db, "programsubmission"));
+programsubmissionSnapshot.forEach((docSnap) => {
+  const data = docSnap.data();
+  if (Array.isArray(data.submissions)) {
+    data.submissions.forEach((submission) => {
+const date = submission.submittedAt && typeof submission.submittedAt.toDate === 'function'
+  ? submission.submittedAt.toDate()
+  : submission.submittedAt
+    ? new Date(submission.submittedAt)
+    : null;
+      const monthMatches = selectedMonth ? date?.getMonth() + 1 === parseInt(selectedMonth) : true;
+      const yearMatches = selectedYear ? date?.getFullYear() === parseInt(selectedYear) : true;
+
+      if (monthMatches && yearMatches && submission.submittedBy) {
+        allReports.push({
+          ...submission,
+          id: docSnap.id + "_" + submission.occurrence, // unique ID per occurrence
+          submittedAt: submission.submittedAt,
+          evaluatorStatus: submission.evaluatorStatus || "Pending",
+          remarks: submission.remarks || "",
+          submittedBy: submission.submittedBy
+        });
+      }
+    });
+  }
+});
+
 
         const filtered = allReports.filter((report: any) => {
           const date = report?.submittedAt?.toDate?.();
@@ -329,6 +393,17 @@ const Dashboard = () => {
                         );
                       })}
                     </select>
+                     <label className="form-label small mb-0 me-2">Source:</label>
+  <select
+    value={sourceFilter}
+    onChange={(e) => setSourceFilter(e.target.value as any)}
+    className="form-select form-select-sm d-inline-block"
+    style={{ width: "200px" }}
+  >
+    <option value="all">All Sources</option>
+    <option value="submittedDetails">Submitted Details</option>
+    <option value="programsubmission">Program Submissions</option>
+  </select>
                   </div>
 
                   <div className="col-md-4 d-flex justify-content-end">
