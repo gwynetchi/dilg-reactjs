@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -47,7 +47,7 @@ const SentCommunications: React.FC = () => {
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <a href="/dashboards">Home</a>
+                 <Link to="/">Dashboard</Link>
                 </li>
                 <li className="breadcrumb-item active">Communication</li>
               </ol>

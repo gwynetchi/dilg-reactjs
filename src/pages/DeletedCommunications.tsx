@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { Link } from "react-router-dom";
 
 interface Communication {
   id: string;
@@ -148,7 +149,7 @@ const DeletedCommunications = () => {
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <a href="/dashboards">Home</a>
+                  <Link to="/">Dashboard</Link>
                 </li>
                 <li className="breadcrumb-item active">Deleted Communications</li>
               </ol>

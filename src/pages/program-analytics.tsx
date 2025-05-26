@@ -40,11 +40,11 @@ const allStatuses = ["On Time", "Late", "Incomplete", "No Submission", "For Revi
 
 // Define colors for each status
 const statusColors: Record<string, string> = {
-  "On Time": "#28a745",
-  "Late": "#dc3545",
+  "On Time": "#4CAF50",
+  "Late": "#2196F3",
   "Incomplete": "#ffc107",
-  "No Submission": "#6c757d",
-  "For Revision": "#17a2b8",
+  "No Submission": "#F44336",
+  "For Revision": "#FF9800",
 };
 
 const Analytics: React.FC = () => {

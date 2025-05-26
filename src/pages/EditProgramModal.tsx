@@ -9,8 +9,7 @@ interface Program {
   id: string;
   programName: string;
   description: string;
-  outcomeArea?: string;
-
+  outcomeArea: string;
   duration: { from: string; to: string };
   frequency: string;
   participants: string[];

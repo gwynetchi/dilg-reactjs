@@ -4,7 +4,7 @@ import CaviteMap from './cavitemap/cavitemap'; // Make sure the import path is c
 
 const MapSection: React.FC = () => {
   return (
-    <section className="py-8 px-4 bg-gray-50">
+    <section className="py-8 p-4 bg-gray-50 m-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Cavite Municipalities Map</h2>

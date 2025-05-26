@@ -4,6 +4,9 @@ import { collection, getDocs, doc, writeBatch } from "firebase/firestore";
 import OrgChartViewer from "../../components/Elements/OrgChartViewer";
 import { OrgChartNode } from "../../components/Elements/D3OrgChart";
 import { useToast } from "../../components/context/ToastContext";
+import UserModal from "../../pages/admin/orgchartModals/UserModal";
+import DeleteConfirmModal from "../../pages/admin/orgchartModals/DeleteConfirmModal";
+import LoadingOverlay from "../../pages/admin/orgchartModals/LoadingOverlay";
 
 const AdminOrgChartEditor: React.FC = () => {
   const [nodes, setNodes] = useState<OrgChartNode[]>([]);
@@ -92,7 +95,7 @@ const AdminOrgChartEditor: React.FC = () => {
   }, [fetchNodes]);
 
   const handleAddUser = async () => {
-    if (!newNode.name || !newNode.position1) {
+    if (!newNode.name?.trim() || !newNode.position1?.trim()) {
       showToast("Name and Position are required fields", "warning");
       return;
     }
@@ -111,17 +114,19 @@ const AdminOrgChartEditor: React.FC = () => {
 
       const newEntry: OrgChartNode = {
         id: newId,
-        name: newNode.name || "",
-        email: newNode.email || "",
+        name: newNode.name.trim(),
+        email: newNode.email?.trim() || "",
         img: imageUrl,
-        city: newNode.city || "",
-        cluster: newNode.cluster || "",
-        position1: newNode.position1 || "",
-        position2: newNode.position2 || "",
-        layout: newNode.layout as "vertical" | "horizontal" || "horizontal",
-        section: newNode.section as "MES" | "FAS" | "CDS" | "PDMU" || null,
+        city: newNode.city?.trim() || "",
+        cluster: newNode.cluster?.trim() || "",
+        position1: newNode.position1.trim(),
+        position2: newNode.position2?.trim() || "",
+        layout: (newNode.layout as "vertical" | "horizontal") || "horizontal",
+        section: (newNode.section as "MES" | "FAS" | "CDS" | "PDMU") || null,
         subordinates: [],
         superiorId: superiorId || undefined,
+        // contact: "", // Add missing contact field
+        // status: "offline" // Add missing status field
       };
 
       const batch = writeBatch(db);
@@ -157,6 +162,11 @@ const AdminOrgChartEditor: React.FC = () => {
   const handleUpdateUser = async () => {
     if (!selectedId || !form) return;
     
+    if (!form.name?.trim() || !form.position1?.trim()) {
+      showToast("Name and Position are required fields", "warning");
+      return;
+    }
+    
     setLoading(true);
     try {
       const batch = writeBatch(db);
@@ -169,13 +179,13 @@ const AdminOrgChartEditor: React.FC = () => {
       }
 
       const updateData: Record<string, any> = {
-        name: form.name ?? currentNode.name,
-        position1: form.position1 ?? currentNode.position1,
-        position2: form.position2 ?? currentNode.position2,
-        email: form.email ?? currentNode.email,
+        name: form.name?.trim() ?? currentNode.name,
+        position1: form.position1?.trim() ?? currentNode.position1,
+        position2: form.position2?.trim() ?? currentNode.position2,
+        email: form.email?.trim() ?? currentNode.email,
         img: imageUrl,
-        city: form.city ?? currentNode.city,
-        cluster: form.cluster ?? currentNode.cluster,
+        city: form.city?.trim() ?? currentNode.city,
+        cluster: form.cluster?.trim() ?? currentNode.cluster,
         layout: form.layout ?? currentNode.layout,
         section: form.section ?? currentNode.section ?? null,
         subordinates: currentNode.subordinates || [],
@@ -183,6 +193,25 @@ const AdminOrgChartEditor: React.FC = () => {
 
       if (form.superiorId !== undefined) {
         updateData.superiorId = form.superiorId !== null ? form.superiorId : null;
+        
+        // Handle superior change logic
+        const oldSuperior = nodes.find(n => n.subordinates?.includes(selectedId));
+        const newSuperior = form.superiorId ? nodes.find(n => n.id === form.superiorId) : null;
+        
+        // Remove from old superior
+        if (oldSuperior && oldSuperior.id !== form.superiorId) {
+          const updatedSubordinates = oldSuperior.subordinates?.filter(id => id !== selectedId) || [];
+          batch.update(doc(db, "orgdata", oldSuperior.id.toString()), {
+            subordinates: updatedSubordinates
+          });
+        }
+        
+        // Add to new superior
+        if (newSuperior && !newSuperior.subordinates?.includes(selectedId)) {
+          batch.update(doc(db, "orgdata", newSuperior.id.toString()), {
+            subordinates: [...(newSuperior.subordinates || []), selectedId]
+          });
+        }
       }
 
       batch.update(doc(db, "orgdata", selectedId.toString()), updateData);
@@ -270,296 +299,218 @@ const AdminOrgChartEditor: React.FC = () => {
     setForm({});
   };
 
+  const selectedNode = nodes.find(n => n.id === selectedId);
+  const totalUsers = nodes.length;
+  const usersWithSuperiors = nodes.filter(n => n.superiorId).length;
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Org Chart Admin</h2>
-        <div className="flex gap-2">
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
-            onClick={() => {
-              setEditMode("add");
-              setShowModal(true);
-            }}
-            disabled={loading}
-          >
-            Add User
-          </button>
-          <button
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
-            onClick={() => {
-              if (selectedId && form) {
-                setEditMode("edit");
-                setShowModal(true);
-              }
-            }}
-            disabled={!selectedId || loading}
-          >
-            Edit User
-          </button>
-          <button
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
-            onClick={() => setDeleteConfirm(true)}
-            disabled={!selectedId || loading}
-          >
-            Delete User
-          </button>
-        </div>
-      </div>
+    <>
+      {/* Bootstrap CSS CDN */}
+      <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+      />
+      <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" 
+        rel="stylesheet" 
+      />
 
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <p className="text-lg font-medium">Loading...</p>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-8">
-        <OrgChartViewer 
-          key={refreshKey} 
-          onNodeClick={handleNodeClick}
-          selectedNodeId={selectedId}
-        />
-      </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-lg w-full max-w-lg mx-4 overflow-y-auto max-h-[90vh]">
-            <h3 className="text-lg font-semibold mb-4">
-              {editMode === "add" ? "Add New User" : "Edit User"}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="border p-2 rounded w-full"
-                  onChange={(e) => handleImageChange(e, editMode)}
-                  disabled={loading}
-                />
-                {editMode === "edit" && form.img && typeof form.img === 'string' && (
-                  <div className="mt-2 text-xs text-gray-500">
-                    Current image will be replaced
+      <div className="container-fluid py-4">
+        {/* Header Section */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card shadow-sm border-0">
+              <div className="card-header bg-primary text-white">
+                <div className="row align-items-center">
+                  <div className="col-md-6">
+                    <h3 className="mb-0">
+                      <i className="bi bi-diagram-3 me-2"></i>
+                      Organization Chart Admin
+                    </h3>
+                    <small className="opacity-75">Manage your organization structure</small>
                   </div>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name*</label>
-                <input
-                  placeholder="John Doe"
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.name || "" : form.name || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, name: e.target.value }))
-                      : updateField("name", e.target.value)
-                  }
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  placeholder="john@example.com"
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.email || "" : form.email || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, email: e.target.value }))
-                      : updateField("email", e.target.value)
-                  }
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Position*</label>
-                <input
-                  placeholder="Chief Executive Officer"
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.position1 || "" : form.position1 || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, position1: e.target.value }))
-                      : updateField("position1", e.target.value)
-                  }
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
-                <input
-                  placeholder="CEO"
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.position2 || "" : form.position2 || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, position2: e.target.value }))
-                      : updateField("position2", e.target.value)
-                  }
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                <input
-                  placeholder="e.g., New York"
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.city || "" : form.city || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, city: e.target.value }))
-                      : updateField("city", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cluster</label>
-                <input
-                  placeholder="e.g., North America"
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.cluster || "" : form.cluster || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ ...prev, cluster: e.target.value }))
-                      : updateField("cluster", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.section || "" : form.section || ""}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ 
-                          ...prev, 
-                          section: e.target.value as "MES" | "FAS" | "CDS" | "PDMU"
-                        }))
-                      : updateField("section", e.target.value as "MES" | "FAS" | "CDS" | "PDMU")
-                  }
-                >
-                  <option value="">-- Select Section --</option>
-                  <option value="MES">Monitoring and Evaluation Section (MES)</option>
-                  <option value="FAS">Financial and Administrative Section (FAS)</option>
-                  <option value="CDS">Capability Development Section (CDS)</option>
-                  <option value="PDMU">Project and Development Monitoring Unit (PDMU)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={editMode === "add" ? newNode.layout || "horizontal" : form.layout || "horizontal"}
-                  onChange={(e) =>
-                    editMode === "add"
-                      ? setNewNode((prev) => ({ 
-                          ...prev, 
-                          layout: e.target.value as "vertical" | "horizontal" 
-                        }))
-                      : updateField("layout", e.target.value as "vertical" | "horizontal")
-                  }
-                >
-                  <option value="horizontal">Horizontal</option>
-                  <option value="vertical">Vertical</option>
-                </select>
-              </div>
-              
-              {editMode === "edit" && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Superior</label>
-                  <select
-                    className="border p-2 rounded w-full"
-                    value={form.superiorId?.toString() || ""}
-                    onChange={(e) => updateField("superiorId", e.target.value ? +e.target.value : undefined)}
-                  >
-                    <option value="">-- No Superior --</option>
-                    {nodes
-                      .filter(n => n.id !== selectedId)
-                      .map((n) => (
-                        <option key={n.id} value={n.id}>
-                          {n.name} ({n.position1})
-                        </option>
-                      ))
-                    }
-                  </select>
+                  <div className="col-md-6 text-md-end mt-2 mt-md-0">
+                    <div className="btn-group" role="group">
+                      <button
+                        className="btn btn-light btn-sm"
+                        onClick={() => {
+                          setEditMode("add");
+                          setNewNode({}); // Reset newNode when opening add modal
+                          setShowModal(true);
+                        }}
+                        disabled={loading}
+                      >
+                        <i className="bi bi-person-plus me-1"></i>
+                        Add User
+                      </button>
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => {
+                          if (selectedId && selectedNode) {
+                            setEditMode("edit");
+                            const superior = nodes.find(n => n.subordinates?.includes(selectedId));
+                            setForm({
+                              ...selectedNode,
+                              superiorId: superior?.id
+                            });
+                            setShowModal(true);
+                          }
+                        }}
+                        disabled={!selectedId || loading}
+                      >
+                        <i className="bi bi-person-gear me-1"></i>
+                        Edit User
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => {
+                          if (selectedId) {
+                            setDeleteConfirm(true);
+                          }
+                        }}
+                        disabled={!selectedId || loading}
+                      >
+                        <i className="bi bi-person-x me-1"></i>
+                        Delete User
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              )}
-
-              {editMode === "add" && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Superior (Optional)</label>
-                  <select
-                    className="border p-2 rounded w-full"
-                    value={newNode.superiorId?.toString() || ""}
-                    onChange={(e) =>
-                      setNewNode((prev) => ({ 
-                        ...prev, 
-                        superiorId: e.target.value ? +e.target.value : undefined 
-                      }))
-                    }
-                  >
-                    <option value="">-- Select Superior --</option>
-                    {nodes.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.name} ({n.position1})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors"
-                onClick={resetForm}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
-                onClick={editMode === "add" ? handleAddUser : handleUpdateUser}
-                disabled={loading}
-              >
-                {loading ? "Saving..." : "Save"}
-              </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
 
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
-            <p className="mb-4">Are you sure you want to delete this user? This action cannot be undone.</p>
-            <div className="flex justify-end gap-3">
-              <button
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors"
-                onClick={() => setDeleteConfirm(false)}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
-                onClick={handleDeleteUser}
-                disabled={loading}
-              >
-                {loading ? "Deleting..." : "Delete"}
-              </button>
+        {/* Stats Section */}
+        <div className="row mb-4">
+          <div className="col-md-3">
+            <div className="card border-0 shadow-sm bg-primary text-white">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1">
+                    <h6 className="card-title opacity-75 mb-1">Total Users</h6>
+                    <h3 className="mb-0">{totalUsers}</h3>
+                  </div>
+                  <div className="ms-3">
+                    <i className="bi bi-people" style={{ fontSize: '2rem', opacity: 0.7 }}></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card border-0 shadow-sm bg-success text-white">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1">
+                    <h6 className="card-title opacity-75 mb-1">Hierarchy Links</h6>
+                    <h3 className="mb-0">{usersWithSuperiors}</h3>
+                  </div>
+                  <div className="ms-3">
+                    <i className="bi bi-diagram-2" style={{ fontSize: '2rem', opacity: 0.7 }}></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-6">
+            {selectedNode && (
+              <div className="card border-0 shadow-sm bg-info text-white">
+                <div className="card-body">
+                  <div className="d-flex align-items-center">
+                    <div className="me-3">
+                      <img
+                        src={selectedNode.img}
+                        alt={selectedNode.name}
+                        className="rounded-circle border border-white border-2"
+                        style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div className="flex-grow-1">
+                      <h6 className="card-title opacity-75 mb-1">Selected User</h6>
+                      <h5 className="mb-0">{selectedNode.name}</h5>
+                      <small className="opacity-75">{selectedNode.position1}</small>
+                    </div>
+                    <div className="ms-3">
+                      <i className="bi bi-person-check" style={{ fontSize: '2rem', opacity: 0.7 }}></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!selectedNode && (
+              <div className="card border-0 shadow-sm bg-secondary text-white">
+                <div className="card-body text-center">
+                  <i className="bi bi-cursor" style={{ fontSize: '2rem', opacity: 0.7 }}></i>
+                  <h6 className="mt-2 mb-0">Click on a user in the chart to select</h6>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Organization Chart Section */}
+        <div className="row">
+          <div className="col-12">
+            <div className="card shadow-sm border-0">
+              <div className="card-header bg-light border-bottom">
+                <div className="d-flex align-items-center justify-content-between">
+                  <h5 className="mb-0">
+                    <i className="bi bi-diagram-3 me-2"></i>
+                    Organization Structure
+                  </h5>
+                  <button
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() => {
+                      fetchNodes();
+                      setRefreshKey(prev => prev + 1);
+                    }}
+                    disabled={loading}
+                  >
+                    <i className="bi bi-arrow-clockwise me-1"></i>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+              <div className="card-body p-0" style={{ minHeight: '500px', backgroundColor: '#f8f9fa' }}>
+                <OrgChartViewer 
+                  key={refreshKey} 
+                  onNodeClick={handleNodeClick}
+                  selectedNodeId={selectedId}
+                />
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Modals */}
+        <UserModal
+          show={showModal}
+          mode={editMode}
+          nodes={nodes}
+          selectedId={selectedId}
+          form={form}
+          newNode={newNode}
+          loading={loading}
+          onClose={resetForm}
+          onSave={editMode === "add" ? handleAddUser : handleUpdateUser}
+          onImageChange={handleImageChange}
+          onFieldUpdate={updateField}
+          onNewNodeUpdate={setNewNode}
+        />
+
+        <DeleteConfirmModal
+          show={deleteConfirm}
+          loading={loading}
+          userName={selectedNode?.name}
+          userPosition={selectedNode?.position1}
+          onConfirm={handleDeleteUser}
+          onCancel={() => setDeleteConfirm(false)}
+        />
+
+        <LoadingOverlay show={loading} message="Processing..." />
+      </div>
+    </>
   );
 };
 

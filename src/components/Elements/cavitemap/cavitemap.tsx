@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer,LayersControl, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
+import { MapContainer, LayersControl, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
 import { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { db } from '../../../firebase';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { normalizeCityName } from '../../Elements/cavitemap/types';
@@ -79,12 +80,11 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
     };
   }, []);
 
-
   useEffect(() => {
-  import('../../../data/maps/cavite.json').then((data) => {
-    setGeoData(data);
-  });
-}, []);
+    import('../../../data/maps/cavite.json').then((data) => {
+      setGeoData(data);
+    });
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -184,35 +184,41 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
   }, []);
 
   if (loading) {
-    return <div className="w-full h-full flex items-center justify-center">Loading map...</div>;
+    return (
+      <div className="d-flex justify-content-center align-items-center w-100 h-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading map...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="position-relative w-100 h-100">
       <MapContainer
         center={caviteCenter}
         zoom={10.4}
         minZoom={9}
         maxZoom={18}
         style={{ height: '600px', width: '100%' }}
-        className="rounded-lg shadow-md"
+        className="rounded shadow"
         ref={mapRef}
       >
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="OpenStreetMap">
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satellite">
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution='Tiles &copy; Esri'
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
 
-<LayersControl position="topright">
-  <LayersControl.BaseLayer checked name="OpenStreetMap">
-    <TileLayer
-      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    />
-  </LayersControl.BaseLayer>
-  <LayersControl.BaseLayer name="Satellite">
-    <TileLayer
-      url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-      attribution='Tiles &copy; Esri'
-    />
-  </LayersControl.BaseLayer>
-</LayersControl>
         {geoData && (
           <GeoJSON
             data={geoData}
@@ -259,11 +265,15 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
             }}
           >
             <Popup>
-              <div className="w-40">
-                <h3 className="font-bold">{city.name}</h3>
-                <p className="text-sm">{city.description?.substring(0, 60) || 'No description available'}...</p>
+              <div style={{ width: '200px' }}>
+                <h6 className="fw-bold mb-2">{city.name}</h6>
+                <p className="small mb-2">
+                  {city.description?.substring(0, 60) || 'No description available'}...
+                </p>
                 {city.mayor && (
-                  <p className="text-xs mt-1 text-blue-600">Mayor: {city.mayor.name}</p>
+                  <p className="small text-primary mb-0">
+                    <strong>Mayor:</strong> {city.mayor.name}
+                  </p>
                 )}
               </div>
             </Popup>
@@ -271,85 +281,169 @@ const CaviteMap: React.FC<CaviteMapProps> = ({ onCityClick }) => {
         ))}
       </MapContainer>
 
-      {/* Unified Side Panel */}
+      {/* Enhanced Bootstrap City Information Panel */}
       {displayedCity && (
-        <div className={`absolute right-4 top-4 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-50 ${
-          activeCity ? 'border-2 border-blue-400' : 'border border-gray-200'
-        }`}>
-          {displayedCity.image && displayedCity.image !== '' ? (
-            <img 
-              src={displayedCity.image} 
-              alt={displayedCity.name} 
-              className="w-full h-48 object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/cities/default.jpg';
-              }}
-            />
-          ) : (
-            <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
-              <span className="text-gray-400">No image available</span>
-            </div>
-          )}
-          <div className="p-4">
-            <div className="flex justify-between items-start">
-              <h3 className="font-bold text-lg mb-1 text-gray-800">
-                {displayedCity.name}
-              </h3>
-              {activeCity && (
-                <button 
-                  onClick={() => setActiveCity(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                  aria-label="Close city details"
+        <div 
+          className={`position-absolute top-0 end-0 m-3`}
+          style={{ 
+            width: '400px', 
+            zIndex: 1000,
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}
+        >
+          <div className={`card shadow-lg ${activeCity ? 'border-primary border-2' : ''}`}>
+            {/* City Image Header */}
+            <div className="position-relative">
+              {displayedCity.image && displayedCity.image !== '' ? (
+                <img 
+                  src={displayedCity.image} 
+                  alt={displayedCity.name} 
+                  className="card-img-top"
+                  style={{ height: '200px', objectFit: 'cover' }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/cities/default.jpg';
+                  }}
+                />
+              ) : (
+                <div 
+                  className="card-img-top bg-light d-flex align-items-center justify-content-center text-muted"
+                  style={{ height: '200px' }}
                 >
-                  ✕
-                </button>
-              )}
-            </div>
-            
-            <p className="text-gray-600 text-sm mb-3">
-              {displayedCity.description || 'No information available'}
-            </p>
-
-            {displayedCity.mayor ? (
-              <div className="mt-3 pt-3 border-t">
-                <h4 className="font-semibold mb-2">Mayor's Information</h4>
-                <div className="flex items-center space-x-3">
-                  {displayedCity.mayor.image && (
-                    <img 
-                      src={displayedCity.mayor.image} 
-                      alt={displayedCity.mayor.name} 
-                      className="w-12 h-12 rounded-full object-cover border"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/default-mayor.png';
-                      }}
-                    />
-                  )}
-                  <div>
-                    <p className="font-medium">{displayedCity.mayor.name}</p>
-                    <p className="text-sm text-gray-600">
-                      {displayedCity.mayor.politicalParty}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Term: {displayedCity.mayor.termStart} to {displayedCity.mayor.termEnd}
-                    </p>
+                  <div className="text-center">
+                    <i className="bi bi-image fs-1 mb-2"></i>
+                    <p className="mb-0">No image available</p>
                   </div>
                 </div>
-                {displayedCity.mayor.bio && (
-                  <p className="mt-2 text-sm text-gray-600">
-                    {displayedCity.mayor.bio.substring(0, 100)}...
-                  </p>
-                )}
+              )}
+              
+              {/* Close Button for Active City */}
+              {activeCity && (
+                <button 
+                  type="button"
+                  className="btn-close position-absolute top-0 end-0 m-2 bg-white rounded-circle p-2"
+                  onClick={() => setActiveCity(null)}
+                  aria-label="Close city details"
+                  style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                ></button>
+              )}
+              
+              {/* City Status Badge */}
+              <div className="position-absolute bottom-0 start-0 m-2">
+                <span className={`badge ${activeCity ? 'bg-primary' : 'bg-secondary'}`}>
+                  {activeCity ? 'Selected' : 'Preview'}
+                </span>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500 mt-3 pt-3 border-t">
-                No mayor information available
-              </p>
-            )}
-
-            <div className="flex justify-between text-xs text-gray-500 mt-3 pt-3 border-t">
-              <span>Lat: {(displayedCity.coordinates as [number, number])[0].toFixed(4)}</span>
-              <span>Lng: {(displayedCity.coordinates as [number, number])[1].toFixed(4)}</span>
             </div>
+
+            {/* Card Body */}
+            <div className="card-body">
+              {/* City Name and Title */}
+              <div className="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                  <h4 className="card-title mb-1 text-dark fw-bold">
+                    {displayedCity.name}
+                  </h4>
+                  <small className="text-muted">
+                    <i className="bi bi-geo-alt-fill me-1"></i>
+                    Cavite Province
+                  </small>
+                </div>
+              </div>
+              
+              {/* City Description */}
+              <div className="mb-3">
+                <h6 className="text-secondary mb-2">
+                  <i className="bi bi-info-circle-fill me-2"></i>
+                  About
+                </h6>
+                <p className="card-text text-muted">
+                  {displayedCity.description || 'No information available for this city.'}
+                </p>
+              </div>
+
+              {/* Mayor Information Section */}
+              {displayedCity.mayor ? (
+                <div className="mb-3">
+                  <h6 className="text-secondary mb-3">
+                    <i className="bi bi-person-badge-fill me-2"></i>
+                    Mayor's Office
+                  </h6>
+                  
+                  <div className="card bg-light">
+                    <div className="card-body p-3">
+                      <div className="d-flex align-items-center mb-3">
+                        {displayedCity.mayor.image ? (
+                          <img 
+                            src={displayedCity.mayor.image} 
+                            alt={displayedCity.mayor.name} 
+                            className="rounded-circle me-3 border border-2 border-white shadow-sm"
+                            style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/images/default-mayor.png';
+                            }}
+                          />
+                        ) : (
+                          <div 
+                            className="rounded-circle me-3 bg-secondary d-flex align-items-center justify-content-center text-white"
+                            style={{ width: '60px', height: '60px' }}
+                          >
+                            <i className="bi bi-person-fill fs-4"></i>
+                          </div>
+                        )}
+                        <div className="flex-grow-1">
+                          <h6 className="mb-1 fw-bold">{displayedCity.mayor.name}</h6>
+                          <p className="mb-1 small text-primary fw-semibold">
+                            {displayedCity.mayor.politicalParty}
+                          </p>
+                          <p className="mb-0 small text-muted">
+                            <i className="bi bi-calendar-range me-1"></i>
+                            {displayedCity.mayor.termStart} - {displayedCity.mayor.termEnd}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {displayedCity.mayor.bio && (
+                        <div className="border-top pt-2">
+                          <p className="small text-muted mb-0">
+                            {displayedCity.mayor.bio.length > 120 
+                              ? `${displayedCity.mayor.bio.substring(0, 120)}...`
+                              : displayedCity.mayor.bio
+                            }
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-3">
+                  <h6 className="text-secondary mb-2">
+                    <i className="bi bi-person-badge me-2"></i>
+                    Mayor's Office
+                  </h6>
+                  <div className="alert alert-light mb-0" role="alert">
+                    <i className="bi bi-info-circle me-2"></i>
+                    No mayor information available
+                  </div>
+                </div>
+              )}
+
+
+            </div>
+
+            {/* Action Footer */}
+            {!activeCity && hoveredCity && (
+              <div className="card-footer bg-light">
+                <button 
+                  className="btn btn-primary btn-sm w-100"
+                  onClick={() => handleClick(hoveredCity.name)}
+                >
+                  <i className="bi bi-cursor-fill me-2"></i>
+                  Click to Pin Details
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
