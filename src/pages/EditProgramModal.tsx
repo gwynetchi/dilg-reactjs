@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import Select, { ActionMeta, MultiValue } from "react-select";
 import Swal from "sweetalert2";
 import OutcomeAreaDropdown from "./modules/program-modules/OutcomeAreaDropdown";
-
+import { outcomeOptions } from "./modules/program-modules/outcomeOptions";
 interface Program {
   id: string;
   programName: string;
@@ -312,22 +312,15 @@ const EditProgramModal: React.FC<EditProgramModalProps> = ({
 <div className="mb-3">
   <label className="form-label">Outcome Area</label>
   <OutcomeAreaDropdown
-    value={
-      editData.outcomeArea
-        ? {
-            value: editData.outcomeArea,
-            label: editData.outcomeArea,
-            color: "#0d6efd", // Default fallback
-            textColor: "#fff",
-          }
-        : null
+    value={editData.outcomeArea ? 
+      outcomeOptions.find(opt => opt.value === editData.outcomeArea) || null 
+      : null
     }
     onChange={(selected) => {
       handleChange("outcomeArea", selected?.value || "");
     }}
   />
 </div>
-
               </div>
             </div>
 

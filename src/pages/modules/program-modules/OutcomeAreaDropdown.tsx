@@ -48,34 +48,46 @@ const outcomeOptions: OutcomeOption[] = [
 ];
 
 const customStyles: StylesConfig<OutcomeOption, false> = {
-  option: (base, state) => ({
-    ...base,
-    backgroundColor: state.isSelected
-      ? state.data.color
-      : state.isFocused
-      ? `${state.data.color}cc`
-      : state.data.color,
-    color: state.data.textColor,
-    cursor: "pointer",
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isSelected 
+      ? state.data.color 
+      : state.isFocused 
+      ? `${state.data.color}80` 
+      : 'white',
+    color: state.isSelected || state.isFocused ? state.data.textColor : '#212529',
+    ':active': {
+      backgroundColor: state.data.color,
+      color: state.data.textColor
+    }
   }),
-  singleValue: (base, state) => ({
-    ...base,
+  singleValue: (provided, state) => ({
+    ...provided,
     backgroundColor: state.data.color,
     color: state.data.textColor,
-    padding: "5px 10px",
-    borderRadius: "6px",
+    padding: '2px 8px',
+    borderRadius: '4px',
+    fontWeight: '500'
   }),
+  control: (provided) => ({
+    ...provided,
+    borderColor: '#dee2e6',
+    ':hover': {
+      borderColor: '#adb5bd'
+    }
+  })
 };
 
 const OutcomeAreaDropdown: React.FC<Props> = ({ value, onChange }) => {
   return (
     <Select
-      inputId="outcomeArea"
       options={outcomeOptions}
       value={value}
       onChange={onChange}
       styles={customStyles}
-      placeholder="Select Outcome Area"
+      className="basic-select"
+      classNamePrefix="select"
+      placeholder="Select outcome area..."
       isClearable
     />
   );
