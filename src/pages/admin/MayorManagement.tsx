@@ -514,7 +514,6 @@ const MayorManagement: React.FC<MayorManagementProps> = ({ onSave }) => {
                 {Object.entries(cities).map(([normalizedName, cityData]) => {
                   const cityName = cityData.name;
                   const isEditing = editingCity === cityName;
-                  const hasMayor = !!cityData.mayor?.name?.trim();
                   
                   return (
                     <div key={normalizedName} className="col-12 col-lg-6 col-xl-4">

@@ -20,7 +20,9 @@ export default function Landing() {
     <>
       <TopNavbar />
       <Header />
-      <Services />
+      <Services onSectionClick={function (_section: string): void {
+        throw new Error("Function not implemented.");
+      } } />
       {/* <Projects /> */}
       <Blog /> 
       <Pricing />

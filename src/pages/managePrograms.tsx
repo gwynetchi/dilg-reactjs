@@ -12,14 +12,14 @@ import Swal from "sweetalert2";
 import EditProgramModal from "../pages/EditProgramModal";
 import { Link } from "react-router-dom";
 import { Search, FilterCircle, XCircle } from 'react-bootstrap-icons';
-import { Card, Button, Form, Row, Col, Badge, Nav, Tab } from 'react-bootstrap';
+import { Card, Button, Form, Row, Col, Badge, Nav } from 'react-bootstrap';
 import debounce from 'lodash/debounce';
 
 interface Program {
   id: string;
   programName: string;
   description: string;
-  outcomeArea: string; // Changed from optional to required
+  outcomeArea: string;
   duration: { from: string; to: string };
   frequency: string;
   participants: string[];
@@ -40,7 +40,12 @@ interface User {
   role: string;
 }
 
-// Outcome Area options with styling
+interface FilterOptions {
+  frequency: string | null;
+  dateRange: string | null;
+  outcomeArea: string | null;
+}
+
 const outcomeOptions = [
   {
     value: "Excellence in Local Governance Upheld",
@@ -105,7 +110,6 @@ const ManagePrograms: React.FC = () => {
     });
   };
 
-  // Fetch users with roles
   const fetchUsers = async () => {
     try {
       const snapshot = await getDocs(collection(db, "users"));
@@ -130,28 +134,28 @@ const ManagePrograms: React.FC = () => {
     }
   };
 
-  // Fetch programs
+  const fetchPrograms = async () => {
+    setLoading(true);
+    try {
+      const snapshot = await getDocs(collection(db, "programs"));
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Program[];
+      setPrograms(list);
+    } catch (error) {
+      console.error("Error fetching programs:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load programs',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchPrograms = async () => {
-      setLoading(true);
-      try {
-        const snapshot = await getDocs(collection(db, "programs"));
-        const list = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Program[];
-        setPrograms(list);
-      } catch (error) {
-        console.error("Error fetching programs:", error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to load programs',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchPrograms();
     fetchUsers();
   }, []);
@@ -164,20 +168,20 @@ const ManagePrograms: React.FC = () => {
     setSelectedProgram(null);
   };
 
-const handleProgramUpdate = (updatedProgram: Program) => {
-  setPrograms(prev => 
-    prev.map(prog => prog.id === updatedProgram.id ? updatedProgram : prog)
-  );
-  setSelectedProgram(null);
-  
-  Swal.fire({
-    icon: 'success',
-    title: 'Updated!',
-    text: 'Program has been updated successfully',
-    timer: 2000,
-    showConfirmButton: false
-  });
-};
+  const handleProgramUpdate = (updatedProgram: Program) => {
+    setPrograms(prev => 
+      prev.map(prog => prog.id === updatedProgram.id ? updatedProgram : prog)
+    );
+    setSelectedProgram(null);
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Updated!',
+      text: 'Program has been updated successfully',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  };
 
   const deleteProgram = async (id: string) => {
     Swal.fire({
@@ -213,7 +217,6 @@ const handleProgramUpdate = (updatedProgram: Program) => {
     });
   };
 
-  // Apply filters function
   const applyFilters = (program: Program) => {
     const matchesSearch = 
       program.programName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -245,10 +248,7 @@ const handleProgramUpdate = (updatedProgram: Program) => {
     return matchesSearch && matchesFrequency && matchesDateRange && matchesOutcome;
   };
 
-  // Filter programs by search and filters (excluding tab filtering)
   const baseFilteredPrograms = programs.filter(applyFilters);
-  
-  // Filter by active tab
   const filteredPrograms = baseFilteredPrograms.filter(program => {
     return activeTab === 'all' || program.outcomeArea === activeTab;
   });
@@ -266,7 +266,10 @@ const handleProgramUpdate = (updatedProgram: Program) => {
     setSearchTerm('');
   };
   
-  const hasActiveFilters = searchTerm !== '' || filters.frequency !== null || filters.dateRange !== null || filters.outcomeArea !== null;
+  const hasActiveFilters = searchTerm !== '' || 
+    filters.frequency !== null || 
+    filters.dateRange !== null || 
+    filters.outcomeArea !== null;
 
   const getStatusBadge = (program: Program) => {
     if (!program.duration) return null;
@@ -290,7 +293,6 @@ const handleProgramUpdate = (updatedProgram: Program) => {
     const outcomeData = outcomeOptions.find(option => option.value === outcomeArea);
     if (!outcomeData) return null;
     
-    // Use simplified badge labels for better readability
     const simplifiedLabels: Record<string, string> = {
       "Excellence in Local Governance Upheld": "Excellence",
       "Peaceful, Orderly, and Safe Communities Strengthened": "Peaceful",
@@ -340,7 +342,6 @@ const handleProgramUpdate = (updatedProgram: Program) => {
     window.location.href = `/program-links/${programId}`;
   };
 
-  // Render outcome area badge
   const renderOutcomeArea = (outcomeArea: string) => {
     const outcome = outcomeOptions.find(
       (option) => option.value === outcomeArea
@@ -371,28 +372,108 @@ const handleProgramUpdate = (updatedProgram: Program) => {
     );
   };
 
-  return (
-    
-    <div className="container py-4">
-              <div className="head-title">
-          <div className="left">
-            <h1>Regular Reports and Program Management</h1>
-            <nav aria-label="breadcrumb">
-              <ol className="breadcrumb">
-                <li className="breadcrumb-item">
-                  <Link to="/">Dashboard</Link>
-                </li>
-                <li className="breadcrumb-item active">Regular Reports and Programs</li>
-              </ol>
-            </nav>
+  const renderFilterPanel = () => (
+    <Card className={`mb-4 ${isFilterOpen ? '' : 'd-none'}`}>
+      <Card.Body>
+        <Row>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Frequency</Form.Label>
+              <Form.Select 
+                value={filters.frequency || ''}
+                onChange={(e) => handleFilterChange('frequency', e.target.value || null)}
+              >
+                <option value="">All Frequencies</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Yearly">Yearly</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Date Range</Form.Label>
+              <Form.Select 
+                value={filters.dateRange || ''}
+                onChange={(e) => handleFilterChange('dateRange', e.target.value || null)}
+              >
+                <option value="">All Dates</option>
+                <option value="active">Active Programs</option>
+                <option value="upcoming">Upcoming Programs</option>
+                <option value="past">Past Programs</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Outcome Area</Form.Label>
+              <Form.Select 
+                value={filters.outcomeArea || ''}
+                onChange={(e) => handleFilterChange('outcomeArea', e.target.value || null)}
+              >
+                <option value="">All Outcome Areas</option>
+                {outcomeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+        </Row>
+        {hasActiveFilters && (
+          <div className="mt-3">
+            <Button 
+              variant="outline-secondary" 
+              size="sm"
+              onClick={clearFilters}
+            >
+              <XCircle className="me-1" /> Clear Filters
+            </Button>
           </div>
+        )}
+      </Card.Body>
+    </Card>
+  );
+
+  const renderOutcomeTabs = () => (
+    <Nav variant="tabs" className="outcome-nav mb-4" activeKey={activeTab} onSelect={(key) => setActiveTab(key || 'all')}>
+      <Nav.Item>
+        <Nav.Link eventKey="all" className="outcome-tab-all">All Programs</Nav.Link>
+      </Nav.Item>
+      {outcomeOptions.map(option => (
+        <Nav.Item key={option.value}>
+          <Nav.Link 
+            eventKey={option.value} 
+            className={getTabColorClass(option.value)}
+          >
+            {getOutcomeBadge(option.value)}
+          </Nav.Link>
+        </Nav.Item>
+      ))}
+    </Nav>
+  );
+
+  return (
+    <div className="container py-4">
+      <div className="head-title">
+        <div className="left">
+          <h1>Regular Reports and Program Management</h1>
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <Link to="/">Dashboard</Link>
+              </li>
+              <li className="breadcrumb-item active">Regular Reports and Programs</li>
+            </ol>
+          </nav>
         </div>
+      </div>
 
-
-      {/* Include CreatePrograms component directly */}
       <CreatePrograms />
 
-      {/* Filter Controls */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h5 className="mb-0"></h5> 
         <div className="d-flex">
@@ -402,6 +483,7 @@ const handleProgramUpdate = (updatedProgram: Program) => {
               className="form-control"
               placeholder="Search programs..."
               onChange={(e) => handleSearchChange(e.target.value)}
+              value={searchTerm}
             />
             <Search className="position-absolute" style={{ right: '10px', top: '10px' }} />
           </div>
@@ -412,114 +494,126 @@ const handleProgramUpdate = (updatedProgram: Program) => {
             <FilterCircle className="me-1" /> Filter
           </Button>
         </div>
-        
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <p className="mt-2">Loading programs...</p>
+      </div>
+
+      {renderFilterPanel()}
+      {renderOutcomeTabs()}
+
+      <Card>
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
-          ) : filteredPrograms.length === 0 ? (
-            <div className="text-center py-5">
-              <i className="bi bi-folder2-open display-4 text-muted"></i>
-              <p className="mt-2">No programs found. {searchTerm && "Try adjusting your search."}</p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Outcome Area</th>
-                    <th>Program Name</th>
-                    <th>Description</th>
-                    <th>Duration</th>
-                    <th>Frequency</th>
-                    <th>Participants</th>
-                    <th>Actions</th>
+            <p className="mt-2">Loading programs...</p>
+          </div>
+        ) : filteredPrograms.length === 0 ? (
+          <div className="text-center py-5">
+            <i className="bi bi-folder2-open display-4 text-muted"></i>
+            <p className="mt-2">No programs found. {searchTerm && "Try adjusting your search."}</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Outcome Area</th>
+                  <th>Program Name</th>
+                  <th>Description</th>
+                  <th>Duration</th>
+                  <th>Frequency</th>
+                  <th>Participants</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPrograms.map((program) => (
+                  <tr
+                    key={program.id}
+                    className="align-middle"
+                    onClick={() => navigateToDetails(program.id)}
+                    style={{ cursor: "pointer" }}
+                    title="Click to manage program links"
+                  >
+                    <td style={{ maxWidth: "200px" }}>
+                      {renderOutcomeArea(program.outcomeArea)}
+                    </td>
+                    <td className="fw-medium">
+                      {program.programName}
+                      {getStatusBadge(program)}
+                    </td>
+                    <td className="text-muted">{truncateText(program.description, 80)}</td>
+                    <td>
+                      <span className="badge bg-light text-dark border">
+                        {formatFullDate(program.duration.from)}
+                      </span>
+                      <i className="bi bi-arrow-right mx-1"></i>
+                      <span className="badge bg-light text-dark border">
+                        {formatFullDate(program.duration.to)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge bg-info bg-opacity-10 text-info">
+                        {program.frequency}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge bg-success bg-opacity-10 text-success">
+                        <i className="bi bi-people-fill me-1"></i>
+                        {program.participants.length}
+                      </span>
+                    </td>
+                    <td>
+                      {getStatusBadge(program)}
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="d-flex gap-2">
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="modal"
+                          data-bs-target="#editModal"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(program);
+                          }}
+                          title="Edit program"
+                        >
+                          <i className="bi bi-pencil-fill"></i> Edit
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProgram(program.id);
+                          }}
+                          title="Delete program"
+                        >
+                          <i className="bi bi-trash-fill"></i> Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredPrograms.map((program) => (
-                    <tr
-                      key={program.id}
-                      className="align-middle"
-                      onClick={() => navigateToDetails(program.id)}
-                      style={{ cursor: "pointer" }}
-                      title="Click to manage program links"
-                    >
-                      <td style={{ maxWidth: "200px" }}>
-                        {renderOutcomeArea(program.outcomeArea)}
-                      </td>
-                      <td className="fw-medium">{program.programName}</td>
-                      <td className="text-muted">{truncateText(program.description, 80)}</td>
-                      <td>
-                        <span className="badge bg-light text-dark border">
-                          {formatFullDate(program.duration.from)}
-                        </span>
-                        <i className="bi bi-arrow-right mx-1"></i>
-                        <span className="badge bg-light text-dark border">
-                          {formatFullDate(program.duration.to)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="badge bg-info bg-opacity-10 text-info">
-                          {program.frequency}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="badge bg-success bg-opacity-10 text-success">
-                          <i className="bi bi-people-fill me-1"></i>
-                          {program.participants.length}
-                        </span>
-                      </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className="d-flex gap-2">
-                          <button
-                            className="btn btn-sm btn-outline-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editModal"
-                            onClick={(e) => {
-                              e.stopPropagation(); // prevent redirect
-                              handleEditClick(program);
-                            }}
-                            title="Edit program"
-                          >
-                            <i className="bi bi-pencil-fill"></i> Edit
-                          </button>
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={(e) => {
-                              e.stopPropagation(); // prevent redirect
-                              deleteProgram(program.id);
-                            }}
-                            title="Delete program"
-                          >
-                            <i className="bi bi-trash-fill"></i> Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         
         {filteredPrograms.length > 0 && (
-          <div className="card-footer bg-white">
+          <Card.Footer className="bg-white">
             <div className="d-flex justify-content-between align-items-center">
               <small className="text-muted">
                 Showing {filteredPrograms.length} of {programs.length} programs
               </small>
+              <small className="text-muted">
+                Last updated: {new Date().toLocaleString()}
+              </small>
             </div>
-          </div>
+          </Card.Footer>
         )}
-      </div>
+      </Card>
 
-      {/* Edit Modal Component */}
       {selectedProgram && (
         <EditProgramModal
           program={selectedProgram}
@@ -529,14 +623,12 @@ const handleProgramUpdate = (updatedProgram: Program) => {
         />
       )}
 
-      {/* Custom Styles */}
       <style>{`
         .outcome-badge {
           font-size: 0.75rem;
           font-weight: 500;
         }
         
-        /* Improved Tab Styling */
         .outcome-nav .nav-tabs .nav-link {
           transition: all 0.3s ease;
           font-weight: 500;
@@ -633,7 +725,6 @@ const handleProgramUpdate = (updatedProgram: Program) => {
           font-weight: 600;
         }
         
-        /* Responsive improvements */
         .outcome-nav {
           overflow-x: auto;
           flex-wrap: nowrap;

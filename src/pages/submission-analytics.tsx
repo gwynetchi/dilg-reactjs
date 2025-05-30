@@ -14,7 +14,7 @@ import {
 import { db } from "../firebase";
 import { Table, Modal, Button, Form, Card, Badge, Spinner, Container, Row, Col } from "react-bootstrap";
 import "../styles/components/pages.css";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import ChartSwitcher from "../pages/ChartSwitcher";
 
 interface Communication {
@@ -56,7 +56,6 @@ const statusColors: Record<string, string> = {
 
 const Analytics: React.FC = () => {
   // Use location to keep track of URL changes that might be caused by sidebar toggling
-  const location = useLocation();
   
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, Submission[]>>({});

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import '../styles/ScoreboardWidget.css';
@@ -24,7 +23,6 @@ const ScoreboardWidget: React.FC = () => {
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const confettiRef = useRef<HTMLCanvasElement | null>(null);
-  const navigate = useNavigate();
 
   const fetchRecipientDetails = async (uid: string): Promise<string> => {
     try {
@@ -155,9 +153,6 @@ const ScoreboardWidget: React.FC = () => {
     triggerConfetti();
   };
 
-  const navigateToScoreboard = (): void => {
-    navigate('/scoreBoard');
-  };
 
   if (loading) return (
     <div className="widget-loading">

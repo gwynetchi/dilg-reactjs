@@ -86,7 +86,6 @@ const [year, setYear] = useState<number | 'all'>('all');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }, 6000);
   };
-  const USE_SUBMITTED_DETAILS = false; // Change to true when needed
  
   useEffect(() => {
     const unsubscribeUsers = onSnapshot(collection(db, 'users'), async (usersSnapshot) => {
