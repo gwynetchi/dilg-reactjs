@@ -366,28 +366,32 @@ const [outcomeArea, setOutcomeArea] = useState<OutcomeOption | null>(null);
       cancelButtonText: 'No, keep it',
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const commDoc = doc(db, "communications", id);
-          const snapshot = await getDoc(commDoc);
-          const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
-      
-          if (data) {
-            await softDelete(data, "communications", "deleted_communications");
-            await deleteDoc(commDoc);
-            showAlert("Communication Deleted and Archived successfully!", "success");
-            fetchSentCommunications();
-          } else {
-            showAlert("Communication not found!", "error");
-          }
-        } catch (error) {
-          console.error("Error deleting communication:", error);
-          showAlert("Failed to delete communication. Please try again.", "error");
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const commDoc = doc(db, "communications", id);
+        const snapshot = await getDoc(commDoc);
+        const data = snapshot.exists() ? { id, ...snapshot.data() } : null;
+    
+        if (data) {
+          // First soft delete (copy to deleted_communications)
+          await softDelete(data, "communications", "deleted_communications");
+          
+          // Only after successful soft delete, remove the original
+          await deleteDoc(commDoc);
+          
+          showAlert("Communication Deleted and Archived successfully!", "success");
+          fetchSentCommunications();
+        } else {
+          showAlert("Communication not found!", "error");
         }
+      } catch (error) {
+        console.error("Error deleting communication:", error);
+        showAlert("Failed to delete communication. Please try again.", "error");
       }
-    });
-  };    
+    }
+  });
+};
   
   const handleEdit = (comm: Communication) => {
     setSubject(comm.subject);
