@@ -411,9 +411,11 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
               <Link to={path} onClick={() => setActiveMenu(name)}>
                 <i className={`bx ${icon} bx-sm`}></i>
                 <span className="text">{name}</span>
-                {name === "One Shot Reports" && unreadCounts.inbox > 0 && (
+                {/* Show unread count for Inbox (communications) */}
+                {name === "Inbox" && unreadCounts.inbox > 0 && (
                   <span className="menu-badge">{unreadCounts.inbox}</span>
                 )}
+                {/* Show unread count for Regular Reports (programs) */}
                 {name === "Regular Reports" && unreadCounts.programs > 0 && (
                   <span className="menu-badge">{unreadCounts.programs}</span>
                 )}

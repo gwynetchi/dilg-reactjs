@@ -12,7 +12,7 @@ import { getAuth } from "firebase/auth";
 export const softDelete = async (
   originalData: any,
   originalCollection: string,
-  deletedCollection: string,
+  deletedCollection: string = "deleted_communications" // Default to deleted_communications
 ) => {
   try {
     const auth = getAuth();
@@ -45,35 +45,34 @@ export const softDelete = async (
     }
 
     // Prepare the deleted document
-// In your softDelete.tsx
-// In softDelete.tsx
-const deletedDoc = {
-  ...originalData,
-  deletedBy: {
-    id: user.uid,
-    name: deletedByInfo.name,
-    email: deletedByInfo.email
-  },
-  deletedAt: serverTimestamp(),
-  originalCollection,
-  // Only include createdAt if it exists and is valid
-  ...(originalData.createdAt && { createdAt: originalData.createdAt }),
-  id: originalData.id
-};
+    const deletedDoc = {
+      ...originalData,
+      deletedBy: {
+        id: user.uid,
+        name: deletedByInfo.name,
+        email: deletedByInfo.email
+      },
+      deletedAt: serverTimestamp(),
+      originalCollection,
+      // Only include createdAt if it exists and is valid
+      ...(originalData.createdAt && { createdAt: originalData.createdAt }),
+      id: originalData.id
+    };
 
-// Remove any undefined values from the object
-const cleanDeletedDoc = Object.fromEntries(
-  Object.entries(deletedDoc).filter(([_, value]) => value !== undefined)
-);
+    // Remove any undefined values from the object
+    const cleanDeletedDoc = Object.fromEntries(
+      Object.entries(deletedDoc).filter(([_, value]) => value !== undefined)
+    );
 
-// Save to deleted collection
-const deletedRef = doc(db, deletedCollection, originalData.id);
-await setDoc(deletedRef, cleanDeletedDoc);
+    // Save to deleted collection
+    const deletedRef = doc(db, deletedCollection, originalData.id);
+    await setDoc(deletedRef, cleanDeletedDoc);
+    
     console.log("Successfully soft-deleted document:", originalData.id);
     return true;
   } catch (err) {
     console.error("Error in softDelete:", err);
-    throw err; // Re-throw to handle in calling function
+    throw err;
   }
 };
 

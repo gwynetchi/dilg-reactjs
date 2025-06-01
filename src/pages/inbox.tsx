@@ -8,7 +8,8 @@ import {
   serverTimestamp,
   updateDoc,
   arrayUnion,
-  deleteDoc
+  deleteDoc,
+  getDoc
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../firebase";
@@ -17,6 +18,8 @@ import InboxControls from "./modules/inbox-modules/inboxcontrols";
 import DeleteMessageModal from "./modules/inbox-modules/deletemodal";
 import MessageTable from "./modules/inbox-modules/messagetable";
 import "../styles/components/inbox.module.css"; // Make sure this CSS file exists
+import { softDelete } from "./modules/inbox-modules/softDelete";
+import Swal from 'sweetalert2';
 
 const Inbox: React.FC = () => {
   interface Communication {
@@ -194,31 +197,93 @@ const Inbox: React.FC = () => {
     setLoading(false);
   };
 
-  const deleteMessage = async () => {
-    if (!selectedMessage || !userId) return;
-    const { id, recipients, source } = selectedMessage;
+const deleteMessage = async () => {
+  if (!selectedMessage || !userId) return;
+  const { id, recipients, source } = selectedMessage;
 
-    try {
-      const updatedRecipients = recipients.filter((recipient) => recipient !== userId);
-      const messageRef = doc(db, source, id);
+  // Show confirmation dialog
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!'
+  });
 
-      if (updatedRecipients.length === 0) {
-        await deleteDoc(messageRef);
-      } else {
-        await updateDoc(messageRef, {
-          recipients: updatedRecipients
-        });
-      }
+  if (!result.isConfirmed) {
+    setShowModal(false);
+    return;
+  }
 
-      setCommunications((prev) =>
-        prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0)
-      );
-    } catch (error) {
-      console.error("Error deleting message:", error);
+  try {
+    // First get the full message document
+    const messageRef = doc(db, source, id);
+    const messageSnap = await getDoc(messageRef);
+    
+    if (!messageSnap.exists()) {
+      throw new Error("Message not found");
     }
 
+    const messageData = messageSnap.data();
+    
+    // Show loading state
+    Swal.fire({
+      title: 'Deleting...',
+      html: 'Please wait while we archive your message',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // 1. Soft delete - copy to deleted_communications
+    await softDelete(
+      { 
+        ...messageData, 
+        id: id,
+        source: source
+      },
+      source,
+      "deleted_communications"
+    );
+
+    // 2. Update recipients in original document
+    const updatedRecipients = recipients.filter((recipient) => recipient !== userId);
+    
+    if (updatedRecipients.length === 0) {
+      await deleteDoc(messageRef);
+    } else {
+      await updateDoc(messageRef, {
+        recipients: updatedRecipients
+      });
+    }
+
+    // Update local state
+    setCommunications((prev) =>
+      prev.filter((msg) => msg.id !== id || updatedRecipients.length > 0)
+    );
+
+    // Show success message
+    await Swal.fire({
+      icon: 'success',
+      title: 'Deleted!',
+      text: 'The message has been moved to deleted one shot reports',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to delete message. Please try again.',
+    });
+  } finally {
     setShowModal(false);
-  };
+  }
+};
 
   const listenToSenderProfile = (senderId: string) => {
     const senderRef = doc(db, "users", senderId);
@@ -265,14 +330,14 @@ const Inbox: React.FC = () => {
     navigate(`/${rolePaths[userRole] || "viewer"}/inbox/${id}`);
   };
 
-  const handleDeleteRequest = (
-    id: string,
-    recipients: string[],
-    source: "communications" | "programcommunications"
-  ) => {
-    setSelectedMessage({ id, recipients, source });
-    setShowModal(true);
-  };
+const handleDeleteRequest = (
+  id: string,
+  recipients: string[],
+  source: "communications" | "programcommunications"
+) => {
+  setSelectedMessage({ id, recipients, source });
+  deleteMessage(); // Now directly calls deleteMessage which handles the confirmation
+};
 
   const filteredCommunications = communications
     .filter((msg) => {

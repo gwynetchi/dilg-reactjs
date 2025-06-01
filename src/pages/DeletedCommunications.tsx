@@ -145,7 +145,7 @@ const DeletedCommunications = () => {
     <div className="dashboard-container">
         <div className="head-title">
           <div className="left">
-            <h1>Deleted Communications</h1>
+            <h1>Deleted One Shot Reports</h1>
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
