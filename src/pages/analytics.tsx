@@ -23,17 +23,17 @@ const Analytics = () => {
           </div>
           {/* Analytics Navigation */}
           <div className="analytics-navigation">
-            <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/submission-analytics")}>
+            <div className="analytics-card" onClick={() => navigate("/ProvincialOffice/analytics/submission-analytics")}>
               <FaFileAlt className="analytics-icon" />
               <span>One Shot Reports</span>
             </div>
 
-            <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/user-analytics")}>
+            <div className="analytics-card" onClick={() => navigate("/ProvincialOffice/analytics/user-analytics")}>
               <FaUsers className="analytics-icon" />
               <span>User Analytics</span>
             </div>
 
-            <div className="analytics-card" onClick={() => navigate("/evaluator/analytics/monthly-analytics")}>
+            <div className="analytics-card" onClick={() => navigate("/ProvincialOffice/analytics/monthly-analytics")}>
               <FaChartBar className="analytics-icon" />
               <span>Program Analytics</span>
             </div>

@@ -319,9 +319,9 @@ const date = submission.submittedAt && typeof submission.submittedAt.toDate === 
         <div className="mb-3">
           <h1 className="h3">
             {userRole === 'Admin' && 'Admin Dashboard'}
-            {userRole === 'Evaluator' && 'Evaluator Dashboard'}
-            {userRole === 'LGU' && 'LGU Dashboard'}
-            {!['Admin', 'Evaluator', 'LGU'].includes(userRole || '') && 'Dashboard'}
+            {userRole === 'Provincial Office' && 'Provincial Office Dashboard'}
+            {userRole === 'Cluster Office' && 'Cluster Office Dashboard'}
+            {!['Admin', 'Provincial Office', 'Cluster Office'].includes(userRole || '') && 'Dashboard'}
           </h1>
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
@@ -469,7 +469,7 @@ const date = submission.submittedAt && typeof submission.submittedAt.toDate === 
                           <th>Submitted At</th>
                           <th>Status</th>
                           <th>Remarks</th>
-                          {userRole === 'Evaluator' && <th>Actions</th>}
+                          {userRole === 'Provincial Office' && <th>Actions</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -535,7 +535,7 @@ const date = submission.submittedAt && typeof submission.submittedAt.toDate === 
                                 </span>
                               </td>
                               <td className="small">{report.remarks || "—"}</td>
-                              {userRole === 'Evaluator' && (
+                              {userRole === 'Provincial Office' && (
                                 <td>
                                   <button 
                                     className="btn btn-sm btn-light me-1"

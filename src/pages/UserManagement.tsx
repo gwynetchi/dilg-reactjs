@@ -11,6 +11,7 @@ interface EditUserData {
   mname: string;
   lname: string;
   role: string;
+  cluster: string;
   email: string;
   password: string;
   confirmPassword?: string;
@@ -21,6 +22,7 @@ type UserType = {
   email: string;
   password?: string;
   role: string;
+  cluster: string;
   createdAt?: string;
   fname?: string;
   mname?: string;
@@ -47,7 +49,8 @@ const formatDate = (dateString?: string): string => {
 const DEFAULT_USER_DATA = {
   email: "",
   password: "",
-  role: "Viewer",
+  role: "Field Office",
+  cluster: "",
   fname: "",
   mname: "",
   lname: "",
@@ -59,6 +62,7 @@ const DEFAULT_EDIT_DATA = {
   mname: "",
   lname: "",
   role: "",
+  cluster: "",
   email: "",
   password: "",
   confirmPassword: "",
@@ -113,40 +117,54 @@ const UserManagement = () => {
     return () => unsubscribe();
   }, [showNotification]);
 
-  const handleCreateUser = useCallback(async () => {
-    const { email, password, role, fname, mname, lname } = newUser;
+// Update the handleCreateUser function to ensure proper role/cluster assignment
+const handleCreateUser = useCallback(async () => {
+  const { email, password, role, cluster, fname, mname, lname } = newUser;
 
-    if (!email || !password || !role) {
-      showNotification("⚠️ Please fill in all required fields.", "warning");
+  if (!email || !password || !role || !cluster || !fname || !lname) {
+    showNotification("⚠️ Please fill in all required fields.", "warning");
+    return;
+  }
+
+  try {
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showNotification("❌ Please enter a valid email address", "error");
       return;
     }
 
-    if (!window.confirm("Proceed to create this user?")) return;
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-      const uid = userCredential.user.uid;
-
-      await setDoc(doc(db, "users", uid), {
-        uid,
-        email,
-        role,
-        fname,
-        mname,
-        lname,
-        password,
-        profileImage: "",
-        createdAt: new Date().toISOString() 
-      });
-
-      showNotification("✅ User created successfully!");
-      setNewUser(DEFAULT_USER_DATA);
-    } catch (error: any) {
-      console.error("Error creating user:", error.message);
-      const errorMessage = getFirebaseErrorMessage(error.code || error.message);
-      showNotification(`❌ ${errorMessage}`, "error");
+    // Validate password length
+    if (password.length < 6) {
+      showNotification("❌ Password must be at least 6 characters", "error");
+      return;
     }
-  }, [newUser, showNotification]);
+
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid = userCredential.user.uid;
+
+    // Ensure role and cluster are properly saved
+    await setDoc(doc(db, "users", uid), {
+      uid,
+      email: email.toLowerCase(), // Store email in lowercase for consistency
+      role: role.replace(/\s+/g, ''), // Remove spaces when saving
+      cluster,
+      fname,
+      mname,
+      lname,
+      password, // Note: Storing passwords in Firestore is not recommended
+      profileImage: "",
+      createdAt: new Date().toISOString(),
+      isActive: true // Add active status flag
+    });
+
+    showNotification("✅ User created successfully!");
+    setNewUser(DEFAULT_USER_DATA);
+  } catch (error: any) {
+    console.error("Error creating user:", error);
+    const errorMessage = getFirebaseErrorMessage(error.code || error.message);
+    showNotification(`❌ ${errorMessage}`, "error");
+  }
+}, [newUser, showNotification]);
 
   const handleDeleteClick = useCallback((id: string) => {
     setUserToDelete(id);
@@ -187,6 +205,7 @@ const UserManagement = () => {
       mname: user.mname || "",
       lname: user.lname || "",
       role: user.role || "",
+      cluster: user.cluster || "",
       email: user.email || "",
       password: "", // Start with empty password field
       confirmPassword: "",
@@ -201,8 +220,8 @@ const UserManagement = () => {
   }, []);
 
   const validateEditForm = useCallback((): boolean => {
-    if (!editData.fname.trim() || !editData.lname.trim()) {
-      showNotification("First name and last name are required", "warning");
+    if (!editData.fname.trim() || !editData.lname.trim() || !editData.cluster.trim()) {
+      showNotification("First name, last name, and cluster are required", "warning");
       return false;
     }
   
@@ -264,7 +283,8 @@ const UserManagement = () => {
         fname: editData.fname,
         mname: editData.mname,
         lname: editData.lname,
-        role: editData.role,
+        role: editData.role.replace(/\s+/g, ''), // Remove spaces
+        cluster: editData.cluster,
         email: editData.email,
       };
   
@@ -332,9 +352,16 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
 
   const roleOptions = useMemo(() => [
     { value: "Admin", label: "Admin" },
-    { value: "Evaluator", label: "Evaluator" },
-    { value: "LGU", label: "LGU" },
-    { value: "Viewer", label: "Viewer" }
+    { value: "ProvincialOffice", label: "Provincial Office" },
+    { value: "ClusterOffice", label: "Cluster Office" },
+    { value: "FieldOffice", label: "Field Office" }
+  ], []);
+
+  const clusterOptions = useMemo(() => [
+  { value: "Cluster A", label: "Cluster A" },
+  { value: "Cluster B", label: "Cluster B" },
+  { value: "Cluster C", label: "Cluster C" },
+  { value: "Provincial Office", label: "Provincial Office" }
   ], []);
 
   return (
@@ -353,70 +380,82 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
           </div>
 
           {/* Create User Form */}
-          <div className="card p-4 mb-4">
-            <h4>Create New User</h4>
-            <div className="row g-2">
-              {nameFields.map(({ field, placeholder }) => (
-                <div className="col" key={field}>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder={placeholder}
-                    value={newUser[field as keyof typeof newUser]}
-                    onChange={(e) => setNewUser({ ...newUser, [field]: e.target.value })}
-                  />
-                </div>
-              ))}
-            </div>
+<div className="card p-4 mb-4">
+  <h4>Create New User</h4>
+  <div className="row g-2">
+    {nameFields.map(({ field, placeholder }) => (
+      <div className="col" key={field}>
+        <input
+          type="text"
+          className="form-control"
+          placeholder={placeholder}
+          value={newUser[field as keyof typeof newUser]}
+          onChange={(e) => setNewUser({ ...newUser, [field]: e.target.value })}
+        />
+      </div>
+    ))}
+  </div>
 
-            <div className="row g-2 mt-2">
-              <div className="col">
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="Email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                />
-              </div>
-              <div className="col">
-                <div className="input-group">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="form-control"
-                    placeholder="Password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    required
-                  />
-                  <button
-                    className="btn btn-outline-secondary"
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-              </div>              
-              <div className="col">
-                <select
-                  className="form-select"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                >
-                  {roleOptions.map(({ value, label }) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col">
-                <button className="btn btn-outline-primary" onClick={handleCreateUser}>
-                  Create User
-                </button>
-              </div>
-            </div>
-          </div>
-
+  <div className="row g-2 mt-2">
+    <div className="col-md-4">
+      <input
+        type="email"
+        className="form-control"
+        placeholder="Email"
+        value={newUser.email}
+        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+      />
+    </div>
+    <div className="col-md-4">
+      <div className="input-group">
+        <input
+          type={showPassword ? "text" : "password"}
+          className="form-control"
+          placeholder="Password"
+          value={newUser.password}
+          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+          required
+        />
+        <button
+          className="btn btn-outline-secondary"
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? <FaEyeSlash /> : <FaEye />}
+        </button>
+      </div>
+    </div>
+    <div className="col-md-4">
+      <select
+        className="form-select"
+        value={newUser.role}
+        onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+      >
+        {roleOptions.map(({ value, label }) => (
+          <option key={value} value={value}>{label}</option>
+        ))}
+      </select>
+    </div>
+    <div className="col-md-6">
+      <select
+        className="form-select"
+        value={newUser.cluster}
+        onChange={(e) => setNewUser({ ...newUser, cluster: e.target.value })}
+        required
+      >
+        <option value="">Select Cluster</option>
+        {clusterOptions.map(({ value, label }) => (
+          <option key={value} value={value}>{label}</option>
+        ))}
+      </select>
+    </div>
+    <div className="col-md-6">
+      <button className="btn btn-outline-primary w-100" onClick={handleCreateUser}>
+        Create User
+      </button>
+    </div>
+  </div>
+</div>
           {/* User Table */}
           <div className="relative-container">
             <div className="table-data">
@@ -459,6 +498,7 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
                           <th>Email</th>
                           <th>Password</th>
                           <th>Role</th>
+                          <th>Cluster</th>
                           <th>Created At</th>
                           <th>Actions</th>
                         </tr>
@@ -488,6 +528,7 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
                               <td>{user.email}</td>
                               <td>{user.password}</td>
                               <td>{user.role}</td>
+                              <td>{user.cluster || 'N/A'}</td>
                               <td>{formatDate(user.createdAt)}</td>
                               <td>
                                 <button 
@@ -585,7 +626,23 @@ const searchUsers = useCallback((users: UserType[], term: string) => {
                           ))}
                         </select>
                       </div>
-                      
+
+                      <div className="col-md-6">
+                        <label className="form-label">Cluster</label>
+                        <select
+                          name="cluster"
+                          className="form-select"
+                          value={editData.cluster}
+                          onChange={handleEditChange}
+                          required
+                        >
+                          <option value="">Select Cluster</option>
+                          {clusterOptions.map(({ value, label }) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="col-md-6">
                         <label className="form-label">New Password</label>
                         <div className="input-group">

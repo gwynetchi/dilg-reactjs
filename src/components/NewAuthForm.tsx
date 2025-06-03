@@ -109,17 +109,18 @@ const AuthForm = () => {
       const userDoc = await getDoc(userDocRef);
   
       if (userDoc.exists()) {
-        const userRole = userDoc.data().role;
+
+        const userRole = userDoc.data().role.replace(/\s+/g, ''); // Remove all spaces
         console.log(`User role: ${userRole}`);
-  
+
         setSuccessMessage("Logged in successfully!");
         setLoading(false);
-  
+
         setTimeout(() => {
           resetForm();
           navigate(`/${userRole.toLowerCase()}/dashboard`);
         }, 1000);
-      } else {
+        } else {
         setError("User data not found.");
         await auth.signOut();
         setLoading(false);

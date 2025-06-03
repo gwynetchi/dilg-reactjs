@@ -153,12 +153,12 @@ borderColor: "#fd7e14",
 
     if (props.type === "communication") {
       const rolePaths: { [key: string]: string } = {
-        Evaluator: "evaluator",
-        Viewer: "viewer",
-        LGU: "lgu",
+        ProvincialOffice: "Provincial Office",
+        FieldOffice: "Field Office",
+        ClusterOffice: "Cluster Office",
         Admin: "admin",
       };
-      const rolePath = rolePaths[userRole] || "viewer";
+      const rolePath = rolePaths[userRole] || "Field Office";
       navigate(`/${rolePath}/inbox/${props.messageId}`);
     } else if (props.type === "submission") {
       navigate(`/programdetails/${props.programId}`);

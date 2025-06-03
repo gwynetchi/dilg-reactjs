@@ -27,6 +27,7 @@ interface NavbarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 }
+type UserRole = keyof typeof MENU_ITEMS;
 
 // Message types
 interface BaseMessage {
@@ -58,32 +59,32 @@ type Message = CommunicationMessage | ProgramMessage;
 
 // Constants
 const MENU_ITEMS = {
-  Viewer: [
-    { name: "Dashboard", icon: "bxs-dashboard", path: "/viewer/dashboard" },
-    { name: "Inbox", icon: "bxs-inbox", path: "/viewer/inbox" },
-    { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/viewer/programs" },
-    { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/viewer/scoreBoard" },
+  FieldOffice: [
+    { name: "Dashboard", icon: "bxs-dashboard", path: "/FieldOffice/dashboard" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/FieldOffice/inbox" },
+    { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/FieldOffice/programs" },
+    { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/FieldOffice/scoreBoard" },
   ],
-  Evaluator: [
-    { name: "Dashboard", icon: "bxs-dashboard", path: "/evaluator/dashboard" },
-    { name: "Inbox", icon: "bxs-inbox", path: "/evaluator/inbox" },
-    { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/evaluator/programs" },
-    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/evaluator/one_shot_reports" },
-    { name: "Deleted One Shot Reports", icon: "bxs-message-alt-minus", path: "/evaluator/Deletedone_shot_reports" },
-    { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/evaluator/analytics" },
-    { name: "Calendar", icon: "bxs-calendar", path: "/evaluator/calendar" },
-    { name: "Message", icon: "bxs-chat", path: "/evaluator/message" },
-    { name: "Score Board", icon: "bxs-crown", path: "/evaluator/scoreBoard" },
+  ProvincialOffice: [
+    { name: "Dashboard", icon: "bxs-dashboard", path: "/ProvincialOffice/dashboard" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/ProvincialOffice/inbox" },
+    { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/ProvincialOffice/programs" },
+    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/ProvincialOffice/one_shot_reports" },
+    { name: "Deleted One Shot Reports", icon: "bxs-message-alt-minus", path: "/ProvincialOffice/Deletedone_shot_reports" },
+    { name: "Analytics", icon: "bxs-bar-chart-alt-2", path: "/ProvincialOffice/analytics" },
+    { name: "Calendar", icon: "bxs-calendar", path: "/ProvincialOffice/calendar" },
+    { name: "Message", icon: "bxs-chat", path: "/ProvincialOffice/message" },
+    { name: "Score Board", icon: "bxs-crown", path: "/ProvincialOffice/scoreBoard" },
   ],
-  LGU: [
-    { name: "Dashboard", icon: "bxs-dashboard", path: "/lgu/dashboard" },
-    { name: "Inbox", icon: "bxs-inbox", path: "/lgu/inbox" },
-    { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/lgu/programs" },
-    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/lgu/one_shot_reports" },
-    { name: "Deleted One Shot Reports", icon: "bxs-message-alt-minus", path: "/lgu/Deletedone_shot_reports" },
-    { name: "Calendar", icon: "bxs-calendar", path: "/lgu/calendar" },
-    { name: "Message", icon: "bxs-chat", path: "/lgu/message" },
-    { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/lgu/scoreBoard" },
+  ClusterOffice: [
+    { name: "Dashboard", icon: "bxs-dashboard", path: "/ClusterOffice/dashboard" },
+    { name: "Inbox", icon: "bxs-inbox", path: "/ClusterOffice/inbox" },
+    { name: "Regular Reports", icon: "bxs-doughnut-chart", path: "/ClusterOffice/programs" },
+    { name: "One Shot Reports", icon: "bxs-message-alt-edit", path: "/ClusterOffice/one_shot_reports" },
+    { name: "Deleted One Shot Reports", icon: "bxs-message-alt-minus", path: "/ClusterOffice/Deletedone_shot_reports" },
+    { name: "Calendar", icon: "bxs-calendar", path: "/ClusterOffice/calendar" },
+    { name: "Message", icon: "bxs-chat", path: "/ClusterOffice/message" },
+    { name: "Score Board", icon: "bxs-bar-chart-alt-2", path: "/ClusterOffice/scoreBoard" },
   ],
   Admin: [
     { name: "Dashboard", icon: "bxs-dashboard", path: "/admin/dashboard" },
@@ -101,9 +102,9 @@ const MENU_ITEMS = {
 };
 
 const ROLE_PATHS = {
-  Evaluator: "evaluator",
-  Viewer: "viewer",
-  LGU: "lgu",
+  ProvincialOffice: "ProvincialOffice",
+  FieldOffice: "FieldOffice",
+  ClusterOffice: "ClusterOffice",
   Admin: "admin",
 };
 
@@ -132,7 +133,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
     inbox: 0,
     programs: 0
   });
-  const [userRole, setUserRole] = useState<keyof typeof MENU_ITEMS | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userProfilePic, setUserProfilePic] = useState<string>("");
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [unreadMessages, setUnreadMessages] = useState<Message[]>([]);
@@ -310,7 +311,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        const rolePath = ROLE_PATHS[userRole] || "viewer";
+        const rolePath = ROLE_PATHS[userRole] || "FieldOffice";
         const routePath = messageType === 'communication' ? 'inbox' : 'programs';
         navigate(`/${rolePath}/${routePath}/${messageId}`);
         
@@ -392,7 +393,9 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
   const filteredMessages = getFilteredMessages();
 
-  if (!userRole) return null;
+  if (!userRole || !MENU_ITEMS[userRole]) {
+    return null;
+  }
 
   return (
     <div className="d-flex">
@@ -406,7 +409,7 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, setIsSidebarOpen }) => {
         </Link>
 
         <ul className="side-menu top">
-          {userRole && MENU_ITEMS[userRole].map(({ name, icon, path }) => (
+          {userRole && MENU_ITEMS[userRole as keyof typeof MENU_ITEMS]?.map(({ name, icon, path }) => (
             <li key={name} className={activeMenu === name ? "active" : ""}>
               <Link to={path} onClick={() => setActiveMenu(name)}>
                 <i className={`bx ${icon} bx-sm`}></i>

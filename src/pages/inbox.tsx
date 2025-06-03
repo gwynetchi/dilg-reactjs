@@ -311,9 +311,9 @@ const deleteMessage = async () => {
     if (!userRole || !userId) return;
 
     const rolePaths: { [key: string]: string } = {
-      Evaluator: "evaluator",
-      Viewer: "viewer",
-      LGU: "lgu",
+      ProvincialOffice: "Provincial Office",
+      FieldOffice: "Field Office",
+      ClusterOffice: "Cluster Office",
       Admin: "admin"
     };
 
@@ -327,7 +327,7 @@ const deleteMessage = async () => {
       console.error("Error marking message as seen:", error);
     }
 
-    navigate(`/${rolePaths[userRole] || "viewer"}/inbox/${id}`);
+    navigate(`/${rolePaths[userRole] || "Field Office"}/inbox/${id}`);
   };
 
 const handleDeleteRequest = (
